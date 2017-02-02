@@ -1,0 +1,26 @@
+{
+  "extends" : [
+    "tslint:recommended"
+  ],
+  "rules": {
+    "forin": false,
+    "interface-name": [false],
+    "no-console": [false],
+    "indent": [true, "tabs"],
+    "variable-name":
+    [
+      true,
+      "ban-keywords",
+      "check-format",
+      "allow-pascal-case",
+      "allow-leading-underscore"
+    ],
+    "one-line": [false],
+    "max-line-length": [false],
+    "object-literal-sort-keys": false,
+    "curly": false,
+    "ordered-imports": [],
+    "only-arrow-functions": [],
+    "class-name": false
+  }
+}

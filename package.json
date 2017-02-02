@@ -1,0 +1,50 @@
+{
+  "name": "rollup-plugin-typescript2",
+  "version": "0.0.1",
+  "description": "Seamless integration between Rollup and TypeScript. Now with errors.",
+  "main": "dist/rollup-plugin-typescript2.cjs.js",
+  "module": "dist/rollup-plugin-typescript2.es.js",
+  "jsnext:main": "dist/rollup-plugin-typescript2.es.js",
+  "files": [
+    "dist",
+    "src"
+  ],
+  "keywords": [
+    "rollup-plugin",
+    "typescript",
+    "es2015"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/ezolenko/rollup-plugin-typescript2",
+  "author": "@ezolenko",
+  "scripts": {
+    "prebuild": "rimraf dist/*",
+    "build": "rollup -c",
+    "lint": "tslint -c ./tslint.json src/*.ts",
+    "postinstall": "typings install"
+  },
+  "dependencies": {
+  },
+  "peerDependencies": {
+    "typescript": "^2.1.5"
+  },
+  "devDependencies": {
+    "@alexlur/rollup-plugin-typescript": "^0.8.1",
+    "@types/node": "^6.0.53",
+    "lodash": "^4.17.4",
+    "rimraf": "^2.5.4",
+    "rollup": "^0.41.4",
+    "tslint": "^4.1.1",
+    "typescript": "^2.1.5",
+    "typings": "^2.1.0",
+    "rollup-pluginutils": "^2.0.1",
+    "tslib": "^1.5.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ezolenko/rollup-plugin-typescript2.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ezolenko/rollup-plugin-typescript2/issues"
+  }
+}

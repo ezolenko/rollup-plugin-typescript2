@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"module": "es6",
+		"target": "es5",
+		"noImplicitAny": true,
+		"sourceMap": false,
+		"noUnusedParameters": true,
+		"noUnusedLocals": true,
+		"allowJs": true,
+		"noImplicitThis": true,
+		"diagnostics": true,
+		"listFiles": true,
+		"pretty": true,
+		"moduleResolution": "node",
+		"noEmitOnError": true
+	},
+	"include": [
+		"typings/**/*.d.ts",
+		"src/**/*.ts"
+  	]
+}
