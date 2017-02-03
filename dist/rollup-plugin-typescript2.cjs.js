@@ -2,7 +2,6 @@
 'use strict';
 
 var ts = require('typescript');
-var rollupPluginutils = require('rollup-pluginutils');
 var fs = require('fs');
 var path = require('path');
 
@@ -38,92 +37,73 @@ function findFile(cwd, filename) {
     }
     return null;
 }
+function parseTsConfig() {
+    var fileName = findFile(process.cwd(), "tsconfig.json");
+    var text = ts.sys.readFile(fileName);
+    var result = ts.parseConfigFileTextToJson(fileName, text);
+    var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), undefined, fileName);
+    return configParseResult;
+}
 function typescript(options) {
     options = __assign({}, options);
-    var filter = rollupPluginutils.createFilter(options.include || ["*.ts+(|x)", "**/*.ts+(|x)"], options.exclude || ["*.d.ts", "**/*.d.ts"]);
-    // Verify that we're targeting ES2015 modules.
-    if (options.module !== "es2015" && options.module !== "es6")
-        throw new Error("rollup-plugin-typescript2: The module kind should be 'es2015', found: '" + options.module + "'");
-    var cwd = process.cwd();
-    var typescript = ts;
-    var config = typescript.readConfigFile(findFile(cwd, "tsconfig.json"), function (path$$1) { return fs.readFileSync(path$$1, "utf8"); });
-    var compilerOptions = config.config.compilerOptions;
-    var files = {};
+    var parsedConfig = parseTsConfig();
+    console.log("lib:", parsedConfig.options.target, parsedConfig.options.lib);
     var servicesHost = {
-        getScriptFileNames: function () { return _.keys(files); },
+        getScriptFileNames: function () { return parsedConfig.fileNames; },
         getScriptVersion: function (_fileName) { return "0"; },
         getScriptSnapshot: function (fileName) {
             if (!fs.existsSync(fileName))
                 return undefined;
-            return ts.ScriptSnapshot.fromString(fs.readFileSync(fileName).toString());
+            return ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName));
         },
         getCurrentDirectory: function () { return process.cwd(); },
-        getCompilationSettings: function () { return compilerOptions; },
+        getCompilationSettings: function () { return parsedConfig.options; },
         getDefaultLibFileName: function (opts) { return ts.getDefaultLibFilePath(opts); },
     };
     var services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+    var printDiagnostics = function (diagnostics) {
+        diagnostics.forEach(function (diagnostic) {
+            var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+            if (diagnostic.file) {
+                var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
+                console.log("  Error " + diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message);
+            }
+            else {
+                console.log("  Error: " + message);
+            }
+        });
+    };
     return {
-        /*	resolveId(importee: string, importer: string): any
-            {
-                if (importee === TSLIB)
-                    return "\0" + TSLIB;
-    
-                if (!importer)
-                    return null;
-    
-                let result;
-    
-                importer = importer.split("\\").join(" / ");
-    
-                result = typescript.nodeModuleNameResolver( importee, importer, compilerOptions, resolveHost );
-    
-                if (result.resolvedModule && result.resolvedModule.resolvedFileName)
-                {
-                    if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
-                        return null;
-    
-                    return result.resolvedModule.resolvedFileName;
-                }
-    
-                return null;
-            },
-    */
-        load: function (id) {
-            if (!filter(id))
-                return;
+        load: function (_id) {
             return ""; // avoiding double loading
         },
         transform: function (_code, id) {
-            if (!filter(id))
-                return;
-            files[id] = "";
+            console.log("transform", id);
             var output = services.getEmitOutput(id);
-            if (output.emitSkipped)
-                throw new Error("failed to transpile " + id);
-            return {
-                code: output.outputFiles[0],
-                map: output.outputFiles[1],
-            };
-        },
-        intro: function () {
-            return;
-        },
-        outro: function () {
-            _.each(_.keys(files), function (id) {
+            if (output.emitSkipped) {
                 var allDiagnostics = services
                     .getCompilerOptionsDiagnostics()
                     .concat(services.getSyntacticDiagnostics(id))
                     .concat(services.getSemanticDiagnostics(id));
-                allDiagnostics.forEach(function (diagnostic) {
-                    var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-                    if (diagnostic.file) {
-                        var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-                        console.log("  Error " + diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message);
-                    }
-                    else {
-                        console.log("  Error: " + message);
-                    }
-                });
+                printDiagnostics(allDiagnostics);
+                throw new Error("failed to transpile " + id);
+            }
+            var code = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js"); });
+            var map = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
+            console.log("code: " + code.name + ", map: " + map.name);
+            return {
+                code: code ? code.text : undefined,
+                map: map ? map.text : undefined,
+            };
+        },
+        outro: function () {
+            console.log();
+            _.each(parsedConfig.fileNames, function (id) {
+                var allDiagnostics = services
+                    .getCompilerOptionsDiagnostics()
+                    .concat(services.getSyntacticDiagnostics(id))
+                    .concat(services.getSemanticDiagnostics(id));
+                printDiagnostics(allDiagnostics);
             });
             return;
         },
