@@ -1,6 +1,7 @@
 /* eslint-disable */
-import { ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, parseConfigFileTextToJson, parseJsonConfigFileContent, sys } from 'typescript';
+import { ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, sys } from 'typescript';
 import * as ts from 'typescript';
+import { createFilter } from 'rollup-pluginutils';
 import { existsSync } from 'fs';
 import * as fs from 'fs';
 import { dirname, sep } from 'path';
@@ -45,10 +46,26 @@ function parseTsConfig() {
     var configParseResult = parseJsonConfigFileContent(result.config, sys, dirname(fileName), undefined, fileName);
     return configParseResult;
 }
+function printDiagnostics(context, diagnostics) {
+    diagnostics.forEach(function (diagnostic) {
+        var message = flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+        if (diagnostic.file) {
+            var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
+            context.warn({ message: diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message });
+        }
+        else
+            context.warn({ message: message });
+    });
+}
+
 function typescript(options) {
     options = __assign({}, options);
+    var filter = createFilter(options.include || ["*.ts+(|x)", "**/*.ts+(|x)"], options.exclude || ["*.d.ts", "**/*.d.ts"]);
+    delete options.include;
+    delete options.exclude;
     var parsedConfig = parseTsConfig();
-    console.log("lib:", parsedConfig.options.target, parsedConfig.options.lib);
+    if (parsedConfig.options.module !== ModuleKind.ES2015)
+        throw new Error("rollup-plugin-typescript2: The module kind should be 'es2015', found: '" + ModuleKind[parsedConfig.options.module] + "'");
     var servicesHost = {
         getScriptFileNames: function () { return parsedConfig.fileNames; },
         getScriptVersion: function (_fileName) { return "0"; },
@@ -62,51 +79,41 @@ function typescript(options) {
         getDefaultLibFileName: function (opts) { return getDefaultLibFilePath(opts); },
     };
     var services = createLanguageService(servicesHost, createDocumentRegistry());
-    var printDiagnostics = function (diagnostics) {
-        diagnostics.forEach(function (diagnostic) {
-            var message = flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-            if (diagnostic.file) {
-                var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-                console.log("  Error " + diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message);
-            }
-            else {
-                console.log("  Error: " + message);
-            }
-        });
-    };
     return {
-        load: function (_id) {
+        resolveId: function (importee, importer) {
+            if (!importer)
+                return null;
+            importer = importer.split("\\").join("/");
+            var result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
+            if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
+                if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+                    return null;
+                return result.resolvedModule.resolvedFileName;
+            }
+            return null;
+        },
+        load: function (id) {
+            if (!filter(id))
+                return null;
             return ""; // avoiding double loading
         },
         transform: function (_code, id) {
-            console.log("transform", id);
+            if (!filter(id))
+                return null;
             var output = services.getEmitOutput(id);
-            if (output.emitSkipped) {
-                var allDiagnostics = services
-                    .getCompilerOptionsDiagnostics()
-                    .concat(services.getSyntacticDiagnostics(id))
-                    .concat(services.getSemanticDiagnostics(id));
-                printDiagnostics(allDiagnostics);
-                throw new Error("failed to transpile " + id);
-            }
+            var allDiagnostics = services
+                .getCompilerOptionsDiagnostics()
+                .concat(services.getSyntacticDiagnostics(id))
+                .concat(services.getSemanticDiagnostics(id));
+            printDiagnostics(this, allDiagnostics);
+            if (output.emitSkipped)
+                this.error({ message: "failed to transpile " + id });
             var code = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js"); });
             var map = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
-            console.log("code: " + code.name + ", map: " + map.name);
             return {
                 code: code ? code.text : undefined,
-                map: map ? map.text : undefined,
+                map: map ? JSON.parse(map.text) : { mappings: "" },
             };
-        },
-        outro: function () {
-            console.log();
-            _.each(parsedConfig.fileNames, function (id) {
-                var allDiagnostics = services
-                    .getCompilerOptionsDiagnostics()
-                    .concat(services.getSyntacticDiagnostics(id))
-                    .concat(services.getSemanticDiagnostics(id));
-                printDiagnostics(allDiagnostics);
-            });
-            return;
         },
     };
 }

@@ -43,13 +43,43 @@ function parseTsConfig()
 	return configParseResult;
 }
 
+interface Message
+{
+	message: string;
+}
+interface Context
+{
+	warn(message: Message): void;
+	error(message: Message): void;
+}
+function printDiagnostics(context: Context,  diagnostics: ts.Diagnostic[])
+{
+	diagnostics.forEach((diagnostic) =>
+	{
+		let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
+		if (diagnostic.file)
+		{
+			let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+			context.warn({ message: `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}` });
+		}
+		else
+			context.warn({ message });
+	});
+};
+
 export default function typescript (options: any)
 {
 	options = { ... options };
 
+	const filter = createFilter(options.include || [ "*.ts+(|x)", "**/*.ts+(|x)" ], options.exclude || [ "*.d.ts", "**/*.d.ts" ]);
+
+	delete options.include;
+	delete options.exclude;
+
 	let parsedConfig = parseTsConfig();
 
-	console.log("lib:", parsedConfig.options.target, parsedConfig.options.lib);
+	if (parsedConfig.options.module !== ts.ModuleKind.ES2015)
+		throw new Error( `rollup-plugin-typescript2: The module kind should be 'es2015', found: '${ts.ModuleKind[parsedConfig.options.module]}'` );
 
 	const servicesHost: ts.LanguageServiceHost = {
 		getScriptFileNames: () => parsedConfig.fileNames,
@@ -68,71 +98,58 @@ export default function typescript (options: any)
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	let printDiagnostics = function(diagnostics: ts.Diagnostic[])
-	{
-		diagnostics.forEach((diagnostic) =>
-		{
-			let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-			if (diagnostic.file)
-			{
-				let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-				console.log(`  Error ${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
-			}
-			else
-			{
-				console.log(`  Error: ${message}`);
-			}
-		});
-	};
-
 	return {
-		load(_id: string): any
+
+		resolveId(importee: string, importer: string)
 		{
+			if (!importer)
+				return null;
+
+			importer = importer.split("\\").join("/");
+
+			let result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
+
+			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
+			{
+				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+					return null;
+
+				return result.resolvedModule.resolvedFileName;
+			}
+
+			return null;
+		},
+
+		load(id: string): any
+		{
+			if (!filter(id))
+				return null;
 			return ""; // avoiding double loading
 		},
 
-		transform(_code: string, id: string): any
+		transform(this: Context, _code: string, id: string): any
 		{
-			console.log("transform", id);
+			if (!filter(id)) return null;
 
 			let output = services.getEmitOutput(id);
 
-			if (output.emitSkipped)
-			{
-				let allDiagnostics = services
-					.getCompilerOptionsDiagnostics()
-					.concat(services.getSyntacticDiagnostics(id))
-					.concat(services.getSemanticDiagnostics(id));
+			let allDiagnostics = services
+				.getCompilerOptionsDiagnostics()
+				.concat(services.getSyntacticDiagnostics(id))
+				.concat(services.getSemanticDiagnostics(id));
 
-				printDiagnostics(allDiagnostics);
-				throw new Error(`failed to transpile ${id}`);
-			}
+			printDiagnostics(this, allDiagnostics);
+
+			if (output.emitSkipped)
+				this.error({ message: `failed to transpile ${id}`});
 
 			const code: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
 			const map: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
 
-			console.log(`code: ${code.name}, map: ${map.name}`);
-
 			return {
 				code: code ? code.text : undefined,
-				map: map ? map.text : undefined,
+				map: map ? JSON.parse(map.text) : { mappings: "" },
 			};
-		},
-
-		outro(): any
-		{
-			console.log();
-			_.each(parsedConfig.fileNames, (id: string) =>
-			{
-				let allDiagnostics = services
-					.getCompilerOptionsDiagnostics()
-					.concat(services.getSyntacticDiagnostics(id))
-					.concat(services.getSemanticDiagnostics(id));
-
-				printDiagnostics(allDiagnostics);
-			});
-
-			return;
 		},
 	};
 }
