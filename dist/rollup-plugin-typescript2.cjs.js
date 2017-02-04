@@ -19,6 +19,14 @@ const __assign = Object.assign || function (target) {
 };
 
 var _ = require("lodash");
+function getDefaultOptions() {
+    return {
+        noEmitHelpers: true,
+        module: ts.ModuleKind.ES2015,
+        sourceMap: true,
+        importHelpers: true,
+    };
+}
 // Gratefully lifted from 'look-up', due to problems using it directly:
 //   https://github.com/jonschlinkert/look-up/blob/master/index.js
 //   MIT Licenced
@@ -38,11 +46,22 @@ function findFile(cwd, filename) {
     }
     return null;
 }
+// The injected id for helpers.
+var TSLIB = "tslib";
+var tslibSource;
+try {
+    var tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
+    tslibSource = fs.readFileSync(tslibPath, "utf8");
+}
+catch (e) {
+    console.warn("Error loading `tslib` helper library.");
+    throw e;
+}
 function parseTsConfig() {
     var fileName = findFile(process.cwd(), "tsconfig.json");
     var text = ts.sys.readFile(fileName);
     var result = ts.parseConfigFileTextToJson(fileName, text);
-    var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), undefined, fileName);
+    var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getDefaultOptions(), fileName);
     return configParseResult;
 }
 function printDiagnostics(context, diagnostics) {
@@ -80,6 +99,8 @@ function typescript(options) {
     var services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
     return {
         resolveId: function (importee, importer) {
+            if (importee === TSLIB)
+                return "\0" + TSLIB;
             if (!importer)
                 return null;
             importer = importer.split("\\").join("/");
@@ -92,9 +113,8 @@ function typescript(options) {
             return null;
         },
         load: function (id) {
-            if (!filter(id))
-                return null;
-            return ""; // avoiding double loading
+            if (id === "\0" + TSLIB)
+                return tslibSource;
         },
         transform: function (_code, id) {
             if (!filter(id))

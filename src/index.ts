@@ -5,6 +5,16 @@ import * as path from "path";
 import { existsSync } from "fs";
 const _ = require("lodash") as lodash;
 
+function getDefaultOptions()
+{
+	return {
+		noEmitHelpers: true,
+		module: ts.ModuleKind.ES2015,
+		sourceMap: true,
+		importHelpers: true,
+	};
+}
+
 // Gratefully lifted from 'look-up', due to problems using it directly:
 //   https://github.com/jonschlinkert/look-up/blob/master/index.js
 //   MIT Licenced
@@ -33,12 +43,25 @@ function findFile(cwd: string, filename: string)
 	return null;
 }
 
+// The injected id for helpers.
+const TSLIB = "tslib";
+let tslibSource: string;
+try
+{
+	const tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
+	tslibSource = fs.readFileSync(tslibPath, "utf8");
+} catch (e)
+{
+	console.warn("Error loading `tslib` helper library.");
+	throw e;
+}
+
 function parseTsConfig()
 {
 	const fileName = findFile(process.cwd(), "tsconfig.json");
 	const text = ts.sys.readFile(fileName);
 	const result = ts.parseConfigFileTextToJson(fileName, text);
-	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), undefined, fileName);
+	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getDefaultOptions(), fileName);
 
 	return configParseResult;
 }
@@ -52,7 +75,7 @@ interface Context
 	warn(message: Message): void;
 	error(message: Message): void;
 }
-function printDiagnostics(context: Context,  diagnostics: ts.Diagnostic[])
+function printDiagnostics(context: Context, diagnostics: ts.Diagnostic[])
 {
 	diagnostics.forEach((diagnostic) =>
 	{
@@ -102,6 +125,9 @@ export default function typescript (options: any)
 
 		resolveId(importee: string, importer: string)
 		{
+			if (importee === TSLIB)
+				return "\0" + TSLIB;
+
 			if (!importer)
 				return null;
 
@@ -122,9 +148,8 @@ export default function typescript (options: any)
 
 		load(id: string): any
 		{
-			if (!filter(id))
-				return null;
-			return ""; // avoiding double loading
+			if (id === "\0" + TSLIB)
+				return tslibSource;
 		},
 
 		transform(this: Context, _code: string, id: string): any
