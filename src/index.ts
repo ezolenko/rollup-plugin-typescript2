@@ -5,13 +5,14 @@ import * as path from "path";
 import { existsSync } from "fs";
 const _ = require("lodash") as lodash;
 
-function getDefaultOptions()
+function getOptionsOverrides()
 {
 	return {
-		noEmitHelpers: true,
 		module: ts.ModuleKind.ES2015,
 		sourceMap: true,
+		noEmitHelpers: true,
 		importHelpers: true,
+		noResolve: false,
 	};
 }
 
@@ -61,7 +62,7 @@ function parseTsConfig()
 	const fileName = findFile(process.cwd(), "tsconfig.json");
 	const text = ts.sys.readFile(fileName);
 	const result = ts.parseConfigFileTextToJson(fileName, text);
-	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getDefaultOptions(), fileName);
+	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
 
 	return configParseResult;
 }
