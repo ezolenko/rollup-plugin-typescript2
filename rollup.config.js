@@ -10,7 +10,8 @@ export default {
 		'fs',
 		'object-assign',
 		'rollup-pluginutils',
-		'typescript'
+		'typescript',
+		'lodash'
 	],
 
 	plugins: [

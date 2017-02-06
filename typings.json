@@ -1,8 +1,0 @@
-{
-  "name": "rollup-plugin-typescript2",
-  "dependencies": {
-	  "lodash": "registry:dt/lodash"
-  },
-  "globalDependencies": {
-  }
-}

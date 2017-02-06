@@ -5,6 +5,7 @@ var ts = require('typescript');
 var rollupPluginutils = require('rollup-pluginutils');
 var fs = require('fs');
 var path = require('path');
+var _ = require('lodash');
 
 const __assign = Object.assign || function (target) {
     for (var source, i = 1; i < arguments.length; i++) {
@@ -18,13 +19,13 @@ const __assign = Object.assign || function (target) {
     return target;
 };
 
-var _ = require("lodash");
-function getDefaultOptions() {
+function getOptionsOverrides() {
     return {
-        noEmitHelpers: true,
         module: ts.ModuleKind.ES2015,
         sourceMap: true,
+        noEmitHelpers: true,
         importHelpers: true,
+        noResolve: false,
     };
 }
 // Gratefully lifted from 'look-up', due to problems using it directly:
@@ -50,6 +51,7 @@ function findFile(cwd, filename) {
 var TSLIB = "tslib";
 var tslibSource;
 try {
+    // tslint:disable-next-line:no-string-literal no-var-requires
     var tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
     tslibSource = fs.readFileSync(tslibPath, "utf8");
 }
@@ -61,7 +63,7 @@ function parseTsConfig() {
     var fileName = findFile(process.cwd(), "tsconfig.json");
     var text = ts.sys.readFile(fileName);
     var result = ts.parseConfigFileTextToJson(fileName, text);
-    var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getDefaultOptions(), fileName);
+    var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
     return configParseResult;
 }
 function printDiagnostics(context, diagnostics) {
@@ -82,8 +84,6 @@ function typescript(options) {
     delete options.include;
     delete options.exclude;
     var parsedConfig = parseTsConfig();
-    if (parsedConfig.options.module !== ts.ModuleKind.ES2015)
-        throw new Error("rollup-plugin-typescript2: The module kind should be 'es2015', found: '" + ts.ModuleKind[parsedConfig.options.module] + "'");
     var servicesHost = {
         getScriptFileNames: function () { return parsedConfig.fileNames; },
         getScriptVersion: function (_fileName) { return "0"; },

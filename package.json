@@ -23,23 +23,22 @@
     "lint": "tslint -c ./tslint.json src/*.ts",
     "postinstall": "typings install"
   },
-  "dependencies": {},
+  "dependencies": {
+    "lodash": "^4.17.4",
+    "rollup-pluginutils": "^2.0.1",
+    "tslib": "^1.5.0"
+  },
   "peerDependencies": {
-    "typescript": "^2.1.5"
+    "typescript": "^2.0"
   },
   "devDependencies": {
     "@alexlur/rollup-plugin-typescript": "^0.8.1",
+    "@types/lodash": "^4.14.52",
     "@types/node": "^6.0.53",
-    "glob": "^7.1.1",
-    "glob-fs": "^0.1.6",
-    "lodash": "^4.17.4",
     "rimraf": "^2.5.4",
     "rollup": "^0.41.4",
-    "rollup-pluginutils": "^2.0.1",
-    "tslib": "^1.5.0",
-    "tslint": "^4.1.1",
-    "typescript": "^2.1.5",
-    "typings": "^2.1.0"
+    "tslint": "^4.4.2",
+    "typescript": "^2.1.5"
   },
   "repository": {
     "type": "git",

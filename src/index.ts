@@ -3,9 +3,9 @@ import { createFilter } from "rollup-pluginutils";
 import * as fs from "fs";
 import * as path from "path";
 import { existsSync } from "fs";
-const _ = require("lodash") as lodash;
+import * as _ from "lodash";
 
-function getOptionsOverrides()
+function getOptionsOverrides(): ts.CompilerOptions
 {
 	return {
 		module: ts.ModuleKind.ES2015,
@@ -49,6 +49,7 @@ const TSLIB = "tslib";
 let tslibSource: string;
 try
 {
+	// tslint:disable-next-line:no-string-literal no-var-requires
 	const tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
 	tslibSource = fs.readFileSync(tslibPath, "utf8");
 } catch (e)
@@ -101,9 +102,6 @@ export default function typescript (options: any)
 	delete options.exclude;
 
 	let parsedConfig = parseTsConfig();
-
-	if (parsedConfig.options.module !== ts.ModuleKind.ES2015)
-		throw new Error( `rollup-plugin-typescript2: The module kind should be 'es2015', found: '${ts.ModuleKind[parsedConfig.options.module]}'` );
 
 	const servicesHost: ts.LanguageServiceHost = {
 		getScriptFileNames: () => parsedConfig.fileNames,

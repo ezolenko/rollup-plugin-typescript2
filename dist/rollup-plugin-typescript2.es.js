@@ -6,6 +6,8 @@ import { existsSync, readFileSync } from 'fs';
 import * as fs from 'fs';
 import { dirname, sep } from 'path';
 import * as path from 'path';
+import { endsWith, find } from 'lodash';
+import * as _ from 'lodash';
 
 const __assign = Object.assign || function (target) {
     for (var source, i = 1; i < arguments.length; i++) {
@@ -19,13 +21,13 @@ const __assign = Object.assign || function (target) {
     return target;
 };
 
-var _ = require("lodash");
-function getDefaultOptions() {
+function getOptionsOverrides() {
     return {
-        noEmitHelpers: true,
         module: ModuleKind.ES2015,
         sourceMap: true,
+        noEmitHelpers: true,
         importHelpers: true,
+        noResolve: false,
     };
 }
 // Gratefully lifted from 'look-up', due to problems using it directly:
@@ -51,6 +53,7 @@ function findFile(cwd, filename) {
 var TSLIB = "tslib";
 var tslibSource;
 try {
+    // tslint:disable-next-line:no-string-literal no-var-requires
     var tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
     tslibSource = readFileSync(tslibPath, "utf8");
 }
@@ -62,7 +65,7 @@ function parseTsConfig() {
     var fileName = findFile(process.cwd(), "tsconfig.json");
     var text = sys.readFile(fileName);
     var result = parseConfigFileTextToJson(fileName, text);
-    var configParseResult = parseJsonConfigFileContent(result.config, sys, dirname(fileName), getDefaultOptions(), fileName);
+    var configParseResult = parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(), fileName);
     return configParseResult;
 }
 function printDiagnostics(context, diagnostics) {
@@ -83,8 +86,6 @@ function typescript(options) {
     delete options.include;
     delete options.exclude;
     var parsedConfig = parseTsConfig();
-    if (parsedConfig.options.module !== ModuleKind.ES2015)
-        throw new Error("rollup-plugin-typescript2: The module kind should be 'es2015', found: '" + ModuleKind[parsedConfig.options.module] + "'");
     var servicesHost = {
         getScriptFileNames: function () { return parsedConfig.fileNames; },
         getScriptVersion: function (_fileName) { return "0"; },
@@ -107,7 +108,7 @@ function typescript(options) {
             importer = importer.split("\\").join("/");
             var result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
-                if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
                 return result.resolvedModule.resolvedFileName;
             }
@@ -128,8 +129,8 @@ function typescript(options) {
             printDiagnostics(this, allDiagnostics);
             if (output.emitSkipped)
                 this.error({ message: "failed to transpile " + id });
-            var code = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js"); });
-            var map = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
+            var code = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
+            var map = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
             return {
                 code: code ? code.text : undefined,
                 map: map ? JSON.parse(map.text) : { mappings: "" },
