@@ -1,4 +1,6 @@
 # rollup-plugin-typescript2
+![npm-version](https://img.shields.io/npm/v/rollup-plugin-typescript2.svg?maxAge=2592000)
+![npm-dependencies](https://img.shields.io/david/ezolenko/rollup-plugin-typescript2.svg?maxAge=2592000)
 
 Rollup plugin for typescript with compiler errors. 
 
