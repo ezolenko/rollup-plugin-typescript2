@@ -11,7 +11,7 @@ interface ICode
 
 interface INodeLabel
 {
-	dirty?: boolean;
+	dirty: boolean;
 	hash?: string;
 }
 
@@ -33,7 +33,9 @@ export class Cache
 			this.dependencyTree = graph.json.read(JSON.parse(data));
 		}
 		else
-			this.dependencyTree = new graph.Graph();
+			this.dependencyTree = new graph.Graph({ directed: true });
+
+		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
 	}
 
 	public setDependency(importee: string, importer: string): void
@@ -46,12 +48,12 @@ export class Cache
 		this.treeComplete = true;
 	}
 
-	public markAsDirty(fileName: string, snapshot: ts.IScriptSnapshot)
+	public markAsDirty(fileName: string, _snapshot: ts.IScriptSnapshot)
 	{
 		this.dependencyTree.setNode(fileName, { dirty: true });
 	}
 
-	public isDirty(fileName: string, snapshot: ts.IScriptSnapshot): boolean
+	public isDirty(fileName: string, _snapshot: ts.IScriptSnapshot): boolean
 	{
 		let label = this.dependencyTree.node(fileName) as INodeLabel;
 
@@ -67,7 +69,7 @@ export class Cache
 		if (!fs.existsSync(path) || this.isDirty(fileName, snapshot))
 		{
 			let data = transform();
-			this.setCompiled(path, fileName, snapshot, data);
+			this.setCache(path, fileName, snapshot, data);
 			return data;
 		}
 
@@ -76,16 +78,23 @@ export class Cache
 
 	public getDiagnostics(fileName: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): ts.Diagnostic[]
 	{
+		let path = `${this.makePath(fileName, snapshot)}.diagnostics`;
 
+		if (!fs.existsSync(path) || this.isDirty(fileName, snapshot))
+		{
+			let data = check();
+			this.setCache(path, fileName, snapshot, data);
+			return data;
+		}
+
+		return JSON.parse(fs.readFileSync(path, "utf8")) as ts.Diagnostic[];
 	}
 
-	private setDiagnostics(path: string, fileName: string, snapshot: ts.IScriptSnapshot, data: ts.Diagnostic[]): void
+	private setCache(path: string, fileName: string, snapshot: ts.IScriptSnapshot, data: ts.Diagnostic[] | ICode | undefined): void
 	{
+		if (data === undefined)
+			return;
 
-	}
-
-	private setCompiled(path: string, fileName: string, snapshot: ts.IScriptSnapshot, data: ICode)
-	{
 		fs.writeFileSync(path, JSON.stringify(data));
 
 		this.markAsDirty(fileName, snapshot);
