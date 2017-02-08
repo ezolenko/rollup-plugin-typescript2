@@ -11,7 +11,9 @@ export default {
 		'object-assign',
 		'rollup-pluginutils',
 		'typescript',
-		'lodash'
+		'lodash',
+		'graphlib',
+		'object-hash'
 	],
 
 	plugins: [
