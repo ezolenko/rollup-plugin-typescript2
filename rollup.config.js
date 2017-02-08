@@ -10,7 +10,9 @@ export default {
 		'fs',
 		'object-assign',
 		'rollup-pluginutils',
-		'typescript'
+		'typescript',
+		'graphlib',
+		'object-hash'
 	],
 
 	plugins: [
