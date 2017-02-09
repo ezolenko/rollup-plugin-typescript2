@@ -24,10 +24,11 @@
     "postinstall": "typings install"
   },
   "dependencies": {
+    "tslib": "^1.5.0",
     "lodash": "^4.17.4",
-    "rollup-pluginutils": "^2.0.1",
     "graphlib": "^2.1.1",
-    "tslib": "^1.5.0"
+    "object-hash": "^1.1.5",
+    "rollup-pluginutils": "^2.0.1",
   },
   "peerDependencies": {
     "typescript": "^2.0"
