@@ -1,5 +1,5 @@
 import { LanguageServiceHost } from "./host";
-import { Cache, ICode } from "./cache";
+import { Cache, ICode, IDiagnostics } from "./cache";
 import * as ts from "typescript";
 import { createFilter } from "rollup-pluginutils";
 import * as fs from "fs";
@@ -63,6 +63,9 @@ try
 function parseTsConfig()
 {
 	const fileName = findFile(process.cwd(), "tsconfig.json");
+	if (!fileName)
+		throw new Error(`couldn't find 'tsconfig.json' in ${process.cwd()}`);
+
 	const text = ts.sys.readFile(fileName);
 	const result = ts.parseConfigFileTextToJson(fileName, text);
 	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
@@ -79,29 +82,28 @@ interface Context
 	warn(message: Message): void;
 	error(message: Message): void;
 }
-function printDiagnostics(diagnostics: ts.Diagnostic[])
+function printDiagnostics(diagnostics: IDiagnostics[])
 {
-	diagnostics.forEach((diagnostic) =>
+	_.each(diagnostics, (diagnostic) =>
 	{
-		let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-		if (diagnostic.file)
-		{
-			let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-			console.log(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
-		}
+		if (diagnostic.fileLine)
+			console.log(`${diagnostic.fileLine}: ${diagnostic.flatMessage}`);
 		else
-			console.log(message);
+			console.log(diagnostic.flatMessage);
 	});
 };
 
-export default function typescript (options: any)
+interface IOptions
+{
+	include?: string;
+	exclude?: string;
+}
+
+export default function typescript (options: IOptions)
 {
 	options = { ... options };
 
 	const filter = createFilter(options.include || [ "*.ts+(|x)", "**/*.ts+(|x)" ], options.exclude || [ "*.d.ts", "**/*.d.ts" ]);
-
-	delete options.include;
-	delete options.exclude;
 
 	let parsedConfig = parseTsConfig();
 
@@ -109,14 +111,12 @@ export default function typescript (options: any)
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	const cache = new Cache(process.cwd(), parsedConfig.options, parsedConfig.fileNames);
+	const cache = new Cache(`${process.cwd()}/.rts2_cache`, parsedConfig.options, parsedConfig.fileNames);
 
 	return {
 
 		resolveId(importee: string, importer: string)
 		{
-			cache.setDependency(importee, importer);
-
 			if (importee === TSLIB)
 				return "\0" + TSLIB;
 
@@ -132,6 +132,9 @@ export default function typescript (options: any)
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
 
+				if (filter(result.resolvedModule.resolvedFileName))
+					cache.setDependency(result.resolvedModule.resolvedFileName, importer);
+
 				return result.resolvedModule.resolvedFileName;
 			}
 
@@ -146,13 +149,12 @@ export default function typescript (options: any)
 			return undefined;
 		},
 
-		transform(this: Context, code: string, id: string): ICode | null
+		transform(this: Context, code: string, id: string): ICode | undefined
 		{
 			if (!filter(id))
-				return null;
+				return undefined;
 
 			const snapshot = servicesHost.setSnapshot(id, code);
-
 			let result = cache.getCompiled(id, snapshot, () =>
 			{
 				const output = services.getEmitOutput(id);
@@ -160,8 +162,8 @@ export default function typescript (options: any)
 				if (output.emitSkipped)
 					this.error({ message: `failed to transpile ${id}`});
 
-				const transpiled: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
-				const map: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
+				const transpiled = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
+				const map = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
 
 				return {
 					code: transpiled ? transpiled.text : undefined,
@@ -179,6 +181,13 @@ export default function typescript (options: any)
 			cache.walkTree((id: string) =>
 			{
 				const snapshot = servicesHost.getScriptSnapshot(id);
+
+				if (!snapshot)
+				{
+					console.log(`failed lo load snapshot for ${id}`);
+					return;
+				}
+
 				const diagnostics = cache.getDiagnostics(id, snapshot, () =>
 				{
 					return services
@@ -186,11 +195,8 @@ export default function typescript (options: any)
 						.concat(services.getSyntacticDiagnostics(id))
 						.concat(services.getSemanticDiagnostics(id));
 				});
-				if (diagnostics.length !== 0)
-				{
-					console.log(id);
-					printDiagnostics(diagnostics);
-				}
+
+				printDiagnostics(diagnostics);
 			});
 		},
 	};

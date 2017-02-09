@@ -1,14 +1,16 @@
 /* eslint-disable */
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import * as fs from 'fs';
 import { ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, sys } from 'typescript';
 import * as ts from 'typescript';
-import { each, endsWith, find, has, keys, some } from 'lodash';
+import { each, endsWith, find, has, map, some } from 'lodash';
 import * as _ from 'lodash';
-import { Graph, alg, json } from 'graphlib';
+import { Graph, alg } from 'graphlib';
 import * as graph from 'graphlib';
 import { sha1 } from 'object-hash';
 import * as hash from 'object-hash';
+import { sync } from 'mkdirp';
+import * as mkdirp from 'mkdirp';
 import { createFilter } from 'rollup-pluginutils';
 import { dirname, sep } from 'path';
 import * as path from 'path';
@@ -67,23 +69,25 @@ var Cache = (function () {
     function Cache(cacheRoot, options, rootFilenames) {
         this.cacheRoot = cacheRoot;
         this.options = options;
+        this.cacheVersion = "0";
         this.treeComplete = false;
-        this.cacheRoot = this.cacheRoot + "/" + sha1({ rootFilenames: rootFilenames, options: this.options });
-        mkdirSync(this.cacheRoot);
-        var dependencyTreeFile = this.cacheRoot + "/tree";
-        if (existsSync(dependencyTreeFile)) {
-            var data = readFileSync(this.cacheRoot + "/tree", "utf8");
-            this.dependencyTree = json.read(JSON.parse(data));
-        }
-        else
-            this.dependencyTree = new Graph({ directed: true });
+        this.cacheRoot = this.cacheRoot + "/" + sha1({ version: this.cacheVersion, rootFilenames: rootFilenames, options: this.options });
+        sync(this.cacheRoot);
+        this.dependencyTree = new Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
     }
     Cache.prototype.walkTree = function (cb) {
-        each(alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+        var acyclic = alg.isAcyclic(this.dependencyTree);
+        if (acyclic) {
+            each(alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+            return;
+        }
+        // console.log("cycles detected in dependency graph, not sorting");
+        each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     Cache.prototype.setDependency = function (importee, importer) {
-        // importer -> importee
+        // console.log(importer, "->", importee);
+        // importee -> importer
         this.dependencyTree.setEdge(importer, importee);
     };
     Cache.prototype.lastDependencySet = function () {
@@ -96,14 +100,25 @@ var Cache = (function () {
     Cache.prototype.isDirty = function (id, _snapshot, checkImports) {
         var _this = this;
         var label = this.dependencyTree.node(id);
-        if (checkImports || label.dirty)
+        if (!label)
+            return false;
+        if (!checkImports || label.dirty)
             return label.dirty;
         var dependencies = alg.dijkstra(this.dependencyTree, id);
-        return some(keys(dependencies), function (dependencyId) { return _this.dependencyTree.node(dependencyId).dirty; });
+        return some(dependencies, function (dependency, node) {
+            if (!node || dependency.distance === Infinity)
+                return false;
+            var l = _this.dependencyTree.node(node);
+            var dirty = l === undefined ? true : l.dirty;
+            if (dirty)
+                console.log("dirty: " + id + " -> " + node);
+            return dirty;
+        });
     };
     Cache.prototype.getCompiled = function (id, snapshot, transform) {
         var path$$1 = this.makePath(id, snapshot);
         if (!existsSync(path$$1) || this.isDirty(id, snapshot, false)) {
+            // console.log(`compile cache miss: ${id}`);
             var data = transform();
             this.setCache(path$$1, id, snapshot, data);
             return data;
@@ -113,7 +128,8 @@ var Cache = (function () {
     Cache.prototype.getDiagnostics = function (id, snapshot, check) {
         var path$$1 = this.makePath(id, snapshot) + ".diagnostics";
         if (!existsSync(path$$1) || this.isDirty(id, snapshot, true)) {
-            var data = check();
+            // console.log(`diagnostics cache miss: ${id}`);
+            var data = this.convert(check());
             this.setCache(path$$1, id, snapshot, data);
             return data;
         }
@@ -128,6 +144,18 @@ var Cache = (function () {
     Cache.prototype.makePath = function (id, snapshot) {
         var data = snapshot.getText(0, snapshot.getLength());
         return this.cacheRoot + "/" + sha1({ data: data, id: id });
+    };
+    Cache.prototype.convert = function (data) {
+        return map(data, function (diagnostic) {
+            var entry = {
+                flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            };
+            if (diagnostic.file) {
+                var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
+                entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
+            }
+            return entry;
+        });
     };
     return Cache;
 }());
@@ -174,35 +202,31 @@ catch (e) {
 }
 function parseTsConfig() {
     var fileName = findFile(process.cwd(), "tsconfig.json");
+    if (!fileName)
+        throw new Error("couldn't find 'tsconfig.json' in " + process.cwd());
     var text = sys.readFile(fileName);
     var result = parseConfigFileTextToJson(fileName, text);
     var configParseResult = parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(), fileName);
     return configParseResult;
 }
 function printDiagnostics(diagnostics) {
-    diagnostics.forEach(function (diagnostic) {
-        var message = flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-        if (diagnostic.file) {
-            var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-            console.log(diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message);
-        }
+    each(diagnostics, function (diagnostic) {
+        if (diagnostic.fileLine)
+            console.log(diagnostic.fileLine + ": " + diagnostic.flatMessage);
         else
-            console.log(message);
+            console.log(diagnostic.flatMessage);
     });
 }
 
 function typescript(options) {
     options = __assign({}, options);
     var filter = createFilter(options.include || ["*.ts+(|x)", "**/*.ts+(|x)"], options.exclude || ["*.d.ts", "**/*.d.ts"]);
-    delete options.include;
-    delete options.exclude;
     var parsedConfig = parseTsConfig();
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var services = createLanguageService(servicesHost, createDocumentRegistry());
-    var cache = new Cache(process.cwd(), parsedConfig.options, parsedConfig.fileNames);
+    var cache = new Cache(process.cwd() + "/.rts2_cache", parsedConfig.options, parsedConfig.fileNames);
     return {
         resolveId: function (importee, importer) {
-            cache.setDependency(importee, importer);
             if (importee === TSLIB)
                 return "\0" + TSLIB;
             if (!importer)
@@ -212,6 +236,8 @@ function typescript(options) {
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
+                if (filter(result.resolvedModule.resolvedFileName))
+                    cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 return result.resolvedModule.resolvedFileName;
             }
             return null;
@@ -224,17 +250,17 @@ function typescript(options) {
         transform: function (code, id) {
             var _this = this;
             if (!filter(id))
-                return null;
+                return undefined;
             var snapshot = servicesHost.setSnapshot(id, code);
             var result = cache.getCompiled(id, snapshot, function () {
                 var output = services.getEmitOutput(id);
                 if (output.emitSkipped)
                     _this.error({ message: "failed to transpile " + id });
                 var transpiled = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
-                var map = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
+                var map$$1 = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
                 return {
                     code: transpiled ? transpiled.text : undefined,
-                    map: map ? JSON.parse(map.text) : { mappings: "" },
+                    map: map$$1 ? JSON.parse(map$$1.text) : { mappings: "" },
                 };
             });
             return result;
@@ -243,16 +269,17 @@ function typescript(options) {
             cache.lastDependencySet();
             cache.walkTree(function (id) {
                 var snapshot = servicesHost.getScriptSnapshot(id);
+                if (!snapshot) {
+                    console.log("failed lo load snapshot for " + id);
+                    return;
+                }
                 var diagnostics = cache.getDiagnostics(id, snapshot, function () {
                     return services
                         .getCompilerOptionsDiagnostics()
                         .concat(services.getSyntacticDiagnostics(id))
                         .concat(services.getSemanticDiagnostics(id));
                 });
-                if (diagnostics.length !== 0) {
-                    console.log(id);
-                    printDiagnostics(diagnostics);
-                }
+                printDiagnostics(diagnostics);
             });
         },
     };

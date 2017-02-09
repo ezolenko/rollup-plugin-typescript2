@@ -13,7 +13,8 @@ export default {
 		'typescript',
 		'lodash',
 		'graphlib',
-		'object-hash'
+		'object-hash',
+		'mkdirp'
 	],
 
 	plugins: [
