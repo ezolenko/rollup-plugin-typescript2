@@ -1,3 +1,5 @@
+import { LanguageServiceHost } from "./host";
+import { Cache, ICode } from "./cache";
 import * as ts from "typescript";
 import { createFilter } from "rollup-pluginutils";
 import * as fs from "fs";
@@ -77,7 +79,7 @@ interface Context
 	warn(message: Message): void;
 	error(message: Message): void;
 }
-function printDiagnostics(context: Context, diagnostics: ts.Diagnostic[])
+function printDiagnostics(diagnostics: ts.Diagnostic[])
 {
 	diagnostics.forEach((diagnostic) =>
 	{
@@ -85,10 +87,10 @@ function printDiagnostics(context: Context, diagnostics: ts.Diagnostic[])
 		if (diagnostic.file)
 		{
 			let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-			context.warn({ message: `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}` });
+			console.log(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
 		}
 		else
-			context.warn({ message });
+			console.log(message);
 	});
 };
 
@@ -103,27 +105,18 @@ export default function typescript (options: any)
 
 	let parsedConfig = parseTsConfig();
 
-	const servicesHost: ts.LanguageServiceHost = {
-		getScriptFileNames: () => parsedConfig.fileNames,
-		getScriptVersion: (_fileName) => "0",
-		getScriptSnapshot: (fileName) =>
-		{
-			if (!fs.existsSync(fileName))
-				return undefined;
-
-			return ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName));
-		},
-		getCurrentDirectory: () => process.cwd(),
-		getCompilationSettings: () => parsedConfig.options,
-		getDefaultLibFileName: (opts) => ts.getDefaultLibFilePath(opts),
-	};
+	const servicesHost = new LanguageServiceHost(parsedConfig);
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+
+	const cache = new Cache(process.cwd(), parsedConfig.options, parsedConfig.fileNames);
 
 	return {
 
 		resolveId(importee: string, importer: string)
 		{
+			cache.setDependency(importee, importer);
+
 			if (importee === TSLIB)
 				return "\0" + TSLIB;
 
@@ -145,35 +138,60 @@ export default function typescript (options: any)
 			return null;
 		},
 
-		load(id: string): any
+		load(id: string): string | undefined
 		{
 			if (id === "\0" + TSLIB)
 				return tslibSource;
+
+			return undefined;
 		},
 
-		transform(this: Context, _code: string, id: string): any
+		transform(this: Context, code: string, id: string): ICode | null
 		{
-			if (!filter(id)) return null;
+			if (!filter(id))
+				return null;
 
-			let output = services.getEmitOutput(id);
+			const snapshot = servicesHost.setSnapshot(id, code);
 
-			let allDiagnostics = services
-				.getCompilerOptionsDiagnostics()
-				.concat(services.getSyntacticDiagnostics(id))
-				.concat(services.getSemanticDiagnostics(id));
+			let result = cache.getCompiled(id, snapshot, () =>
+			{
+				const output = services.getEmitOutput(id);
 
-			printDiagnostics(this, allDiagnostics);
+				if (output.emitSkipped)
+					this.error({ message: `failed to transpile ${id}`});
 
-			if (output.emitSkipped)
-				this.error({ message: `failed to transpile ${id}`});
+				const transpiled: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
+				const map: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
 
-			const code: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
-			const map: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
+				return {
+					code: transpiled ? transpiled.text : undefined,
+					map: map ? JSON.parse(map.text) : { mappings: "" },
+				};
+			});
 
-			return {
-				code: code ? code.text : undefined,
-				map: map ? JSON.parse(map.text) : { mappings: "" },
-			};
+			return result;
+		},
+
+		outro(): void
+		{
+			cache.lastDependencySet();
+
+			cache.walkTree((id: string) =>
+			{
+				const snapshot = servicesHost.getScriptSnapshot(id);
+				const diagnostics = cache.getDiagnostics(id, snapshot, () =>
+				{
+					return services
+						.getCompilerOptionsDiagnostics()
+						.concat(services.getSyntacticDiagnostics(id))
+						.concat(services.getSemanticDiagnostics(id));
+				});
+				if (diagnostics.length !== 0)
+				{
+					console.log(id);
+					printDiagnostics(diagnostics);
+				}
+			});
 		},
 	};
 }

@@ -4,7 +4,7 @@ import * as hash from "object-hash";
 import * as fs from "fs";
 import * as _ from "lodash";
 
-interface ICode
+export interface ICode
 {
 	code: string;
 	map: string;
@@ -37,6 +37,11 @@ export class Cache
 			this.dependencyTree = new graph.Graph({ directed: true });
 
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
+	}
+
+	public walkTree(cb: (id: string) => void | false)
+	{
+		_.each(graph.alg.topsort(this.dependencyTree), (id: string) => cb(id));
 	}
 
 	public setDependency(importee: string, importer: string): void

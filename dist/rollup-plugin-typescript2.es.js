@@ -1,13 +1,17 @@
 /* eslint-disable */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import * as fs from 'fs';
 import { ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, sys } from 'typescript';
 import * as ts from 'typescript';
+import { each, endsWith, find, has, keys, some } from 'lodash';
+import * as _ from 'lodash';
+import { Graph, alg, json } from 'graphlib';
+import * as graph from 'graphlib';
+import { sha1 } from 'object-hash';
+import * as hash from 'object-hash';
 import { createFilter } from 'rollup-pluginutils';
-import { existsSync, readFileSync } from 'fs';
-import * as fs from 'fs';
 import { dirname, sep } from 'path';
 import * as path from 'path';
-import { endsWith, find } from 'lodash';
-import * as _ from 'lodash';
 
 const __assign = Object.assign || function (target) {
     for (var source, i = 1; i < arguments.length; i++) {
@@ -20,6 +24,113 @@ const __assign = Object.assign || function (target) {
     }
     return target;
 };
+
+var LanguageServiceHost = (function () {
+    function LanguageServiceHost(parsedConfig) {
+        this.parsedConfig = parsedConfig;
+        this.cwd = process.cwd();
+        this.snapshots = {};
+    }
+    LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
+        var snapshot = ScriptSnapshot.fromString(data);
+        this.snapshots[fileName] = snapshot;
+        return snapshot;
+    };
+    LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
+        if (has(this.snapshots, fileName))
+            return this.snapshots[fileName];
+        if (existsSync(fileName)) {
+            this.snapshots[fileName] = ScriptSnapshot.fromString(sys.readFile(fileName));
+            return this.snapshots[fileName];
+        }
+        return undefined;
+    };
+    LanguageServiceHost.prototype.getCurrentDirectory = function () {
+        return this.cwd;
+    };
+    LanguageServiceHost.prototype.getScriptVersion = function (_fileName) {
+        return "0";
+    };
+    LanguageServiceHost.prototype.getScriptFileNames = function () {
+        return this.parsedConfig.fileNames;
+    };
+    LanguageServiceHost.prototype.getCompilationSettings = function () {
+        return this.parsedConfig.options;
+    };
+    LanguageServiceHost.prototype.getDefaultLibFileName = function (opts) {
+        return getDefaultLibFilePath(opts);
+    };
+    return LanguageServiceHost;
+}());
+
+var Cache = (function () {
+    function Cache(cacheRoot, options, rootFilenames) {
+        this.cacheRoot = cacheRoot;
+        this.options = options;
+        this.treeComplete = false;
+        this.cacheRoot = this.cacheRoot + "/" + sha1({ rootFilenames: rootFilenames, options: this.options });
+        mkdirSync(this.cacheRoot);
+        var dependencyTreeFile = this.cacheRoot + "/tree";
+        if (existsSync(dependencyTreeFile)) {
+            var data = readFileSync(this.cacheRoot + "/tree", "utf8");
+            this.dependencyTree = json.read(JSON.parse(data));
+        }
+        else
+            this.dependencyTree = new Graph({ directed: true });
+        this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
+    }
+    Cache.prototype.walkTree = function (cb) {
+        each(alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+    };
+    Cache.prototype.setDependency = function (importee, importer) {
+        // importer -> importee
+        this.dependencyTree.setEdge(importer, importee);
+    };
+    Cache.prototype.lastDependencySet = function () {
+        this.treeComplete = true;
+    };
+    Cache.prototype.markAsDirty = function (id, _snapshot) {
+        this.dependencyTree.setNode(id, { dirty: true });
+    };
+    // returns true if node or any of its imports changed
+    Cache.prototype.isDirty = function (id, _snapshot, checkImports) {
+        var _this = this;
+        var label = this.dependencyTree.node(id);
+        if (checkImports || label.dirty)
+            return label.dirty;
+        var dependencies = alg.dijkstra(this.dependencyTree, id);
+        return some(keys(dependencies), function (dependencyId) { return _this.dependencyTree.node(dependencyId).dirty; });
+    };
+    Cache.prototype.getCompiled = function (id, snapshot, transform) {
+        var path$$1 = this.makePath(id, snapshot);
+        if (!existsSync(path$$1) || this.isDirty(id, snapshot, false)) {
+            var data = transform();
+            this.setCache(path$$1, id, snapshot, data);
+            return data;
+        }
+        return JSON.parse(readFileSync(path$$1, "utf8"));
+    };
+    Cache.prototype.getDiagnostics = function (id, snapshot, check) {
+        var path$$1 = this.makePath(id, snapshot) + ".diagnostics";
+        if (!existsSync(path$$1) || this.isDirty(id, snapshot, true)) {
+            var data = check();
+            this.setCache(path$$1, id, snapshot, data);
+            return data;
+        }
+        return JSON.parse(readFileSync(path$$1, "utf8"));
+    };
+    Cache.prototype.setCache = function (path$$1, id, snapshot, data) {
+        if (data === undefined)
+            return;
+        writeFileSync(path$$1, JSON.stringify(data));
+        this.markAsDirty(id, snapshot);
+    };
+    Cache.prototype.makePath = function (id, snapshot) {
+        var data = snapshot.getText(0, snapshot.getLength());
+        return this.cacheRoot + "/" + sha1({ data: data, id: id });
+    };
+    return Cache;
+}());
 
 function getOptionsOverrides() {
     return {
@@ -68,15 +179,15 @@ function parseTsConfig() {
     var configParseResult = parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(), fileName);
     return configParseResult;
 }
-function printDiagnostics(context, diagnostics) {
+function printDiagnostics(diagnostics) {
     diagnostics.forEach(function (diagnostic) {
         var message = flattenDiagnosticMessageText(diagnostic.messageText, "\n");
         if (diagnostic.file) {
             var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-            context.warn({ message: diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message });
+            console.log(diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + "): " + message);
         }
         else
-            context.warn({ message: message });
+            console.log(message);
     });
 }
 
@@ -86,21 +197,12 @@ function typescript(options) {
     delete options.include;
     delete options.exclude;
     var parsedConfig = parseTsConfig();
-    var servicesHost = {
-        getScriptFileNames: function () { return parsedConfig.fileNames; },
-        getScriptVersion: function (_fileName) { return "0"; },
-        getScriptSnapshot: function (fileName) {
-            if (!existsSync(fileName))
-                return undefined;
-            return ScriptSnapshot.fromString(sys.readFile(fileName));
-        },
-        getCurrentDirectory: function () { return process.cwd(); },
-        getCompilationSettings: function () { return parsedConfig.options; },
-        getDefaultLibFileName: function (opts) { return getDefaultLibFilePath(opts); },
-    };
+    var servicesHost = new LanguageServiceHost(parsedConfig);
     var services = createLanguageService(servicesHost, createDocumentRegistry());
+    var cache = new Cache(process.cwd(), parsedConfig.options, parsedConfig.fileNames);
     return {
         resolveId: function (importee, importer) {
+            cache.setDependency(importee, importer);
             if (importee === TSLIB)
                 return "\0" + TSLIB;
             if (!importer)
@@ -117,24 +219,41 @@ function typescript(options) {
         load: function (id) {
             if (id === "\0" + TSLIB)
                 return tslibSource;
+            return undefined;
         },
-        transform: function (_code, id) {
+        transform: function (code, id) {
+            var _this = this;
             if (!filter(id))
                 return null;
-            var output = services.getEmitOutput(id);
-            var allDiagnostics = services
-                .getCompilerOptionsDiagnostics()
-                .concat(services.getSyntacticDiagnostics(id))
-                .concat(services.getSemanticDiagnostics(id));
-            printDiagnostics(this, allDiagnostics);
-            if (output.emitSkipped)
-                this.error({ message: "failed to transpile " + id });
-            var code = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
-            var map = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
-            return {
-                code: code ? code.text : undefined,
-                map: map ? JSON.parse(map.text) : { mappings: "" },
-            };
+            var snapshot = servicesHost.setSnapshot(id, code);
+            var result = cache.getCompiled(id, snapshot, function () {
+                var output = services.getEmitOutput(id);
+                if (output.emitSkipped)
+                    _this.error({ message: "failed to transpile " + id });
+                var transpiled = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
+                var map = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
+                return {
+                    code: transpiled ? transpiled.text : undefined,
+                    map: map ? JSON.parse(map.text) : { mappings: "" },
+                };
+            });
+            return result;
+        },
+        outro: function () {
+            cache.lastDependencySet();
+            cache.walkTree(function (id) {
+                var snapshot = servicesHost.getScriptSnapshot(id);
+                var diagnostics = cache.getDiagnostics(id, snapshot, function () {
+                    return services
+                        .getCompilerOptionsDiagnostics()
+                        .concat(services.getSyntacticDiagnostics(id))
+                        .concat(services.getSemanticDiagnostics(id));
+                });
+                if (diagnostics.length !== 0) {
+                    console.log(id);
+                    printDiagnostics(diagnostics);
+                }
+            });
         },
     };
 }

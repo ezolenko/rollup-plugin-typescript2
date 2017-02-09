@@ -28,16 +28,17 @@
     "lodash": "^4.17.4",
     "graphlib": "^2.1.1",
     "object-hash": "^1.1.5",
-    "rollup-pluginutils": "^2.0.1",
+    "rollup-pluginutils": "^2.0.1"
   },
   "peerDependencies": {
     "typescript": "^2.0"
   },
   "devDependencies": {
     "@alexlur/rollup-plugin-typescript": "^0.8.1",
+    "@types/graphlib": "^2.1.3",
     "@types/lodash": "^4.14.52",
     "@types/node": "^6.0.53",
-    "@types/graphlib": "^2.1.3",
+    "@types/object-hash": "^0.5.28",
     "rimraf": "^2.5.4",
     "rollup": "^0.41.4",
     "tslint": "^4.4.2",
