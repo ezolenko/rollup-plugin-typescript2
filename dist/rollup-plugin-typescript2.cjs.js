@@ -1,12 +1,11 @@
 /* eslint-disable */
 'use strict';
 
-var fs = require('fs');
+var fs = require('fs-extra');
 var ts = require('typescript');
 var _ = require('lodash');
 var graph = require('graphlib');
 var hash = require('object-hash');
-var mkdirp = require('mkdirp');
 var rollupPluginutils = require('rollup-pluginutils');
 var path = require('path');
 
@@ -60,16 +59,61 @@ var LanguageServiceHost = (function () {
     return LanguageServiceHost;
 }());
 
-var Cache = (function () {
-    function Cache(cacheRoot, options, rootFilenames) {
+var RollingCache = (function () {
+    function RollingCache(cacheRoot, checkNewCache) {
         this.cacheRoot = cacheRoot;
+        this.checkNewCache = checkNewCache;
+        this.oldCacheRoot = this.cacheRoot + "/cache";
+        this.newCacheRoot = this.cacheRoot + "/cache_";
+        fs.emptyDirSync(this.newCacheRoot);
+    }
+    RollingCache.prototype.exists = function (name) {
+        if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
+            return true;
+        return fs.existsSync(this.oldCacheRoot + "/" + name);
+    };
+    RollingCache.prototype.match = function (names) {
+        if (!fs.existsSync(this.oldCacheRoot))
+            return false;
+        return _.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
+    };
+    RollingCache.prototype.read = function (name) {
+        if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
+            return fs.readJsonSync(this.newCacheRoot + "/" + name, "utf8");
+        return fs.readJsonSync(this.oldCacheRoot + "/" + name, "utf8");
+    };
+    RollingCache.prototype.write = function (name, data) {
+        if (data === undefined)
+            return;
+        fs.writeJson(this.newCacheRoot + "/" + name, data, { encoding: "utf8" }, function () { });
+    };
+    RollingCache.prototype.touch = function (name) {
+        fs.ensureFile(this.newCacheRoot + "/" + name, function () { });
+    };
+    RollingCache.prototype.roll = function () {
+        var _this = this;
+        fs.remove(this.oldCacheRoot, function () {
+            fs.move(_this.newCacheRoot, _this.oldCacheRoot, function () { });
+        });
+    };
+    return RollingCache;
+}());
+
+var Cache = (function () {
+    function Cache(host, cache, options, rootFilenames) {
+        var _this = this;
+        this.host = host;
         this.options = options;
-        this.cacheVersion = "0";
-        this.treeComplete = false;
-        this.cacheRoot = this.cacheRoot + "/" + hash.sha1({ version: this.cacheVersion, rootFilenames: rootFilenames, options: this.options });
-        mkdirp.sync(this.cacheRoot);
+        this.cacheVersion = "1";
+        this.typesDirty = false;
+        this.cacheDir = cache + "/" + hash.sha1({ version: this.cacheVersion, rootFilenames: rootFilenames, options: this.options });
+        this.codeCache = new RollingCache(this.cacheDir + "/code", true);
+        this.typesCache = new RollingCache(this.cacheDir + "/types", false);
+        this.diagnosticsCache = new RollingCache(this.cacheDir + "/diagnostics", false);
         this.dependencyTree = new graph.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
+        this.types = _.filter(rootFilenames, function (file) { return _.endsWith(file, ".d.ts"); })
+            .map(function (id) { return { id: id, snapshot: _this.host.getScriptSnapshot(id) }; });
     }
     Cache.prototype.walkTree = function (cb) {
         var acyclic = graph.alg.isAcyclic(this.dependencyTree);
@@ -77,21 +121,55 @@ var Cache = (function () {
             _.each(graph.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
-        // console.log("cycles detected in dependency graph, not sorting");
         _.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     Cache.prototype.setDependency = function (importee, importer) {
-        // console.log(importer, "->", importee);
         // importee -> importer
         this.dependencyTree.setEdge(importer, importee);
     };
-    Cache.prototype.lastDependencySet = function () {
-        this.treeComplete = true;
+    Cache.prototype.compileDone = function () {
+        var _this = this;
+        var typeNames = _.filter(this.types, function (snaphot) { return snaphot.snapshot !== undefined; })
+            .map(function (snaphot) { return _this.makeName(snaphot.id, snaphot.snapshot); });
+        // types dirty if any d.ts changed, added or removed
+        this.typesDirty = !this.typesCache.match(typeNames);
+        _.each(typeNames, function (name) { return _this.typesCache.touch(name); });
+    };
+    Cache.prototype.diagnosticsDone = function () {
+        this.codeCache.roll();
+        this.diagnosticsCache.roll();
+        this.typesCache.roll();
+    };
+    Cache.prototype.getCompiled = function (id, snapshot, transform) {
+        var name = this.makeName(id, snapshot);
+        if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
+            console.log("compile cache miss: " + id);
+            var data_1 = transform();
+            this.codeCache.write(name, data_1);
+            this.markAsDirty(id, snapshot);
+            return data_1;
+        }
+        var data = this.codeCache.read(name);
+        this.codeCache.write(name, data);
+        return data;
+    };
+    Cache.prototype.getDiagnostics = function (id, snapshot, check) {
+        var name = this.makeName(id, snapshot);
+        if (!this.diagnosticsCache.exists(name) || this.isDirty(id, snapshot, true)) {
+            console.log("diag cache miss: " + id);
+            var data_2 = this.convert(check());
+            this.diagnosticsCache.write(name, data_2);
+            this.markAsDirty(id, snapshot);
+            return data_2;
+        }
+        var data = this.diagnosticsCache.read(name);
+        this.diagnosticsCache.write(name, data);
+        return data;
     };
     Cache.prototype.markAsDirty = function (id, _snapshot) {
         this.dependencyTree.setNode(id, { dirty: true });
     };
-    // returns true if node or any of its imports changed
+    // returns true if node or any of its imports or any of global types changed
     Cache.prototype.isDirty = function (id, _snapshot, checkImports) {
         var _this = this;
         var label = this.dependencyTree.node(id);
@@ -99,6 +177,8 @@ var Cache = (function () {
             return false;
         if (!checkImports || label.dirty)
             return label.dirty;
+        if (this.typesDirty)
+            return true;
         var dependencies = graph.alg.dijkstra(this.dependencyTree, id);
         return _.some(dependencies, function (dependency, node) {
             if (!node || dependency.distance === Infinity)
@@ -106,48 +186,22 @@ var Cache = (function () {
             var l = _this.dependencyTree.node(node);
             var dirty = l === undefined ? true : l.dirty;
             if (dirty)
-                console.log("dirty: " + id + " -> " + node);
+                console.log(("dirty: " + id + " -> " + node).gray);
             return dirty;
         });
     };
-    Cache.prototype.getCompiled = function (id, snapshot, transform) {
-        var path$$1 = this.makePath(id, snapshot);
-        if (!fs.existsSync(path$$1) || this.isDirty(id, snapshot, false)) {
-            // console.log(`compile cache miss: ${id}`);
-            var data = transform();
-            this.setCache(path$$1, id, snapshot, data);
-            return data;
-        }
-        return JSON.parse(fs.readFileSync(path$$1, "utf8"));
-    };
-    Cache.prototype.getDiagnostics = function (id, snapshot, check) {
-        var path$$1 = this.makePath(id, snapshot) + ".diagnostics";
-        if (!fs.existsSync(path$$1) || this.isDirty(id, snapshot, true)) {
-            // console.log(`diagnostics cache miss: ${id}`);
-            var data = this.convert(check());
-            this.setCache(path$$1, id, snapshot, data);
-            return data;
-        }
-        return JSON.parse(fs.readFileSync(path$$1, "utf8"));
-    };
-    Cache.prototype.setCache = function (path$$1, id, snapshot, data) {
-        if (data === undefined)
-            return;
-        fs.writeFileSync(path$$1, JSON.stringify(data));
-        this.markAsDirty(id, snapshot);
-    };
-    Cache.prototype.makePath = function (id, snapshot) {
+    Cache.prototype.makeName = function (id, snapshot) {
         var data = snapshot.getText(0, snapshot.getLength());
-        return this.cacheRoot + "/" + hash.sha1({ data: data, id: id });
+        return hash.sha1({ data: data, id: id });
     };
     Cache.prototype.convert = function (data) {
         return _.map(data, function (diagnostic) {
             var entry = {
-                flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+                flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n").yellow,
             };
             if (diagnostic.file) {
                 var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-                entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
+                entry.fileLine = (diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")").white;
             }
             return entry;
         });
@@ -215,11 +269,11 @@ function printDiagnostics(diagnostics) {
 
 function typescript(options) {
     options = __assign({}, options);
-    var filter = rollupPluginutils.createFilter(options.include || ["*.ts+(|x)", "**/*.ts+(|x)"], options.exclude || ["*.d.ts", "**/*.d.ts"]);
+    var filter$$1 = rollupPluginutils.createFilter(options.include || ["*.ts+(|x)", "**/*.ts+(|x)"], options.exclude || ["*.d.ts", "**/*.d.ts"]);
     var parsedConfig = parseTsConfig();
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
-    var cache = new Cache(process.cwd() + "/.rts2_cache", parsedConfig.options, parsedConfig.fileNames);
+    var cache = new Cache(servicesHost, process.cwd() + "/.rts2_cache", parsedConfig.options, parsedConfig.fileNames);
     return {
         resolveId: function (importee, importer) {
             if (importee === TSLIB)
@@ -229,10 +283,10 @@ function typescript(options) {
             importer = importer.split("\\").join("/");
             var result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
+                if (filter$$1(result.resolvedModule.resolvedFileName))
+                    cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                if (filter(result.resolvedModule.resolvedFileName))
-                    cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 return result.resolvedModule.resolvedFileName;
             }
             return null;
@@ -244,7 +298,7 @@ function typescript(options) {
         },
         transform: function (code, id) {
             var _this = this;
-            if (!filter(id))
+            if (!filter$$1(id))
                 return undefined;
             var snapshot = servicesHost.setSnapshot(id, code);
             var result = cache.getCompiled(id, snapshot, function () {
@@ -261,7 +315,7 @@ function typescript(options) {
             return result;
         },
         outro: function () {
-            cache.lastDependencySet();
+            cache.compileDone();
             cache.walkTree(function (id) {
                 var snapshot = servicesHost.getScriptSnapshot(id);
                 if (!snapshot) {
@@ -276,6 +330,7 @@ function typescript(options) {
                 });
                 printDiagnostics(diagnostics);
             });
+            cache.diagnosticsDone();
         },
     };
 }

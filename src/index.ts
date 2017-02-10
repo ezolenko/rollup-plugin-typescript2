@@ -2,10 +2,10 @@ import { LanguageServiceHost } from "./host";
 import { Cache, ICode, IDiagnostics } from "./cache";
 import * as ts from "typescript";
 import { createFilter } from "rollup-pluginutils";
-import * as fs from "fs";
+import * as fs from "fs-extra";
 import * as path from "path";
-import { existsSync } from "fs";
 import * as _ from "lodash";
+import * as colors from "colors";
 
 function getOptionsOverrides(): ts.CompilerOptions
 {
@@ -25,7 +25,7 @@ function findFile(cwd: string, filename: string)
 {
 	let fp = cwd ? (cwd + "/" + filename) : filename;
 
-	if (existsSync(fp))
+	if (fs.existsSync(fp))
 	{
 		return fp;
 	}
@@ -37,7 +37,7 @@ function findFile(cwd: string, filename: string)
 	{
 		cwd = segs.slice(0, len).join("/");
 		fp = cwd + "/" + filename;
-		if (existsSync(fp))
+		if (fs.existsSync(fp))
 		{
 			return fp;
 		}
@@ -111,7 +111,7 @@ export default function typescript (options: IOptions)
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	const cache = new Cache(`${process.cwd()}/.rts2_cache`, parsedConfig.options, parsedConfig.fileNames);
+	const cache = new Cache(servicesHost, `${process.cwd()}/.rts2_cache`, parsedConfig.options, parsedConfig.fileNames);
 
 	return {
 
@@ -129,11 +129,11 @@ export default function typescript (options: IOptions)
 
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
 			{
-				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
-					return null;
-
 				if (filter(result.resolvedModule.resolvedFileName))
 					cache.setDependency(result.resolvedModule.resolvedFileName, importer);
+
+				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+					return null;
 
 				return result.resolvedModule.resolvedFileName;
 			}
@@ -176,7 +176,7 @@ export default function typescript (options: IOptions)
 
 		outro(): void
 		{
-			cache.lastDependencySet();
+			cache.compileDone();
 
 			cache.walkTree((id: string) =>
 			{
@@ -198,6 +198,8 @@ export default function typescript (options: IOptions)
 
 				printDiagnostics(diagnostics);
 			});
+
+			cache.diagnosticsDone();
 		},
 	};
 }

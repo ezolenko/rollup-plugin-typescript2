@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import * as fs from "fs-extra";
 import * as ts from "typescript";
 import * as _ from "lodash";
 

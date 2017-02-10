@@ -1,9 +1,8 @@
 import * as ts from "typescript";
 import * as graph from "graphlib";
 import * as hash from "object-hash";
-import * as fs from "fs";
 import * as _ from "lodash";
-import * as mkdirp from "mkdirp";
+import { RollingCache } from "./rollingcache";
 
 export interface ICode
 {
@@ -14,7 +13,6 @@ export interface ICode
 interface INodeLabel
 {
 	dirty: boolean;
-	hash?: string;
 }
 
 export interface IDiagnostics
@@ -23,20 +21,37 @@ export interface IDiagnostics
 	fileLine?: string;
 }
 
+interface ITypeSnapshot
+{
+	id: string;
+	snapshot: ts.IScriptSnapshot | undefined;
+}
+
 export class Cache
 {
-	private cacheVersion = "0";
+	private cacheVersion = "1";
 	private dependencyTree: graph.Graph;
-	private treeComplete: boolean = false;
+	private types: ITypeSnapshot[];
+	private typesDirty = false;
+	private cacheDir: string;
+	private codeCache: RollingCache<ICode | undefined>;
+	private typesCache: RollingCache<string>;
+	private diagnosticsCache: RollingCache<IDiagnostics[]>;
 
-	constructor(private cacheRoot: string, private options: ts.CompilerOptions, rootFilenames: string[])
+	constructor(private host: ts.LanguageServiceHost, cache: string, private options: ts.CompilerOptions, rootFilenames: string[])
 	{
-		this.cacheRoot = `${this.cacheRoot}/${hash.sha1({ version: this.cacheVersion, rootFilenames, options: this.options })}`;
+		this.cacheDir = `${cache}/${hash.sha1({ version: this.cacheVersion, rootFilenames, options: this.options })}`;
 
-		mkdirp.sync(this.cacheRoot);
+		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
+		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, false);
+		this.diagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/diagnostics`, false);
 
 		this.dependencyTree = new graph.Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
+
+		this.types = _
+			.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
+			.map((id) => { return { id, snapshot: this.host.getScriptSnapshot(id) }; });
 	}
 
 	public walkTree(cb: (id: string) => void | false): void
@@ -49,29 +64,77 @@ export class Cache
 			return;
 		}
 
-		// console.log("cycles detected in dependency graph, not sorting");
 		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
 	}
 
 	public setDependency(importee: string, importer: string): void
 	{
-		// console.log(importer, "->", importee);
 		// importee -> importer
 		this.dependencyTree.setEdge(importer, importee);
 	}
 
-	public lastDependencySet(): void
+	public compileDone(): void
 	{
-		this.treeComplete = true;
+		let typeNames = _
+			.filter(this.types, (snaphot) => snaphot.snapshot !== undefined)
+			.map((snaphot) => this.makeName(snaphot.id, snaphot.snapshot!));
+
+		// types dirty if any d.ts changed, added or removed
+		this.typesDirty = !this.typesCache.match(typeNames);
+
+		_.each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
-	public markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void
+	public diagnosticsDone()
+	{
+		this.codeCache.roll();
+		this.diagnosticsCache.roll();
+		this.typesCache.roll();
+	}
+
+	public getCompiled(id: string, snapshot: ts.IScriptSnapshot, transform: () =>  ICode | undefined): ICode | undefined
+	{
+		let name = this.makeName(id, snapshot);
+
+		if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false))
+		{
+			console.log(`compile cache miss: ${id}`);
+			let data = transform();
+			this.codeCache.write(name, data);
+			this.markAsDirty(id, snapshot);
+			return data;
+		}
+
+		let data = this.codeCache.read(name);
+		this.codeCache.write(name, data);
+		return data;
+	}
+
+	public getDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	{
+		let name = this.makeName(id, snapshot);
+
+		if (!this.diagnosticsCache.exists(name) || this.isDirty(id, snapshot, true))
+		{
+			console.log(`diag cache miss: ${id}`);
+			let data = this.convert(check());
+			this.diagnosticsCache.write(name, data);
+			this.markAsDirty(id, snapshot);
+			return data;
+		}
+
+		let data = this.diagnosticsCache.read(name);
+		this.diagnosticsCache.write(name, data);
+		return data;
+	}
+
+	private markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void
 	{
 		this.dependencyTree.setNode(id, { dirty: true });
 	}
 
-	// returns true if node or any of its imports changed
-	public isDirty(id: string, _snapshot: ts.IScriptSnapshot, checkImports: boolean): boolean
+	// returns true if node or any of its imports or any of global types changed
+	private isDirty(id: string, _snapshot: ts.IScriptSnapshot, checkImports: boolean): boolean
 	{
 		let label = this.dependencyTree.node(id) as INodeLabel;
 
@@ -80,6 +143,9 @@ export class Cache
 
 		if (!checkImports || label.dirty)
 			return label.dirty;
+
+		if (this.typesDirty)
+			return true;
 
 		let dependencies = graph.alg.dijkstra(this.dependencyTree, id);
 
@@ -92,56 +158,16 @@ export class Cache
 			let dirty = l === undefined ? true : l.dirty;
 
 			if (dirty)
-				console.log(`dirty: ${id} -> ${node}`);
+				console.log(`dirty: ${id} -> ${node}`.gray);
 
 			return dirty;
 		});
 	}
 
-	public getCompiled(id: string, snapshot: ts.IScriptSnapshot, transform: () =>  ICode | undefined): ICode | undefined
-	{
-		let path = this.makePath(id, snapshot);
-
-		if (!fs.existsSync(path) || this.isDirty(id, snapshot, false))
-		{
-			// console.log(`compile cache miss: ${id}`);
-			let data = transform();
-			this.setCache(path, id, snapshot, data);
-			return data;
-		}
-
-		return JSON.parse(fs.readFileSync(path, "utf8")) as ICode;
-	}
-
-	public getDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
-	{
-		let path = `${this.makePath(id, snapshot)}.diagnostics`;
-
-		if (!fs.existsSync(path) || this.isDirty(id, snapshot, true))
-		{
-			// console.log(`diagnostics cache miss: ${id}`);
-			let data = this.convert(check());
-			this.setCache(path, id, snapshot, data);
-			return data;
-		}
-
-		return JSON.parse(fs.readFileSync(path, "utf8")) as IDiagnostics[];
-	}
-
-	private setCache(path: string, id: string, snapshot: ts.IScriptSnapshot, data: IDiagnostics[] | ICode | undefined): void
-	{
-		if (data === undefined)
-			return;
-
-		fs.writeFileSync(path, JSON.stringify(data));
-
-		this.markAsDirty(id, snapshot);
-	}
-
-	private makePath(id: string, snapshot: ts.IScriptSnapshot): string
+	private makeName(id: string, snapshot: ts.IScriptSnapshot)
 	{
 		let data = snapshot.getText(0, snapshot.getLength());
-		return `${this.cacheRoot}/${hash.sha1({ data, id })}`;
+		return hash.sha1({ data, id });
 	}
 
 	private convert(data: ts.Diagnostic[]): IDiagnostics[]
@@ -150,13 +176,13 @@ export class Cache
 		{
 			let entry: IDiagnostics =
 			{
-				flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+				flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n").yellow,
 			};
 
 			if (diagnostic.file)
 			{
 				let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-				entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
+				entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`.white;
 			}
 
 			return entry;
