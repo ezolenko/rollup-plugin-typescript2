@@ -1,3 +1,4 @@
+import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
 import { Cache, ICode, IDiagnostics } from "./cache";
 import * as ts from "typescript";
@@ -26,9 +27,7 @@ function findFile(cwd: string, filename: string)
 	let fp = cwd ? (cwd + "/" + filename) : filename;
 
 	if (fs.existsSync(fp))
-	{
 		return fp;
-	}
 
 	const segs = cwd.split(path.sep);
 	let len = segs.length;
@@ -38,9 +37,7 @@ function findFile(cwd: string, filename: string)
 		cwd = segs.slice(0, len).join("/");
 		fp = cwd + "/" + filename;
 		if (fs.existsSync(fp))
-		{
 			return fp;
-		}
 	}
 
 	return null;
@@ -73,37 +70,42 @@ function parseTsConfig()
 	return configParseResult;
 }
 
-interface Message
-{
-	message: string;
-}
-interface Context
-{
-	warn(message: Message): void;
-	error(message: Message): void;
-}
-function printDiagnostics(diagnostics: IDiagnostics[])
+function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 {
 	_.each(diagnostics, (diagnostic) =>
 	{
 		if (diagnostic.fileLine)
-			console.log(`${diagnostic.fileLine}: ${colors.yellow(diagnostic.flatMessage)}`);
+			context.warn(`${diagnostic.fileLine}: ${colors.yellow(diagnostic.flatMessage)}`);
 		else
-			console.log(colors.yellow(diagnostic.flatMessage));
+			context.warn(colors.yellow(diagnostic.flatMessage));
 	});
 };
 
 interface IOptions
 {
-	include?: string;
-	exclude?: string;
+	include: string;
+	exclude: string;
+	check: boolean;
+	verbose: number;
+	clean: boolean;
+	cacheRoot: string;
 }
 
 export default function typescript (options: IOptions)
 {
 	options = { ... options };
 
-	const filter = createFilter(options.include || [ "*.ts+(|x)", "**/*.ts+(|x)" ], options.exclude || [ "*.d.ts", "**/*.d.ts" ]);
+	_.defaults(options,
+	{
+		check: true,
+		verbose: VerbosityLevel.Info,
+		clean: false,
+		cacheRoot: `${process.cwd()}/.rts2_cache`,
+		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
+		exclude: [ "*.d.ts", "**/*.d.ts" ],
+	});
+
+	const filter = createFilter(options.include, options.exclude);
 
 	let parsedConfig = parseTsConfig();
 
@@ -111,7 +113,12 @@ export default function typescript (options: IOptions)
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	const cache = new Cache(servicesHost, `${process.cwd()}/.rts2_cache`, parsedConfig.options, parsedConfig.fileNames);
+	const context = new ConsoleContext(options.verbose, "");
+
+	const cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+
+	if (options.clean)
+		cache.clean();
 
 	return {
 
@@ -149,7 +156,7 @@ export default function typescript (options: IOptions)
 			return undefined;
 		},
 
-		transform(this: Context, code: string, id: string): ICode | undefined
+		transform(this: IRollupContext, code: string, id: string): ICode | undefined
 		{
 			if (!filter(id))
 				return undefined;
@@ -178,26 +185,29 @@ export default function typescript (options: IOptions)
 		{
 			cache.compileDone();
 
-			cache.walkTree((id: string) =>
+			if (options.check)
 			{
-				const snapshot = servicesHost.getScriptSnapshot(id);
-
-				if (!snapshot)
+				cache.walkTree((id: string) =>
 				{
-					console.log(colors.red(`failed lo load snapshot for ${id}`));
-					return;
-				}
+					const snapshot = servicesHost.getScriptSnapshot(id);
 
-				const diagnostics = cache.getDiagnostics(id, snapshot, () =>
-				{
-					return services
-						.getCompilerOptionsDiagnostics()
-						.concat(services.getSyntacticDiagnostics(id))
-						.concat(services.getSemanticDiagnostics(id));
+					if (!snapshot)
+					{
+						context.error(colors.red(`failed lo load snapshot for ${id}`));
+						return;
+					}
+
+					const diagnostics = cache.getDiagnostics(id, snapshot, () =>
+					{
+						return services
+							.getCompilerOptionsDiagnostics()
+							.concat(services.getSyntacticDiagnostics(id))
+							.concat(services.getSemanticDiagnostics(id));
+					});
+
+					printDiagnostics(context, diagnostics);
 				});
-
-				printDiagnostics(diagnostics);
-			});
+			}
 
 			cache.diagnosticsDone();
 		},
