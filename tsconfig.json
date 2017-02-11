@@ -12,7 +12,8 @@
 		"listFiles": true,
 		"pretty": true,
 		"moduleResolution": "node",
-		"noEmitOnError": true
+		"noEmitOnError": true,
+		"strictNullChecks": true
 	},
 	"include": [
 		"typings/**/*.d.ts",

@@ -7,11 +7,14 @@ export default {
 
 	external: [
 		'path',
-		'fs',
+		'fs-extra',
 		'object-assign',
 		'rollup-pluginutils',
 		'typescript',
-		'lodash'
+		'lodash',
+		'graphlib',
+		'object-hash',
+		'colors/safe'
 	],
 
 	plugins: [

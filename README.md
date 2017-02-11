@@ -6,7 +6,7 @@ Rollup plugin for typescript with compiler errors.
 
 This is a rewrite of original rollup-plugin-typescript, starting and borrowing from [this fork](https://github.com/alexlur/rollup-plugin-typescript).
 
-This version is significantly slower than original, but it will print out typescript errors and warnings.
+This version is somewhat slower than original, but it will print out typescript syntactic and semantic diagnostic messages (the main reason for using typescript after all).
 
 ## Usage
 
@@ -15,11 +15,11 @@ This version is significantly slower than original, but it will print out typesc
 import typescript from 'rollup-plugin-typescript';
 
 export default {
-  entry: './main.ts',
+	entry: './main.ts',
 
-  plugins: [
-    typescript()
-  ]
+	plugins: [
+		typescript()
+	]
 }
 ```
 
@@ -32,7 +32,19 @@ Following compiler options are forced though:
 * `importHelpers`: true
 * `noResolve`: false
 
-Plugin itself takes standard include/exclude options (each a minimatch pattern, or array of minimatch patterns), which determine which files are transpiled by Typescript (all `.ts` and `.tsx` files by default)
+Plugin takes following options:
+* `check`: true
+	- set to false to avoid doing any diagnostic checks on the code
+* `verbosity`: 2
+	- goes up to 3
+* `clean`: false
+	- set to true for clean build (wipes out cache)
+* `cacheRoot`: ".rts2_cache"
+	- path to cache
+* `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
+	- passes all .ts files through typescript compiler. 
+* `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
+	- but not types
 
 ### TypeScript version
-This plugin currently requires TypeScript > 2.0.
+This plugin currently requires TypeScript 2.0+.

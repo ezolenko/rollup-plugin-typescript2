@@ -1,9 +1,12 @@
+import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
+import { LanguageServiceHost } from "./host";
+import { Cache, ICode, IDiagnostics } from "./cache";
 import * as ts from "typescript";
 import { createFilter } from "rollup-pluginutils";
-import * as fs from "fs";
+import * as fs from "fs-extra";
 import * as path from "path";
-import { existsSync } from "fs";
 import * as _ from "lodash";
+import * as colors from "colors/safe";
 
 function getOptionsOverrides(): ts.CompilerOptions
 {
@@ -23,10 +26,8 @@ function findFile(cwd: string, filename: string)
 {
 	let fp = cwd ? (cwd + "/" + filename) : filename;
 
-	if (existsSync(fp))
-	{
+	if (fs.existsSync(fp))
 		return fp;
-	}
 
 	const segs = cwd.split(path.sep);
 	let len = segs.length;
@@ -35,10 +36,8 @@ function findFile(cwd: string, filename: string)
 	{
 		cwd = segs.slice(0, len).join("/");
 		fp = cwd + "/" + filename;
-		if (existsSync(fp))
-		{
+		if (fs.existsSync(fp))
 			return fp;
-		}
 	}
 
 	return null;
@@ -61,6 +60,9 @@ try
 function parseTsConfig()
 {
 	const fileName = findFile(process.cwd(), "tsconfig.json");
+	if (!fileName)
+		throw new Error(`couldn't find 'tsconfig.json' in ${process.cwd()}`);
+
 	const text = ts.sys.readFile(fileName);
 	const result = ts.parseConfigFileTextToJson(fileName, text);
 	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
@@ -68,57 +70,55 @@ function parseTsConfig()
 	return configParseResult;
 }
 
-interface Message
+function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 {
-	message: string;
-}
-interface Context
-{
-	warn(message: Message): void;
-	error(message: Message): void;
-}
-function printDiagnostics(context: Context, diagnostics: ts.Diagnostic[])
-{
-	diagnostics.forEach((diagnostic) =>
+	_.each(diagnostics, (diagnostic) =>
 	{
-		let message = ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n");
-		if (diagnostic.file)
-		{
-			let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-			context.warn({ message: `${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}` });
-		}
+		if (diagnostic.fileLine)
+			context.warn(`${diagnostic.fileLine}: ${colors.yellow(diagnostic.flatMessage)}`);
 		else
-			context.warn({ message });
+			context.warn(colors.yellow(diagnostic.flatMessage));
 	});
 };
 
-export default function typescript (options: any)
+interface IOptions
+{
+	include: string;
+	exclude: string;
+	check: boolean;
+	verbosity: number;
+	clean: boolean;
+	cacheRoot: string;
+}
+
+export default function typescript (options: IOptions)
 {
 	options = { ... options };
 
-	const filter = createFilter(options.include || [ "*.ts+(|x)", "**/*.ts+(|x)" ], options.exclude || [ "*.d.ts", "**/*.d.ts" ]);
+	_.defaults(options,
+	{
+		check: true,
+		verbosity: VerbosityLevel.Info,
+		clean: false,
+		cacheRoot: `${process.cwd()}/.rts2_cache`,
+		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
+		exclude: [ "*.d.ts", "**/*.d.ts" ],
+	});
 
-	delete options.include;
-	delete options.exclude;
+	const filter = createFilter(options.include, options.exclude);
 
 	let parsedConfig = parseTsConfig();
 
-	const servicesHost: ts.LanguageServiceHost = {
-		getScriptFileNames: () => parsedConfig.fileNames,
-		getScriptVersion: (_fileName) => "0",
-		getScriptSnapshot: (fileName) =>
-		{
-			if (!fs.existsSync(fileName))
-				return undefined;
-
-			return ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName));
-		},
-		getCurrentDirectory: () => process.cwd(),
-		getCompilationSettings: () => parsedConfig.options,
-		getDefaultLibFileName: (opts) => ts.getDefaultLibFilePath(opts),
-	};
+	const servicesHost = new LanguageServiceHost(parsedConfig);
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+
+	const context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
+
+	const cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+
+	if (options.clean)
+		cache.clean();
 
 	return {
 
@@ -136,6 +136,9 @@ export default function typescript (options: any)
 
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
 			{
+				if (filter(result.resolvedModule.resolvedFileName))
+					cache.setDependency(result.resolvedModule.resolvedFileName, importer);
+
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
 
@@ -145,35 +148,68 @@ export default function typescript (options: any)
 			return null;
 		},
 
-		load(id: string): any
+		load(id: string): string | undefined
 		{
 			if (id === "\0" + TSLIB)
 				return tslibSource;
+
+			return undefined;
 		},
 
-		transform(this: Context, _code: string, id: string): any
+		transform(this: IRollupContext, code: string, id: string): ICode | undefined
 		{
-			if (!filter(id)) return null;
+			if (!filter(id))
+				return undefined;
 
-			let output = services.getEmitOutput(id);
+			const snapshot = servicesHost.setSnapshot(id, code);
+			let result = cache.getCompiled(id, snapshot, () =>
+			{
+				const output = services.getEmitOutput(id);
 
-			let allDiagnostics = services
-				.getCompilerOptionsDiagnostics()
-				.concat(services.getSyntacticDiagnostics(id))
-				.concat(services.getSemanticDiagnostics(id));
+				if (output.emitSkipped)
+					this.error({ message: colors.red(`failed to transpile ${id}`)});
 
-			printDiagnostics(this, allDiagnostics);
+				const transpiled = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
+				const map = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
 
-			if (output.emitSkipped)
-				this.error({ message: `failed to transpile ${id}`});
+				return {
+					code: transpiled ? transpiled.text : undefined,
+					map: map ? JSON.parse(map.text) : { mappings: "" },
+				};
+			});
 
-			const code: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
-			const map: ts.OutputFile = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
+			return result;
+		},
 
-			return {
-				code: code ? code.text : undefined,
-				map: map ? JSON.parse(map.text) : { mappings: "" },
-			};
+		outro(): void
+		{
+			cache.compileDone();
+
+			if (options.check)
+			{
+				cache.walkTree((id: string) =>
+				{
+					const snapshot = servicesHost.getScriptSnapshot(id);
+
+					if (!snapshot)
+					{
+						context.error(colors.red(`failed lo load snapshot for ${id}`));
+						return;
+					}
+
+					const diagnostics = cache.getDiagnostics(id, snapshot, () =>
+					{
+						return services
+							.getCompilerOptionsDiagnostics()
+							.concat(services.getSyntacticDiagnostics(id))
+							.concat(services.getSemanticDiagnostics(id));
+					});
+
+					printDiagnostics(context, diagnostics);
+				});
+			}
+
+			cache.diagnosticsDone();
 		},
 	};
 }
