@@ -171,17 +171,16 @@ var Cache = (function () {
         this.cacheVersion = "1";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + hash.sha1({ version: this.cacheVersion, rootFilenames: rootFilenames, options: this.options });
-        this.codeCache = new RollingCache(this.cacheDir + "/code", true);
-        this.typesCache = new RollingCache(this.cacheDir + "/types", false);
-        this.diagnosticsCache = new RollingCache(this.cacheDir + "/diagnostics", false);
         this.dependencyTree = new graph.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
         this.ambientTypes = _.filter(rootFilenames, function (file) { return _.endsWith(file, ".d.ts"); })
             .map(function (id) { return { id: id, snapshot: _this.host.getScriptSnapshot(id) }; });
+        this.init();
     }
     Cache.prototype.clean = function () {
         this.context.info("cleaning cache: " + this.cacheDir);
         fs.emptyDirSync(this.cacheDir);
+        this.init();
     };
     Cache.prototype.walkTree = function (cb) {
         var acyclic = graph.alg.isAcyclic(this.dependencyTree);
@@ -239,6 +238,11 @@ var Cache = (function () {
         var data = this.diagnosticsCache.read(name);
         this.diagnosticsCache.write(name, data);
         return data;
+    };
+    Cache.prototype.init = function () {
+        this.codeCache = new RollingCache(this.cacheDir + "/code", true);
+        this.typesCache = new RollingCache(this.cacheDir + "/types", false);
+        this.diagnosticsCache = new RollingCache(this.cacheDir + "/diagnostics", false);
     };
     Cache.prototype.markAsDirty = function (id, _snapshot) {
         this.context.debug("changed: " + id);
@@ -344,7 +348,7 @@ function typescript(options) {
     options = __assign({}, options);
     _.defaults(options, {
         check: true,
-        verbose: VerbosityLevel.Info,
+        verbosity: VerbosityLevel.Info,
         clean: false,
         cacheRoot: process.cwd() + "/.rts2_cache",
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
@@ -354,7 +358,7 @@ function typescript(options) {
     var parsedConfig = parseTsConfig();
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
-    var context = new ConsoleContext(options.verbose, "");
+    var context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
     var cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
     if (options.clean)
         cache.clean();

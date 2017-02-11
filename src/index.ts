@@ -86,7 +86,7 @@ interface IOptions
 	include: string;
 	exclude: string;
 	check: boolean;
-	verbose: number;
+	verbosity: number;
 	clean: boolean;
 	cacheRoot: string;
 }
@@ -98,7 +98,7 @@ export default function typescript (options: IOptions)
 	_.defaults(options,
 	{
 		check: true,
-		verbose: VerbosityLevel.Info,
+		verbosity: VerbosityLevel.Info,
 		clean: false,
 		cacheRoot: `${process.cwd()}/.rts2_cache`,
 		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
@@ -113,7 +113,7 @@ export default function typescript (options: IOptions)
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	const context = new ConsoleContext(options.verbose, "");
+	const context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
 
 	const cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
 

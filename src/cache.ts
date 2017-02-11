@@ -44,22 +44,22 @@ export class Cache
 	{
 		this.cacheDir = `${cache}/${hash.sha1({ version: this.cacheVersion, rootFilenames, options: this.options })}`;
 
-		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
-		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, false);
-		this.diagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/diagnostics`, false);
-
 		this.dependencyTree = new graph.Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
 
 		this.ambientTypes = _
 			.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
 			.map((id) => { return { id, snapshot: this.host.getScriptSnapshot(id) }; });
+
+		this.init();
 	}
 
 	public clean()
 	{
 		this.context.info(`cleaning cache: ${this.cacheDir}`);
 		fs.emptyDirSync(this.cacheDir);
+
+		this.init();
 	}
 
 	public walkTree(cb: (id: string) => void | false): void
@@ -146,6 +146,13 @@ export class Cache
 		let data = this.diagnosticsCache.read(name);
 		this.diagnosticsCache.write(name, data);
 		return data;
+	}
+
+	private init()
+	{
+		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
+		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, false);
+		this.diagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/diagnostics`, false);
 	}
 
 	private markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void
