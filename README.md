@@ -12,7 +12,7 @@ This version is somewhat slower than original, but it will print out typescript 
 
 ```js
 // rollup.config.js
-import typescript from 'rollup-plugin-typescript';
+import typescript from 'rollup-plugin-typescript2';
 
 export default {
 	entry: './main.ts',
