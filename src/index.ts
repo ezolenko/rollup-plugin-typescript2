@@ -5,7 +5,7 @@ import { createFilter } from "rollup-pluginutils";
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as _ from "lodash";
-import * as colors from "colors";
+import * as colors from "colors/safe";
 
 function getOptionsOverrides(): ts.CompilerOptions
 {
@@ -87,9 +87,9 @@ function printDiagnostics(diagnostics: IDiagnostics[])
 	_.each(diagnostics, (diagnostic) =>
 	{
 		if (diagnostic.fileLine)
-			console.log(`${diagnostic.fileLine}: ${diagnostic.flatMessage}`);
+			console.log(`${diagnostic.fileLine}: ${colors.yellow(diagnostic.flatMessage)}`);
 		else
-			console.log(diagnostic.flatMessage);
+			console.log(colors.yellow(diagnostic.flatMessage));
 	});
 };
 
@@ -160,7 +160,7 @@ export default function typescript (options: IOptions)
 				const output = services.getEmitOutput(id);
 
 				if (output.emitSkipped)
-					this.error({ message: `failed to transpile ${id}`});
+					this.error({ message: colors.red(`failed to transpile ${id}`)});
 
 				const transpiled = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
 				const map = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
@@ -184,7 +184,7 @@ export default function typescript (options: IOptions)
 
 				if (!snapshot)
 				{
-					console.log(`failed lo load snapshot for ${id}`);
+					console.log(colors.red(`failed lo load snapshot for ${id}`));
 					return;
 				}
 

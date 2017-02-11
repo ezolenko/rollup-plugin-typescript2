@@ -2,6 +2,7 @@ import * as ts from "typescript";
 import * as graph from "graphlib";
 import * as hash from "object-hash";
 import * as _ from "lodash";
+import * as colors from "colors/safe";
 import { RollingCache } from "./rollingcache";
 
 export interface ICode
@@ -158,7 +159,7 @@ export class Cache
 			let dirty = l === undefined ? true : l.dirty;
 
 			if (dirty)
-				console.log(`dirty: ${id} -> ${node}`.gray);
+				console.log(colors.gray(`dirty: ${id} -> ${node}`));
 
 			return dirty;
 		});
@@ -176,13 +177,13 @@ export class Cache
 		{
 			let entry: IDiagnostics =
 			{
-				flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n").yellow,
+				flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
 			};
 
 			if (diagnostic.file)
 			{
 				let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-				entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`.white;
+				entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
 			}
 
 			return entry;
