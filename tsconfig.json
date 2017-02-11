@@ -3,10 +3,9 @@
 		"module": "es6",
 		"target": "es5",
 		"noImplicitAny": true,
-		"sourceMap": false,
+		"sourceMap": true,
 		"noUnusedParameters": true,
 		"noUnusedLocals": true,
-		"allowJs": true,
 		"noImplicitThis": true,
 		"diagnostics": true,
 		"listFiles": true,
@@ -16,7 +15,6 @@
 		"strictNullChecks": true
 	},
 	"include": [
-		"typings/**/*.d.ts",
 		"src/**/*.ts"
   	]
 }

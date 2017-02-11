@@ -2,11 +2,13 @@ import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./cont
 import { LanguageServiceHost } from "./host";
 import { Cache, ICode, IDiagnostics } from "./cache";
 import * as ts from "typescript";
-import { createFilter } from "rollup-pluginutils";
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as _ from "lodash";
 import * as colors from "colors/safe";
+
+// tslint:disable-next-line:no-var-requires
+const createFilter = require("rollup-pluginutils").createFilter;
 
 function getOptionsOverrides(): ts.CompilerOptions
 {
