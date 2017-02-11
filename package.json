@@ -36,7 +36,7 @@
     "tslib": "^1.5.0"
   },
   "devDependencies": {
-    "rollup-plugin-typescript2": "^0.0.1",
+    "rollup-plugin-typescript2": "^0.1.0",
     "@types/colors": "^1.1.1",
     "@types/fs-extra": "0.0.37",
     "@types/graphlib": "^2.1.3",
