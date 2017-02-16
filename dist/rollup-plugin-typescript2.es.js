@@ -411,8 +411,16 @@ function typescript(options) {
             var snapshot = servicesHost.setSnapshot(id, code);
             var result = cache.getCompiled(id, snapshot, function () {
                 var output = services.getEmitOutput(id);
-                if (output.emitSkipped)
-                    _this.error({ message: red("failed to transpile " + id) });
+                if (output.emitSkipped) {
+                    var diagnostics = cache.getDiagnostics(id, snapshot, function () {
+                        return services
+                            .getCompilerOptionsDiagnostics()
+                            .concat(services.getSyntacticDiagnostics(id))
+                            .concat(services.getSemanticDiagnostics(id));
+                    });
+                    printDiagnostics(_this, diagnostics);
+                    _this.error(red("failed to transpile " + id));
+                }
                 var transpiled = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
                 var map$$1 = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
                 return {
@@ -423,6 +431,7 @@ function typescript(options) {
             return result;
         },
         outro: function () {
+            context.debug("outro");
             cache.compileDone();
             if (options.check) {
                 cache.walkTree(function (id) {

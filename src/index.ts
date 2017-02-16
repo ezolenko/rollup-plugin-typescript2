@@ -72,7 +72,7 @@ function parseTsConfig()
 	return configParseResult;
 }
 
-function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
+function printDiagnostics(context: IContext | IRollupContext, diagnostics: IDiagnostics[])
 {
 	_.each(diagnostics, (diagnostic) =>
 	{
@@ -169,7 +169,17 @@ export default function typescript (options: IOptions)
 				const output = services.getEmitOutput(id);
 
 				if (output.emitSkipped)
-					this.error({ message: colors.red(`failed to transpile ${id}`)});
+				{
+					const diagnostics = cache.getDiagnostics(id, snapshot, () =>
+					{
+						return services
+							.getCompilerOptionsDiagnostics()
+							.concat(services.getSyntacticDiagnostics(id))
+							.concat(services.getSemanticDiagnostics(id));
+					});
+					printDiagnostics(this, diagnostics);
+					this.error(colors.red(`failed to transpile ${id}`));
+				}
 
 				const transpiled = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
 				const map = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
@@ -185,6 +195,7 @@ export default function typescript (options: IOptions)
 
 		outro(): void
 		{
+			context.debug("outro");
 			cache.compileDone();
 
 			if (options.check)

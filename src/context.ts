@@ -1,12 +1,8 @@
-interface Message
-{
-	message: string;
-}
 
 export interface IRollupContext
 {
-	warn(message: Message | string): void;
-	error(message: Message | string): void;
+	warn(message: string): void;
+	error(message: string): void;
 }
 
 export interface IContext
