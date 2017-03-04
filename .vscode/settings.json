@@ -1,4 +1,5 @@
 {
 	"editor.tabSize": 4,
-	"editor.useTabStops": true
+	"editor.useTabStops": true,
+	"editor.dragAndDrop": true
 }
