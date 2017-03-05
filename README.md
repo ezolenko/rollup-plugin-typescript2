@@ -1,4 +1,5 @@
 # rollup-plugin-typescript2
+
 [![npm-version](https://img.shields.io/npm/v/rollup-plugin-typescript2.svg?maxAge=2592000)](https://npmjs.org/package/rollup-plugin-typescript2)
 ![npm-dependencies](https://img.shields.io/david/ezolenko/rollup-plugin-typescript2.svg?maxAge=2592000)
 
@@ -64,4 +65,19 @@ Plugin takes following options:
 
 
 ### TypeScript version
+
 This plugin currently requires TypeScript 2.0+.
+
+### Reporting bugs
+
+Report any bugs on github: <https://github.com/ezolenko/rollup-plugin-typescript2/issues>.
+
+Attach your `tsconfig.json`, `package.json` (for versions of dependencies), rollup script and anything else that could influence module resolution, ambient types and typescript compilation.
+
+Check if problem is reproducible after running `npm prune` to clear any rogue types from npm_modules (by default typescript grabs all ambient types).
+
+Check if you get the same problem with `clean` option set to true (might indicate a bug in the cache).
+
+If makes sense, check if running `tsc` directly produces similar results.
+
+Attach plugin output with `verbosity` option set to 3 (this will list all files being transpiled and their imports).
