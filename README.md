@@ -60,7 +60,7 @@ Plugin takes following options:
 
 * `abortOnError`: true
 
-	Bail out on first syntactic error. Im most cases setting this to false will result in exception in rollup itself.
+	Bail out on first syntactic error. In most cases setting this to false will result in exception in rollup itself.
 
 
 ### TypeScript version
