@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { emptyDirSync, ensureFile, ensureFileSync, existsSync, move, readFileSync, readJsonSync, readdirSync, remove, writeJson, writeJsonSync } from 'fs-extra';
 import * as fs from 'fs-extra';
-import { ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, sys } from 'typescript';
+import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, sys, version } from 'typescript';
 import * as ts from 'typescript';
 import { defaults, each, endsWith, filter, find, has, isEqual, map, some } from 'lodash';
 import * as _ from 'lodash';
@@ -11,7 +11,7 @@ import { sha1 } from 'object-hash';
 import * as hash from 'object-hash';
 import { dirname, sep } from 'path';
 import * as path from 'path';
-import { red, yellow } from 'colors/safe';
+import { red, white, yellow } from 'colors/safe';
 import * as colors from 'colors/safe';
 
 /*! *****************************************************************************
@@ -74,6 +74,40 @@ var ConsoleContext = (function () {
         console.log("" + this.prefix + message);
     };
     return ConsoleContext;
+}());
+
+var RollupContext = (function () {
+    function RollupContext(verbosity, bail, context, prefix) {
+        if (prefix === void 0) { prefix = ""; }
+        this.verbosity = verbosity;
+        this.bail = bail;
+        this.context = context;
+        this.prefix = prefix;
+    }
+    RollupContext.prototype.warn = function (message) {
+        if (this.verbosity < VerbosityLevel.Warning)
+            return;
+        this.context.warn("" + this.prefix + message);
+    };
+    RollupContext.prototype.error = function (message) {
+        if (this.verbosity < VerbosityLevel.Error)
+            return;
+        if (this.bail)
+            this.context.error("" + this.prefix + message);
+        else
+            this.context.warn("" + this.prefix + message);
+    };
+    RollupContext.prototype.info = function (message) {
+        if (this.verbosity < VerbosityLevel.Info)
+            return;
+        this.context.warn("" + this.prefix + message);
+    };
+    RollupContext.prototype.debug = function (message) {
+        if (this.verbosity < VerbosityLevel.Debug)
+            return;
+        this.context.warn("" + this.prefix + message);
+    };
+    return RollupContext;
 }());
 
 var LanguageServiceHost = (function () {
@@ -180,15 +214,33 @@ var RollingCache = (function () {
     return RollingCache;
 }());
 
+function convertDiagnostic(data) {
+    return map(data, function (diagnostic) {
+        var entry = {
+            flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            category: diagnostic.category,
+        };
+        if (diagnostic.file) {
+            var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
+            entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
+        }
+        return entry;
+    });
+}
 var Cache = (function () {
     function Cache(host, cache, options, rootFilenames, context) {
         var _this = this;
         this.host = host;
         this.options = options;
         this.context = context;
-        this.cacheVersion = "1";
+        this.cacheVersion = "2";
         this.ambientTypesDirty = false;
-        this.cacheDir = cache + "/" + sha1({ version: this.cacheVersion, rootFilenames: rootFilenames, options: this.options });
+        this.cacheDir = cache + "/" + sha1({
+            version: this.cacheVersion,
+            rootFilenames: rootFilenames,
+            options: this.options,
+            tsVersion: version,
+        });
         this.dependencyTree = new Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
         this.ambientTypes = filter(rootFilenames, function (file) { return endsWith(file, ".d.ts"); })
@@ -226,7 +278,8 @@ var Cache = (function () {
     };
     Cache.prototype.diagnosticsDone = function () {
         this.codeCache.roll();
-        this.diagnosticsCache.roll();
+        this.semanticDiagnosticsCache.roll();
+        this.syntacticDiagnosticsCache.roll();
         this.typesCache.roll();
     };
     Cache.prototype.getCompiled = function (id, snapshot, transform) {
@@ -243,24 +296,31 @@ var Cache = (function () {
         this.codeCache.write(name, data);
         return data;
     };
-    Cache.prototype.getDiagnostics = function (id, snapshot, check) {
+    Cache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
+        return this.getDiagnostics(this.syntacticDiagnosticsCache, id, snapshot, check);
+    };
+    Cache.prototype.getSemanticDiagnostics = function (id, snapshot, check) {
+        return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
+    };
+    Cache.prototype.getDiagnostics = function (cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
-        if (!this.diagnosticsCache.exists(name) || this.isDirty(id, snapshot, true)) {
+        if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
             this.context.debug("fresh diagnostics for: " + id);
-            var data_2 = this.convert(check());
-            this.diagnosticsCache.write(name, data_2);
+            var data_2 = convertDiagnostic(check());
+            cache.write(name, data_2);
             this.markAsDirty(id, snapshot);
             return data_2;
         }
         this.context.debug("old diagnostics for: " + id);
-        var data = this.diagnosticsCache.read(name);
-        this.diagnosticsCache.write(name, data);
+        var data = cache.read(name);
+        cache.write(name, data);
         return data;
     };
     Cache.prototype.init = function () {
         this.codeCache = new RollingCache(this.cacheDir + "/code", true);
         this.typesCache = new RollingCache(this.cacheDir + "/types", false);
-        this.diagnosticsCache = new RollingCache(this.cacheDir + "/diagnostics", false);
+        this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", false);
+        this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", false);
     };
     Cache.prototype.markAsDirty = function (id, _snapshot) {
         this.context.debug("changed: " + id);
@@ -290,18 +350,6 @@ var Cache = (function () {
     Cache.prototype.makeName = function (id, snapshot) {
         var data = snapshot.getText(0, snapshot.getLength());
         return sha1({ data: data, id: id });
-    };
-    Cache.prototype.convert = function (data) {
-        return map(data, function (diagnostic) {
-            var entry = {
-                flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-            };
-            if (diagnostic.file) {
-                var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-                entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
-            }
-            return entry;
-        });
     };
     return Cache;
 }());
@@ -357,10 +405,27 @@ function parseTsConfig() {
 }
 function printDiagnostics(context, diagnostics) {
     each(diagnostics, function (diagnostic) {
+        var print;
+        var color;
+        switch (diagnostic.category) {
+            case DiagnosticCategory.Message:
+                print = context.info;
+                color = white;
+                break;
+            case DiagnosticCategory.Error:
+                print = context.error;
+                color = red;
+                break;
+            case DiagnosticCategory.Warning:
+            default:
+                print = context.warn;
+                color = yellow;
+                break;
+        }
         if (diagnostic.fileLine)
-            context.warn(diagnostic.fileLine + ": " + yellow(diagnostic.flatMessage));
+            print.call(context, [diagnostic.fileLine + ": " + color(diagnostic.flatMessage)]);
         else
-            context.warn(yellow(diagnostic.flatMessage));
+            print.call(context, [color(diagnostic.flatMessage)]);
     });
 }
 
@@ -373,6 +438,7 @@ function typescript(options) {
         cacheRoot: process.cwd() + "/.rts2_cache",
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
+        abortOnError: true,
     });
     var filter$$1 = createFilter(options.include, options.exclude);
     var parsedConfig = parseTsConfig();
@@ -408,17 +474,21 @@ function typescript(options) {
             var _this = this;
             if (!filter$$1(id))
                 return undefined;
+            var contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rollup-plugin-typescript2: ");
+            contextWrapper.debug(id);
             var snapshot = servicesHost.setSnapshot(id, code);
+            // getting compiled file from cache of from ts
             var result = cache.getCompiled(id, snapshot, function () {
                 var output = services.getEmitOutput(id);
                 if (output.emitSkipped) {
-                    var diagnostics = cache.getDiagnostics(id, snapshot, function () {
-                        return services
-                            .getCompilerOptionsDiagnostics()
-                            .concat(services.getSyntacticDiagnostics(id))
-                            .concat(services.getSemanticDiagnostics(id));
-                    });
-                    printDiagnostics(_this, diagnostics);
+                    if (options.check) {
+                        var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
+                            return services.getSyntacticDiagnostics(id);
+                        });
+                        contextWrapper.debug("printDiagnostics");
+                        printDiagnostics(contextWrapper, diagnostics);
+                    }
+                    // if no output was generated, aborting compilation
                     _this.error(red("failed to transpile " + id));
                 }
                 var transpiled = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
@@ -428,11 +498,26 @@ function typescript(options) {
                     map: map$$1 ? JSON.parse(map$$1.text) : { mappings: "" },
                 };
             });
+            // printing syntactic errors
+            if (options.check) {
+                var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
+                    return services.getSyntacticDiagnostics(id);
+                });
+                contextWrapper.debug("printDiagnostics");
+                printDiagnostics(contextWrapper, diagnostics);
+            }
             return result;
+        },
+        intro: function () {
+            context.debug("intro");
+            // printing compiler option errors
+            if (options.check)
+                printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
         },
         outro: function () {
             context.debug("outro");
             cache.compileDone();
+            // printing semantic errors
             if (options.check) {
                 cache.walkTree(function (id) {
                     var snapshot = servicesHost.getScriptSnapshot(id);
@@ -440,11 +525,8 @@ function typescript(options) {
                         context.error(red("failed lo load snapshot for " + id));
                         return;
                     }
-                    var diagnostics = cache.getDiagnostics(id, snapshot, function () {
-                        return services
-                            .getCompilerOptionsDiagnostics()
-                            .concat(services.getSyntacticDiagnostics(id))
-                            .concat(services.getSemanticDiagnostics(id));
+                    var diagnostics = cache.getSemanticDiagnostics(id, snapshot, function () {
+                        return services.getSemanticDiagnostics(id);
                     });
                     printDiagnostics(context, diagnostics);
                 });

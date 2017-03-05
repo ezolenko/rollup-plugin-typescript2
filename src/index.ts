@@ -1,6 +1,7 @@
+import { RollupContext } from "./rollupcontext";
 import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { Cache, ICode, IDiagnostics } from "./cache";
+import { Cache, convertDiagnostic, ICode, IDiagnostics } from "./cache";
 import * as ts from "typescript";
 import * as fs from "fs-extra";
 import * as path from "path";
@@ -72,14 +73,33 @@ function parseTsConfig()
 	return configParseResult;
 }
 
-function printDiagnostics(context: IContext | IRollupContext, diagnostics: IDiagnostics[])
+function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 {
 	_.each(diagnostics, (diagnostic) =>
 	{
+		let print;
+		let color;
+		switch (diagnostic.category)
+		{
+			case ts.DiagnosticCategory.Message:
+				print = context.info;
+				color = colors.white;
+				break;
+			case ts.DiagnosticCategory.Error:
+				print = context.error;
+				color = colors.red;
+				break;
+			case ts.DiagnosticCategory.Warning:
+			default:
+				print = context.warn;
+				color = colors.yellow;
+				break;
+		}
+
 		if (diagnostic.fileLine)
-			context.warn(`${diagnostic.fileLine}: ${colors.yellow(diagnostic.flatMessage)}`);
+			print.call(context, [`${diagnostic.fileLine}: ${color(diagnostic.flatMessage)}`]);
 		else
-			context.warn(colors.yellow(diagnostic.flatMessage));
+			print.call(context, [color(diagnostic.flatMessage)]);
 	});
 };
 
@@ -91,6 +111,7 @@ interface IOptions
 	verbosity: number;
 	clean: boolean;
 	cacheRoot: string;
+	abortOnError: boolean;
 }
 
 export default function typescript (options: IOptions)
@@ -105,11 +126,12 @@ export default function typescript (options: IOptions)
 		cacheRoot: `${process.cwd()}/.rts2_cache`,
 		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
 		exclude: [ "*.d.ts", "**/*.d.ts" ],
+		abortOnError: true,
 	});
 
 	const filter = createFilter(options.include, options.exclude);
 
-	let parsedConfig = parseTsConfig();
+	const parsedConfig = parseTsConfig();
 
 	const servicesHost = new LanguageServiceHost(parsedConfig);
 
@@ -163,26 +185,35 @@ export default function typescript (options: IOptions)
 			if (!filter(id))
 				return undefined;
 
+			const contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rollup-plugin-typescript2: ");
+
+			contextWrapper.debug(id);
+
 			const snapshot = servicesHost.setSnapshot(id, code);
-			let result = cache.getCompiled(id, snapshot, () =>
+
+			// getting compiled file from cache of from ts
+			const result = cache.getCompiled(id, snapshot, () =>
 			{
 				const output = services.getEmitOutput(id);
 
 				if (output.emitSkipped)
 				{
-					const diagnostics = cache.getDiagnostics(id, snapshot, () =>
+					if (options.check)
 					{
-						return services
-							.getCompilerOptionsDiagnostics()
-							.concat(services.getSyntacticDiagnostics(id))
-							.concat(services.getSemanticDiagnostics(id));
-					});
-					printDiagnostics(this, diagnostics);
+						const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
+						{
+							return services.getSyntacticDiagnostics(id);
+						});
+						contextWrapper.debug("printDiagnostics");
+						printDiagnostics(contextWrapper, diagnostics);
+					}
+
+					// if no output was generated, aborting compilation
 					this.error(colors.red(`failed to transpile ${id}`));
 				}
 
-				const transpiled = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".js") );
-				const map = _.find(output.outputFiles, (entry: ts.OutputFile) => _.endsWith(entry.name, ".map") );
+				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") );
+				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map") );
 
 				return {
 					code: transpiled ? transpiled.text : undefined,
@@ -190,14 +221,36 @@ export default function typescript (options: IOptions)
 				};
 			});
 
+			// printing syntactic errors
+			if (options.check)
+			{
+				const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
+				{
+					return services.getSyntacticDiagnostics(id);
+				});
+				contextWrapper.debug("printDiagnostics");
+				printDiagnostics(contextWrapper, diagnostics);
+			}
+
 			return result;
+		},
+
+		intro(): void
+		{
+			context.debug("intro");
+
+			// printing compiler option errors
+			if (options.check)
+				printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
 		},
 
 		outro(): void
 		{
 			context.debug("outro");
+
 			cache.compileDone();
 
+			// printing semantic errors
 			if (options.check)
 			{
 				cache.walkTree((id: string) =>
@@ -210,12 +263,9 @@ export default function typescript (options: IOptions)
 						return;
 					}
 
-					const diagnostics = cache.getDiagnostics(id, snapshot, () =>
+					const diagnostics = cache.getSemanticDiagnostics(id, snapshot, () =>
 					{
-						return services
-							.getCompilerOptionsDiagnostics()
-							.concat(services.getSyntacticDiagnostics(id))
-							.concat(services.getSemanticDiagnostics(id));
+						return services.getSemanticDiagnostics(id);
 					});
 
 					printDiagnostics(context, diagnostics);

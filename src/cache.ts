@@ -21,6 +21,7 @@ export interface IDiagnostics
 {
 	flatMessage: string;
 	fileLine?: string;
+	category: ts.DiagnosticCategory;
 }
 
 interface ITypeSnapshot
@@ -29,20 +30,46 @@ interface ITypeSnapshot
 	snapshot: ts.IScriptSnapshot | undefined;
 }
 
+export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
+{
+	return _.map(data, (diagnostic) =>
+	{
+		let entry: IDiagnostics =
+		{
+			flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+			category: diagnostic.category,
+		};
+
+		if (diagnostic.file)
+		{
+			let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+			entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
+		}
+
+		return entry;
+	});
+}
+
 export class Cache
 {
-	private cacheVersion = "1";
+	private cacheVersion = "2";
 	private dependencyTree: graph.Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
 	private cacheDir: string;
 	private codeCache: RollingCache<ICode | undefined>;
 	private typesCache: RollingCache<string>;
-	private diagnosticsCache: RollingCache<IDiagnostics[]>;
+	private semanticDiagnosticsCache: RollingCache<IDiagnostics[]>;
+	private syntacticDiagnosticsCache: RollingCache<IDiagnostics[]>;
 
 	constructor(private host: ts.LanguageServiceHost, cache: string, private options: ts.CompilerOptions, rootFilenames: string[], private context: IContext)
 	{
-		this.cacheDir = `${cache}/${hash.sha1({ version: this.cacheVersion, rootFilenames, options: this.options })}`;
+		this.cacheDir = `${cache}/${hash.sha1({
+			version: this.cacheVersion,
+			rootFilenames,
+			options: this.options,
+			tsVersion : ts.version,
+		})}`;
 
 		this.dependencyTree = new graph.Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
@@ -102,7 +129,8 @@ export class Cache
 	public diagnosticsDone()
 	{
 		this.codeCache.roll();
-		this.diagnosticsCache.roll();
+		this.semanticDiagnosticsCache.roll();
+		this.syntacticDiagnosticsCache.roll();
 		this.typesCache.roll();
 	}
 
@@ -127,24 +155,34 @@ export class Cache
 		return data;
 	}
 
-	public getDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	public getSyntacticDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	{
+		return this.getDiagnostics(this.syntacticDiagnosticsCache, id, snapshot, check);
+	}
+
+	public getSemanticDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	{
+		return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
+	}
+
+	private getDiagnostics(cache: RollingCache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
 		let name = this.makeName(id, snapshot);
 
-		if (!this.diagnosticsCache.exists(name) || this.isDirty(id, snapshot, true))
+		if (!cache.exists(name) || this.isDirty(id, snapshot, true))
 		{
 			this.context.debug(`fresh diagnostics for: ${id}`);
 
-			let data = this.convert(check());
-			this.diagnosticsCache.write(name, data);
+			let data = convertDiagnostic(check());
+			cache.write(name, data);
 			this.markAsDirty(id, snapshot);
 			return data;
 		}
 
 		this.context.debug(`old diagnostics for: ${id}`);
 
-		let data = this.diagnosticsCache.read(name);
-		this.diagnosticsCache.write(name, data);
+		let data = cache.read(name);
+		cache.write(name, data);
 		return data;
 	}
 
@@ -152,7 +190,8 @@ export class Cache
 	{
 		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
 		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, false);
-		this.diagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/diagnostics`, false);
+		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, false);
+		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, false);
 	}
 
 	private markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void
@@ -196,24 +235,5 @@ export class Cache
 	{
 		let data = snapshot.getText(0, snapshot.getLength());
 		return hash.sha1({ data, id });
-	}
-
-	private convert(data: ts.Diagnostic[]): IDiagnostics[]
-	{
-		return _.map(data, (diagnostic) =>
-		{
-			let entry: IDiagnostics =
-			{
-				flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-			};
-
-			if (diagnostic.file)
-			{
-				let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-				entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
-			}
-
-			return entry;
-		});
 	}
 }
