@@ -33,18 +33,35 @@ Following compiler options are forced though:
 * `noResolve`: false
 
 Plugin takes following options:
+
 * `check`: true
-	- set to false to avoid doing any diagnostic checks on the code
+
+	Set to false to avoid doing any diagnostic checks on the code.
+
 * `verbosity`: 2
-	- goes up to 3
+
+	Goes up to 3.
+
 * `clean`: false
-	- set to true for clean build (wipes out cache)
+	
+	Set to true for clean build (wipes out cache on every build).
+
 * `cacheRoot`: ".rts2_cache"
-	- path to cache
+	
+	Path to cache.
+
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
-	- passes all .ts files through typescript compiler. 
+
+	Passes all .ts files through typescript compiler. 
+
 * `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
-	- but not types
+
+	But excludes types.
+
+* `abortOnError`: true
+
+	Bail out on first syntactic error. Im most cases setting this to false will result in exception in rollup itself.
+
 
 ### TypeScript version
 This plugin currently requires TypeScript 2.0+.
