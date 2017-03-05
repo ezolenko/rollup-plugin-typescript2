@@ -60,7 +60,7 @@ try
 	throw e;
 }
 
-function parseTsConfig()
+function parseTsConfig(context: IContext)
 {
 	const fileName = findFile(process.cwd(), "tsconfig.json");
 	if (!fileName)
@@ -68,6 +68,13 @@ function parseTsConfig()
 
 	const text = ts.sys.readFile(fileName);
 	const result = ts.parseConfigFileTextToJson(fileName, text);
+
+	if (result.error)
+	{
+		printDiagnostics(context, convertDiagnostic([result.error]));
+		throw new Error(`failed to parse ${fileName}`);
+	}
+
 	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
 
 	return configParseResult;
@@ -129,15 +136,15 @@ export default function typescript (options: IOptions)
 		abortOnError: true,
 	});
 
+	const context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
+
 	const filter = createFilter(options.include, options.exclude);
 
-	const parsedConfig = parseTsConfig();
+	const parsedConfig = parseTsConfig(context);
 
 	const servicesHost = new LanguageServiceHost(parsedConfig);
 
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
-
-	const context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
 
 	const cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
 

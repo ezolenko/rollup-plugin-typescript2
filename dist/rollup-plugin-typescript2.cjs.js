@@ -389,12 +389,16 @@ catch (e) {
     console.warn("Error loading `tslib` helper library.");
     throw e;
 }
-function parseTsConfig() {
+function parseTsConfig(context) {
     var fileName = findFile(process.cwd(), "tsconfig.json");
     if (!fileName)
         throw new Error("couldn't find 'tsconfig.json' in " + process.cwd());
     var text = ts.sys.readFile(fileName);
     var result = ts.parseConfigFileTextToJson(fileName, text);
+    if (result.error) {
+        printDiagnostics(context, convertDiagnostic([result.error]));
+        throw new Error("failed to parse " + fileName);
+    }
     var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
     return configParseResult;
 }
@@ -435,11 +439,11 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
     });
+    var context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
     var filter$$1 = createFilter(options.include, options.exclude);
-    var parsedConfig = parseTsConfig();
+    var parsedConfig = parseTsConfig(context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
-    var context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
     var cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
     if (options.clean)
         cache.clean();
