@@ -28,13 +28,13 @@ export class RollupContext implements IContext
 	{
 		if (this.verbosity < VerbosityLevel.Info)
 			return;
-		this.context.warn(`${this.prefix}${message}`);
+		console.log(`${this.prefix}${message}`);
 	}
 
 	public debug(message: string): void
 	{
 		if (this.verbosity < VerbosityLevel.Debug)
 			return;
-		this.context.warn(`${this.prefix}${message}`);
+		console.log(`${this.prefix}${message}`);
 	}
 }

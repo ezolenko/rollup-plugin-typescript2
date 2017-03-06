@@ -100,12 +100,12 @@ var RollupContext = (function () {
     RollupContext.prototype.info = function (message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        this.context.warn("" + this.prefix + message);
+        console.log("" + this.prefix + message);
     };
     RollupContext.prototype.debug = function (message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        this.context.warn("" + this.prefix + message);
+        console.log("" + this.prefix + message);
     };
     return RollupContext;
 }());
