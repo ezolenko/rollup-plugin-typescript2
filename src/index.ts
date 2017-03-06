@@ -211,7 +211,6 @@ export default function typescript (options: IOptions)
 						{
 							return services.getSyntacticDiagnostics(id);
 						});
-						contextWrapper.debug("printDiagnostics");
 						printDiagnostics(contextWrapper, diagnostics);
 					}
 
@@ -235,7 +234,6 @@ export default function typescript (options: IOptions)
 				{
 					return services.getSyntacticDiagnostics(id);
 				});
-				contextWrapper.debug("printDiagnostics");
 				printDiagnostics(contextWrapper, diagnostics);
 			}
 
