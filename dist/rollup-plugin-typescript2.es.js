@@ -172,6 +172,9 @@ var RollingCache = (function () {
             return true;
         return existsSync(this.oldCacheRoot + "/" + name);
     };
+    RollingCache.prototype.path = function (name) {
+        return this.oldCacheRoot + "/" + name;
+    };
     /**
      * @returns true if old cache contains all names and nothing more
      */
@@ -263,13 +266,18 @@ var Cache = (function () {
     };
     Cache.prototype.setDependency = function (importee, importer) {
         // importee -> importer
-        this.context.debug(importee + " -> " + importer);
+        this.context.debug("" + importee);
+        this.context.debug("    imported by " + importer);
         this.dependencyTree.setEdge(importer, importee);
     };
     Cache.prototype.compileDone = function () {
         var _this = this;
-        var typeNames = filter(this.ambientTypes, function (snaphot) { return snaphot.snapshot !== undefined; })
-            .map(function (snaphot) { return _this.makeName(snaphot.id, snaphot.snapshot); });
+        this.context.debug("Ambient types:");
+        var typeNames = filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
+            .map(function (snapshot) {
+            _this.context.debug("    " + snapshot.id);
+            return _this.makeName(snapshot.id, snapshot.snapshot);
+        });
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
@@ -284,14 +292,16 @@ var Cache = (function () {
     };
     Cache.prototype.getCompiled = function (id, snapshot, transform) {
         var name = this.makeName(id, snapshot);
+        this.context.debug("transpiling '" + id + "'");
+        this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
         if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
-            this.context.debug("fresh transpile for: " + id);
+            this.context.debug("    cache miss");
             var data_1 = transform();
             this.codeCache.write(name, data_1);
             this.markAsDirty(id, snapshot);
             return data_1;
         }
-        this.context.debug("old transpile for: " + id);
+        this.context.debug("    cache hit");
         var data = this.codeCache.read(name);
         this.codeCache.write(name, data);
         return data;
@@ -304,14 +314,16 @@ var Cache = (function () {
     };
     Cache.prototype.getDiagnostics = function (cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
+        this.context.debug("diagnostics for '" + id + "'");
+        this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
-            this.context.debug("fresh diagnostics for: " + id);
+            this.context.debug("    cache miss");
             var data_2 = convertDiagnostic(check());
             cache.write(name, data_2);
             this.markAsDirty(id, snapshot);
             return data_2;
         }
-        this.context.debug("old diagnostics for: " + id);
+        this.context.debug("    cache hit");
         var data = cache.read(name);
         cache.write(name, data);
         return data;
@@ -323,7 +335,6 @@ var Cache = (function () {
         this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", false);
     };
     Cache.prototype.markAsDirty = function (id, _snapshot) {
-        this.context.debug("changed: " + id);
         this.dependencyTree.setNode(id, { dirty: true });
     };
     // returns true if node or any of its imports or any of global types changed
@@ -444,7 +455,7 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
     });
-    var context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
+    var context = new ConsoleContext(options.verbosity, "rpt2: ");
     var filter$$1 = createFilter(options.include, options.exclude);
     var parsedConfig = parseTsConfig(context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
@@ -478,8 +489,7 @@ function typescript(options) {
             var _this = this;
             if (!filter$$1(id))
                 return undefined;
-            var contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rollup-plugin-typescript2: ");
-            contextWrapper.debug(id);
+            var contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rpt2: ");
             var snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache of from ts
             var result = cache.getCompiled(id, snapshot, function () {
@@ -489,7 +499,6 @@ function typescript(options) {
                         var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
                             return services.getSyntacticDiagnostics(id);
                         });
-                        contextWrapper.debug("printDiagnostics");
                         printDiagnostics(contextWrapper, diagnostics);
                     }
                     // if no output was generated, aborting compilation
@@ -507,7 +516,6 @@ function typescript(options) {
                 var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
                     return services.getSyntacticDiagnostics(id);
                 });
-                contextWrapper.debug("printDiagnostics");
                 printDiagnostics(contextWrapper, diagnostics);
             }
             return result;

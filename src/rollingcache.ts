@@ -33,6 +33,11 @@ export class RollingCache <DataType>
 		return fs.existsSync(`${this.oldCacheRoot}/${name}`);
 	}
 
+	public path(name: string): string
+	{
+		return `${this.oldCacheRoot}/${name}`;
+	}
+
 	/**
 	 * @returns true if old cache contains all names and nothing more
 	 */

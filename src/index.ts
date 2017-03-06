@@ -136,7 +136,7 @@ export default function typescript (options: IOptions)
 		abortOnError: true,
 	});
 
-	const context = new ConsoleContext(options.verbosity, "rollup-plugin-typescript2: ");
+	const context = new ConsoleContext(options.verbosity, "rpt2: ");
 
 	const filter = createFilter(options.include, options.exclude);
 
@@ -163,7 +163,7 @@ export default function typescript (options: IOptions)
 
 			importer = importer.split("\\").join("/");
 
-			let result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
+			const result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
 
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
 			{
@@ -192,9 +192,7 @@ export default function typescript (options: IOptions)
 			if (!filter(id))
 				return undefined;
 
-			const contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rollup-plugin-typescript2: ");
-
-			contextWrapper.debug(id);
+			const contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rpt2: ");
 
 			const snapshot = servicesHost.setSnapshot(id, code);
 

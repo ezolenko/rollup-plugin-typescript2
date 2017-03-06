@@ -34,7 +34,7 @@ export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
 {
 	return _.map(data, (diagnostic) =>
 	{
-		let entry: IDiagnostics =
+		const entry: IDiagnostics =
 		{
 			flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
 			category: diagnostic.category,
@@ -42,7 +42,7 @@ export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
 
 		if (diagnostic.file)
 		{
-			let { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 			entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
 		}
 
@@ -107,15 +107,21 @@ export class Cache
 	public setDependency(importee: string, importer: string): void
 	{
 		// importee -> importer
-		this.context.debug(`${importee} -> ${importer}`);
+		this.context.debug(`${importee}`);
+		this.context.debug(`    imported by ${importer}`);
 		this.dependencyTree.setEdge(importer, importee);
 	}
 
 	public compileDone(): void
 	{
-		let typeNames = _
-			.filter(this.ambientTypes, (snaphot) => snaphot.snapshot !== undefined)
-			.map((snaphot) => this.makeName(snaphot.id, snaphot.snapshot!));
+		this.context.debug("Ambient types:");
+		const typeNames = _
+			.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+			.map((snapshot) =>
+			{
+				this.context.debug(`    ${snapshot.id}`);
+				return this.makeName(snapshot.id, snapshot.snapshot!);
+			});
 
 		// types dirty if any d.ts changed, added or removed
 		this.ambientTypesDirty = !this.typesCache.match(typeNames);
@@ -136,21 +142,24 @@ export class Cache
 
 	public getCompiled(id: string, snapshot: ts.IScriptSnapshot, transform: () =>  ICode | undefined): ICode | undefined
 	{
-		let name = this.makeName(id, snapshot);
+		const name = this.makeName(id, snapshot);
+
+		this.context.debug(`transpiling '${id}'`);
+		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
 
 		if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false))
 		{
-			this.context.debug(`fresh transpile for: ${id}`);
+			this.context.debug(`    cache miss`);
 
-			let data = transform();
+			const data = transform();
 			this.codeCache.write(name, data);
 			this.markAsDirty(id, snapshot);
 			return data;
 		}
 
-		this.context.debug(`old transpile for: ${id}`);
+		this.context.debug(`    cache hit`);
 
-		let data = this.codeCache.read(name);
+		const data = this.codeCache.read(name);
 		this.codeCache.write(name, data);
 		return data;
 	}
@@ -167,21 +176,24 @@ export class Cache
 
 	private getDiagnostics(cache: RollingCache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
-		let name = this.makeName(id, snapshot);
+		const name = this.makeName(id, snapshot);
+
+		this.context.debug(`diagnostics for '${id}'`);
+		this.context.debug(`    cache: '${cache.path(name)}'`);
 
 		if (!cache.exists(name) || this.isDirty(id, snapshot, true))
 		{
-			this.context.debug(`fresh diagnostics for: ${id}`);
+			this.context.debug(`    cache miss`);
 
-			let data = convertDiagnostic(check());
+			const data = convertDiagnostic(check());
 			cache.write(name, data);
 			this.markAsDirty(id, snapshot);
 			return data;
 		}
 
-		this.context.debug(`old diagnostics for: ${id}`);
+		this.context.debug(`    cache hit`);
 
-		let data = cache.read(name);
+		const data = cache.read(name);
 		cache.write(name, data);
 		return data;
 	}
@@ -196,14 +208,13 @@ export class Cache
 
 	private markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void
 	{
-		this.context.debug(`changed: ${id}`);
 		this.dependencyTree.setNode(id, { dirty: true });
 	}
 
 	// returns true if node or any of its imports or any of global types changed
 	private isDirty(id: string, _snapshot: ts.IScriptSnapshot, checkImports: boolean): boolean
 	{
-		let label = this.dependencyTree.node(id) as INodeLabel;
+		const label = this.dependencyTree.node(id) as INodeLabel;
 
 		if (!label)
 			return false;
@@ -214,15 +225,15 @@ export class Cache
 		if (this.ambientTypesDirty)
 			return true;
 
-		let dependencies = graph.alg.dijkstra(this.dependencyTree, id);
+		const dependencies = graph.alg.dijkstra(this.dependencyTree, id);
 
 		return _.some(dependencies, (dependency, node) =>
 		{
 			if (!node || dependency.distance === Infinity)
 				return false;
 
-			let l = this.dependencyTree.node(node) as INodeLabel | undefined;
-			let dirty = l === undefined ? true : l.dirty;
+			const l = this.dependencyTree.node(node) as INodeLabel | undefined;
+			const dirty = l === undefined ? true : l.dirty;
 
 			if (dirty)
 				this.context.debug(`import changed: ${id} -> ${node}`);
@@ -233,7 +244,7 @@ export class Cache
 
 	private makeName(id: string, snapshot: ts.IScriptSnapshot)
 	{
-		let data = snapshot.getText(0, snapshot.getLength());
+		const data = snapshot.getText(0, snapshot.getLength());
 		return hash.sha1({ data, id });
 	}
 }

@@ -12,7 +12,9 @@
 		"pretty": true,
 		"moduleResolution": "node",
 		"noEmitOnError": true,
-		"strictNullChecks": true
+		"strictNullChecks": true,
+		"forceConsistentCasingInFileNames": true,
+		"noImplicitReturns": true
 	},
 	"include": [
 		"src/**/*.ts"
