@@ -74,8 +74,14 @@ export class Cache
 		this.dependencyTree = new graph.Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
 
+		const automaticTypes = _
+			.map(ts.getAutomaticTypeDirectiveNames(options, ts.sys), (entry) => ts.resolveTypeReferenceDirective(entry, undefined, options, ts.sys))
+			.filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
+			.map((entry) => entry.resolvedTypeReferenceDirective!.resolvedFileName!);
+
 		this.ambientTypes = _
 			.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
+			.concat(automaticTypes)
 			.map((id) => { return { id, snapshot: this.host.getScriptSnapshot(id) }; });
 
 		this.init();

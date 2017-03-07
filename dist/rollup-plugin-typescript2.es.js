@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { emptyDirSync, ensureFile, ensureFileSync, existsSync, move, readFileSync, readJsonSync, readdirSync, remove, writeJson, writeJsonSync } from 'fs-extra';
 import * as fs from 'fs-extra';
-import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, flattenDiagnosticMessageText, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, sys, version } from 'typescript';
+import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, findConfigFile, flattenDiagnosticMessageText, getAutomaticTypeDirectiveNames, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, resolveTypeReferenceDirective, sys, version } from 'typescript';
 import * as ts from 'typescript';
 import { defaults, each, endsWith, filter, find, has, isEqual, map, some } from 'lodash';
 import * as _ from 'lodash';
@@ -9,7 +9,7 @@ import { Graph, alg } from 'graphlib';
 import * as graph from 'graphlib';
 import { sha1 } from 'object-hash';
 import * as hash from 'object-hash';
-import { dirname, sep } from 'path';
+import { dirname } from 'path';
 import * as path from 'path';
 import { red, white, yellow } from 'colors/safe';
 import * as colors from 'colors/safe';
@@ -246,7 +246,11 @@ var Cache = (function () {
         });
         this.dependencyTree = new Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
+        var automaticTypes = map(getAutomaticTypeDirectiveNames(options, sys), function (entry) { return resolveTypeReferenceDirective(entry, undefined, options, sys); })
+            .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
+            .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
         this.ambientTypes = filter(rootFilenames, function (file) { return endsWith(file, ".d.ts"); })
+            .concat(automaticTypes)
             .map(function (id) { return { id: id, snapshot: _this.host.getScriptSnapshot(id) }; });
         this.init();
     }
@@ -376,23 +380,6 @@ function getOptionsOverrides() {
         noResolve: false,
     };
 }
-// Gratefully lifted from 'look-up', due to problems using it directly:
-//   https://github.com/jonschlinkert/look-up/blob/master/index.js
-//   MIT Licenced
-function findFile(cwd, filename) {
-    var fp = cwd ? (cwd + "/" + filename) : filename;
-    if (existsSync(fp))
-        return fp;
-    var segs = cwd.split(sep);
-    var len = segs.length;
-    while (len--) {
-        cwd = segs.slice(0, len).join("/");
-        fp = cwd + "/" + filename;
-        if (existsSync(fp))
-            return fp;
-    }
-    return null;
-}
 // The injected id for helpers.
 var TSLIB = "tslib";
 var tslibSource;
@@ -406,7 +393,7 @@ catch (e) {
     throw e;
 }
 function parseTsConfig(context) {
-    var fileName = findFile(process.cwd(), "tsconfig.json");
+    var fileName = findConfigFile(process.cwd(), sys.fileExists, "tsconfig.json");
     if (!fileName)
         throw new Error("couldn't find 'tsconfig.json' in " + process.cwd());
     var text = sys.readFile(fileName);
@@ -450,7 +437,7 @@ function typescript(options) {
         check: true,
         verbosity: VerbosityLevel.Info,
         clean: false,
-        cacheRoot: process.cwd() + "/.rts2_cache",
+        cacheRoot: process.cwd() + "/.rpt2_cache",
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
@@ -463,6 +450,9 @@ function typescript(options) {
     var cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
     if (options.clean)
         cache.clean();
+    // printing compiler option errors
+    if (options.check)
+        printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
     return {
         resolveId: function (importee, importer) {
             if (importee === TSLIB)
@@ -476,6 +466,7 @@ function typescript(options) {
                     cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
+                context.debug("resolving " + importee + " to " + result.resolvedModule.resolvedFileName);
                 return result.resolvedModule.resolvedFileName;
             }
             return null;
@@ -519,12 +510,6 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics);
             }
             return result;
-        },
-        intro: function () {
-            context.debug("intro");
-            // printing compiler option errors
-            if (options.check)
-                printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
         },
         outro: function () {
             context.debug("outro");

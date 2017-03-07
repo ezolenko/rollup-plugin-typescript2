@@ -22,30 +22,6 @@ function getOptionsOverrides(): ts.CompilerOptions
 	};
 }
 
-// Gratefully lifted from 'look-up', due to problems using it directly:
-//   https://github.com/jonschlinkert/look-up/blob/master/index.js
-//   MIT Licenced
-function findFile(cwd: string, filename: string)
-{
-	let fp = cwd ? (cwd + "/" + filename) : filename;
-
-	if (fs.existsSync(fp))
-		return fp;
-
-	const segs = cwd.split(path.sep);
-	let len = segs.length;
-
-	while (len--)
-	{
-		cwd = segs.slice(0, len).join("/");
-		fp = cwd + "/" + filename;
-		if (fs.existsSync(fp))
-			return fp;
-	}
-
-	return null;
-}
-
 // The injected id for helpers.
 const TSLIB = "tslib";
 let tslibSource: string;
@@ -62,7 +38,8 @@ try
 
 function parseTsConfig(context: IContext)
 {
-	const fileName = findFile(process.cwd(), "tsconfig.json");
+	const fileName = ts.findConfigFile(process.cwd(), ts.sys.fileExists, "tsconfig.json");
+
 	if (!fileName)
 		throw new Error(`couldn't find 'tsconfig.json' in ${process.cwd()}`);
 
@@ -130,7 +107,7 @@ export default function typescript (options: IOptions)
 		check: true,
 		verbosity: VerbosityLevel.Info,
 		clean: false,
-		cacheRoot: `${process.cwd()}/.rts2_cache`,
+		cacheRoot: `${process.cwd()}/.rpt2_cache`,
 		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
 		exclude: [ "*.d.ts", "**/*.d.ts" ],
 		abortOnError: true,
@@ -150,6 +127,10 @@ export default function typescript (options: IOptions)
 
 	if (options.clean)
 		cache.clean();
+
+	// printing compiler option errors
+	if (options.check)
+		printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
 
 	return {
 
@@ -172,6 +153,8 @@ export default function typescript (options: IOptions)
 
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
+
+				context.debug(`resolving ${importee} to ${result.resolvedModule.resolvedFileName}`);
 
 				return result.resolvedModule.resolvedFileName;
 			}
@@ -236,15 +219,6 @@ export default function typescript (options: IOptions)
 			}
 
 			return result;
-		},
-
-		intro(): void
-		{
-			context.debug("intro");
-
-			// printing compiler option errors
-			if (options.check)
-				printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
 		},
 
 		outro(): void

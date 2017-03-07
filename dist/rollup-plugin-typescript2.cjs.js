@@ -241,7 +241,11 @@ var Cache = (function () {
         });
         this.dependencyTree = new graph.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
+        var automaticTypes = _.map(ts.getAutomaticTypeDirectiveNames(options, ts.sys), function (entry) { return ts.resolveTypeReferenceDirective(entry, undefined, options, ts.sys); })
+            .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
+            .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
         this.ambientTypes = _.filter(rootFilenames, function (file) { return _.endsWith(file, ".d.ts"); })
+            .concat(automaticTypes)
             .map(function (id) { return { id: id, snapshot: _this.host.getScriptSnapshot(id) }; });
         this.init();
     }
@@ -371,23 +375,6 @@ function getOptionsOverrides() {
         noResolve: false,
     };
 }
-// Gratefully lifted from 'look-up', due to problems using it directly:
-//   https://github.com/jonschlinkert/look-up/blob/master/index.js
-//   MIT Licenced
-function findFile(cwd, filename) {
-    var fp = cwd ? (cwd + "/" + filename) : filename;
-    if (fs.existsSync(fp))
-        return fp;
-    var segs = cwd.split(path.sep);
-    var len = segs.length;
-    while (len--) {
-        cwd = segs.slice(0, len).join("/");
-        fp = cwd + "/" + filename;
-        if (fs.existsSync(fp))
-            return fp;
-    }
-    return null;
-}
 // The injected id for helpers.
 var TSLIB = "tslib";
 var tslibSource;
@@ -401,7 +388,7 @@ catch (e) {
     throw e;
 }
 function parseTsConfig(context) {
-    var fileName = findFile(process.cwd(), "tsconfig.json");
+    var fileName = ts.findConfigFile(process.cwd(), ts.sys.fileExists, "tsconfig.json");
     if (!fileName)
         throw new Error("couldn't find 'tsconfig.json' in " + process.cwd());
     var text = ts.sys.readFile(fileName);
@@ -445,7 +432,7 @@ function typescript(options) {
         check: true,
         verbosity: VerbosityLevel.Info,
         clean: false,
-        cacheRoot: process.cwd() + "/.rts2_cache",
+        cacheRoot: process.cwd() + "/.rpt2_cache",
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
@@ -458,6 +445,9 @@ function typescript(options) {
     var cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
     if (options.clean)
         cache.clean();
+    // printing compiler option errors
+    if (options.check)
+        printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
     return {
         resolveId: function (importee, importer) {
             if (importee === TSLIB)
@@ -471,6 +461,7 @@ function typescript(options) {
                     cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
+                context.debug("resolving " + importee + " to " + result.resolvedModule.resolvedFileName);
                 return result.resolvedModule.resolvedFileName;
             }
             return null;
@@ -514,12 +505,6 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics);
             }
             return result;
-        },
-        intro: function () {
-            context.debug("intro");
-            // printing compiler option errors
-            if (options.check)
-                printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
         },
         outro: function () {
             context.debug("outro");
