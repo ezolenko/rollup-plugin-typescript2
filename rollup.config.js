@@ -14,7 +14,8 @@ export default {
 		'lodash',
 		'graphlib',
 		'object-hash',
-		'colors/safe'
+		'colors/safe',
+		'resolve'
 	],
 
 	plugins: [

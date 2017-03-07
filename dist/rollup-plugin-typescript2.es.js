@@ -13,6 +13,8 @@ import { dirname } from 'path';
 import * as path from 'path';
 import { red, white, yellow } from 'colors/safe';
 import * as colors from 'colors/safe';
+import { sync } from 'resolve';
+import * as resolve from 'resolve';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -466,8 +468,11 @@ function typescript(options) {
                     cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                context.debug("resolving " + importee + " to " + result.resolvedModule.resolvedFileName);
-                return result.resolvedModule.resolvedFileName;
+                var resolved = options.rollupCommonJSResolveHack
+                    ? sync(result.resolvedModule.resolvedFileName)
+                    : result.resolvedModule.resolvedFileName;
+                context.debug("resolving " + importee + " to " + resolved);
+                return resolved;
             }
             return null;
         },

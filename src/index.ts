@@ -7,6 +7,7 @@ import * as fs from "fs-extra";
 import * as path from "path";
 import * as _ from "lodash";
 import * as colors from "colors/safe";
+import * as resolve from "resolve";
 
 // tslint:disable-next-line:no-var-requires
 const createFilter = require("rollup-pluginutils").createFilter;
@@ -96,6 +97,7 @@ interface IOptions
 	clean: boolean;
 	cacheRoot: string;
 	abortOnError: boolean;
+	rollupCommonJSResolveHack: boolean;
 }
 
 export default function typescript (options: IOptions)
@@ -154,9 +156,13 @@ export default function typescript (options: IOptions)
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
 
-				context.debug(`resolving ${importee} to ${result.resolvedModule.resolvedFileName}`);
+				const resolved = options.rollupCommonJSResolveHack
+						? resolve.sync(result.resolvedModule.resolvedFileName)
+						: result.resolvedModule.resolvedFileName;
 
-				return result.resolvedModule.resolvedFileName;
+				context.debug(`resolving ${importee} to ${resolved}`);
+
+				return resolved;
 			}
 
 			return null;

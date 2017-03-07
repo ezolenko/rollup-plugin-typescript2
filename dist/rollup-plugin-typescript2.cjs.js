@@ -8,6 +8,7 @@ var graph = require('graphlib');
 var hash = require('object-hash');
 var path = require('path');
 var colors = require('colors/safe');
+var resolve = require('resolve');
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -461,8 +462,11 @@ function typescript(options) {
                     cache.setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                context.debug("resolving " + importee + " to " + result.resolvedModule.resolvedFileName);
-                return result.resolvedModule.resolvedFileName;
+                var resolved = options.rollupCommonJSResolveHack
+                    ? resolve.sync(result.resolvedModule.resolvedFileName)
+                    : result.resolvedModule.resolvedFileName;
+                context.debug("resolving " + importee + " to " + resolved);
+                return resolved;
             }
             return null;
         },
