@@ -6,6 +6,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 {
 	private cwd = process.cwd();
 	private snapshots: { [fileName: string]: ts.IScriptSnapshot } = {};
+	private versions: { [fileName: string]: number } = {};
 
 	constructor(private parsedConfig: ts.ParsedCommandLine)
 	{
@@ -15,6 +16,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 	{
 		let snapshot = ts.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
+		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 		return snapshot;
 	}
 
@@ -39,7 +41,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 
 	public getScriptVersion(_fileName: string)
 	{
-		return "0";
+		return (this.versions[_fileName] || 0).toString();
 	}
 
 	public getScriptFileNames()
