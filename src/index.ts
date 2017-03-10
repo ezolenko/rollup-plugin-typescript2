@@ -117,6 +117,9 @@ export default function typescript (options: IOptions)
 
 	const context = new ConsoleContext(options.verbosity, "rpt2: ");
 
+	context.debug(`Typescript version: ${ts.version}`);
+	context.debug(`Options: ${JSON.stringify(options, undefined, 4)}`);
+
 	const filter = createFilter(options.include, options.exclude);
 
 	const parsedConfig = parseTsConfig(context);
