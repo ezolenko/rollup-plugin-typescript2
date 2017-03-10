@@ -113,6 +113,7 @@ export default function typescript (options: IOptions)
 		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
 		exclude: [ "*.d.ts", "**/*.d.ts" ],
 		abortOnError: true,
+		rollupCommonJSResolveHack: false,
 	});
 
 	const context = new ConsoleContext(options.verbosity, "rpt2: ");

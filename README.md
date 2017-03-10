@@ -63,6 +63,9 @@ Plugin takes following options:
 
 	Bail out on first syntactic error. In most cases setting this to false will result in exception in rollup itself.
 
+* `rollupCommonJSResolveHack`: false
+
+	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in namedExports being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with commonjs. 
 
 ### TypeScript version
 

@@ -9,10 +9,10 @@ import { Graph, alg } from 'graphlib';
 import * as graph from 'graphlib';
 import { sha1 } from 'object-hash';
 import * as hash from 'object-hash';
+import { blue, green, red, white, yellow } from 'colors/safe';
+import * as colors from 'colors/safe';
 import { dirname } from 'path';
 import * as path from 'path';
-import { red, white, yellow } from 'colors/safe';
-import * as colors from 'colors/safe';
 import { sync } from 'resolve';
 import * as resolve from 'resolve';
 
@@ -117,10 +117,12 @@ var LanguageServiceHost = (function () {
         this.parsedConfig = parsedConfig;
         this.cwd = process.cwd();
         this.snapshots = {};
+        this.versions = {};
     }
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         var snapshot = ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
+        this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
@@ -136,7 +138,7 @@ var LanguageServiceHost = (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (_fileName) {
-        return "0";
+        return (this.versions[_fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
         return this.parsedConfig.fileNames;
@@ -257,7 +259,7 @@ var Cache = (function () {
         this.init();
     }
     Cache.prototype.clean = function () {
-        this.context.info("cleaning cache: " + this.cacheDir);
+        this.context.info(blue("cleaning cache: " + this.cacheDir));
         emptyDirSync(this.cacheDir);
         this.init();
     };
@@ -267,7 +269,7 @@ var Cache = (function () {
             each(alg.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
-        this.context.info("import tree has cycles");
+        this.context.info(yellow("import tree has cycles"));
         each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     Cache.prototype.setDependency = function (importee, importer) {
@@ -278,7 +280,7 @@ var Cache = (function () {
     };
     Cache.prototype.compileDone = function () {
         var _this = this;
-        this.context.debug("Ambient types:");
+        this.context.debug(blue("Ambient types:"));
         var typeNames = filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
             .map(function (snapshot) {
             _this.context.debug("    " + snapshot.id);
@@ -287,7 +289,7 @@ var Cache = (function () {
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
-            this.context.info("ambient types changed, redoing all diagnostics");
+            this.context.info(yellow("ambient types changed, redoing all diagnostics"));
         each(typeNames, function (name) { return _this.typesCache.touch(name); });
     };
     Cache.prototype.diagnosticsDone = function () {
@@ -298,16 +300,16 @@ var Cache = (function () {
     };
     Cache.prototype.getCompiled = function (id, snapshot, transform) {
         var name = this.makeName(id, snapshot);
-        this.context.debug("transpiling '" + id + "'");
+        this.context.debug(blue("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
         if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
-            this.context.debug("    cache miss");
+            this.context.debug(yellow("    cache miss"));
             var data_1 = transform();
             this.codeCache.write(name, data_1);
             this.markAsDirty(id, snapshot);
             return data_1;
         }
-        this.context.debug("    cache hit");
+        this.context.debug(green("    cache hit"));
         var data = this.codeCache.read(name);
         this.codeCache.write(name, data);
         return data;
@@ -323,13 +325,13 @@ var Cache = (function () {
         this.context.debug("diagnostics for '" + id + "'");
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
-            this.context.debug("    cache miss");
+            this.context.debug(yellow("    cache miss"));
             var data_2 = convertDiagnostic(check());
             cache.write(name, data_2);
             this.markAsDirty(id, snapshot);
             return data_2;
         }
-        this.context.debug("    cache hit");
+        this.context.debug(green("    cache hit"));
         var data = cache.read(name);
         cache.write(name, data);
         return data;
@@ -360,7 +362,7 @@ var Cache = (function () {
             var l = _this.dependencyTree.node(node);
             var dirty = l === undefined ? true : l.dirty;
             if (dirty)
-                _this.context.debug("import changed: " + id + " -> " + node);
+                _this.context.debug("    import changed: " + node);
             return dirty;
         });
     };
@@ -443,8 +445,11 @@ function typescript(options) {
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
+        rollupCommonJSResolveHack: false,
     });
     var context = new ConsoleContext(options.verbosity, "rpt2: ");
+    context.debug("Typescript version: " + version);
+    context.debug("Options: " + JSON.stringify(options, undefined, 4));
     var filter$$1 = createFilter(options.include, options.exclude);
     var parsedConfig = parseTsConfig(context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
