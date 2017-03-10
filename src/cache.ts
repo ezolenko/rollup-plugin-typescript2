@@ -5,6 +5,7 @@ import * as hash from "object-hash";
 import * as _ from "lodash";
 import { RollingCache } from "./rollingcache";
 import * as fs from "fs-extra";
+import * as colors from "colors/safe";
 
 export interface ICode
 {
@@ -89,7 +90,7 @@ export class Cache
 
 	public clean()
 	{
-		this.context.info(`cleaning cache: ${this.cacheDir}`);
+		this.context.info(colors.blue(`cleaning cache: ${this.cacheDir}`));
 		fs.emptyDirSync(this.cacheDir);
 
 		this.init();
@@ -105,7 +106,7 @@ export class Cache
 			return;
 		}
 
-		this.context.info("import tree has cycles");
+		this.context.info(colors.yellow("import tree has cycles"));
 
 		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
 	}
@@ -120,7 +121,7 @@ export class Cache
 
 	public compileDone(): void
 	{
-		this.context.debug("Ambient types:");
+		this.context.debug(colors.blue("Ambient types:"));
 		const typeNames = _
 			.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
@@ -133,7 +134,7 @@ export class Cache
 		this.ambientTypesDirty = !this.typesCache.match(typeNames);
 
 		if (this.ambientTypesDirty)
-			this.context.info("ambient types changed, redoing all diagnostics");
+			this.context.info(colors.yellow("ambient types changed, redoing all diagnostics"));
 
 		_.each(typeNames, (name) => this.typesCache.touch(name));
 	}
@@ -150,12 +151,12 @@ export class Cache
 	{
 		const name = this.makeName(id, snapshot);
 
-		this.context.debug(`transpiling '${id}'`);
+		this.context.debug(`${colors.blue("transpiling")} '${id}'`);
 		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
 
 		if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false))
 		{
-			this.context.debug(`    cache miss`);
+			this.context.debug(colors.yellow("    cache miss"));
 
 			const data = transform();
 			this.codeCache.write(name, data);
@@ -163,7 +164,7 @@ export class Cache
 			return data;
 		}
 
-		this.context.debug(`    cache hit`);
+		this.context.debug(colors.green("    cache hit"));
 
 		const data = this.codeCache.read(name);
 		this.codeCache.write(name, data);
@@ -189,7 +190,7 @@ export class Cache
 
 		if (!cache.exists(name) || this.isDirty(id, snapshot, true))
 		{
-			this.context.debug(`    cache miss`);
+			this.context.debug(colors.yellow("    cache miss"));
 
 			const data = convertDiagnostic(check());
 			cache.write(name, data);
@@ -197,7 +198,7 @@ export class Cache
 			return data;
 		}
 
-		this.context.debug(`    cache hit`);
+		this.context.debug(colors.green("    cache hit"));
 
 		const data = cache.read(name);
 		cache.write(name, data);
@@ -242,7 +243,7 @@ export class Cache
 			const dirty = l === undefined ? true : l.dirty;
 
 			if (dirty)
-				this.context.debug(`import changed: ${id} -> ${node}`);
+				this.context.debug(`    import changed: ${node}`);
 
 			return dirty;
 		});
