@@ -107,7 +107,7 @@ export default function typescript (options: IOptions)
 	_.defaults(options,
 	{
 		check: true,
-		verbosity: VerbosityLevel.Info,
+		verbosity: VerbosityLevel.Warning,
 		clean: false,
 		cacheRoot: `${process.cwd()}/.rpt2_cache`,
 		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
@@ -118,7 +118,7 @@ export default function typescript (options: IOptions)
 
 	const context = new ConsoleContext(options.verbosity, "rpt2: ");
 
-	context.debug(`Typescript version: ${ts.version}`);
+	context.info(`Typescript version: ${ts.version}`);
 	context.debug(`Options: ${JSON.stringify(options, undefined, 4)}`);
 
 	const filter = createFilter(options.include, options.exclude);
@@ -130,6 +130,8 @@ export default function typescript (options: IOptions)
 	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
 	const cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+
+	let cleanTranspile = true;
 
 	if (options.clean)
 		cache.clean();
@@ -164,7 +166,8 @@ export default function typescript (options: IOptions)
 						? resolve.sync(result.resolvedModule.resolvedFileName)
 						: result.resolvedModule.resolvedFileName;
 
-				context.debug(`resolving ${importee} to ${resolved}`);
+				context.debug(`${colors.blue("resolving")} '${importee}'`);
+				context.debug(`    to '${resolved}'`);
 
 				return resolved;
 			}
@@ -189,24 +192,27 @@ export default function typescript (options: IOptions)
 
 			const snapshot = servicesHost.setSnapshot(id, code);
 
-			// getting compiled file from cache of from ts
+			// getting compiled file from cache or from ts
 			const result = cache.getCompiled(id, snapshot, () =>
 			{
 				const output = services.getEmitOutput(id);
 
 				if (output.emitSkipped)
 				{
-					if (options.check)
-					{
-						const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
-						{
-							return services.getSyntacticDiagnostics(id);
-						});
-						printDiagnostics(contextWrapper, diagnostics);
-					}
+					cleanTranspile = false;
 
-					// if no output was generated, aborting compilation
-					this.error(colors.red(`failed to transpile ${id}`));
+					// always checking on fatal errors, even if options.check is set to false
+					const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
+					{
+						return services.getSyntacticDiagnostics(id);
+					}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
+					{
+						return services.getSemanticDiagnostics(id);
+					}));
+					printDiagnostics(contextWrapper, diagnostics);
+
+					// since no output was generated, aborting compilation
+					this.error(colors.red(`failed to transpile '${id}'`));
 				}
 
 				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") );
@@ -218,48 +224,30 @@ export default function typescript (options: IOptions)
 				};
 			});
 
-			// printing syntactic errors
 			if (options.check)
 			{
 				const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
 				{
 					return services.getSyntacticDiagnostics(id);
-				});
+				}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
+				{
+					return services.getSemanticDiagnostics(id);
+				}));
+
+				if (diagnostics.length !== 0)
+					cleanTranspile = false;
+
 				printDiagnostics(contextWrapper, diagnostics);
 			}
 
 			return result;
 		},
 
-		outro(): void
+		ongenerate(): void
 		{
-			context.debug("outro");
-
-			cache.compileDone();
-
-			// printing semantic errors
-			if (options.check)
-			{
-				cache.walkTree((id: string) =>
-				{
-					const snapshot = servicesHost.getScriptSnapshot(id);
-
-					if (!snapshot)
-					{
-						context.error(colors.red(`failed lo load snapshot for ${id}`));
-						return;
-					}
-
-					const diagnostics = cache.getSemanticDiagnostics(id, snapshot, () =>
-					{
-						return services.getSemanticDiagnostics(id);
-					});
-
-					printDiagnostics(context, diagnostics);
-				});
-			}
-
-			cache.diagnosticsDone();
+			cache.done();
+			if (!cleanTranspile)
+				context.info(colors.yellow("there were errors or warnings above."));
 		},
 	};
 }

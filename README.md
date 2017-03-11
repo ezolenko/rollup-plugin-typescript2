@@ -39,9 +39,12 @@ Plugin takes following options:
 
 	Set to false to avoid doing any diagnostic checks on the code.
 
-* `verbosity`: 2
+* `verbosity`: 1
 
-	Goes up to 3.
+	- 0 -- Error
+	- 1 -- Warning
+	- 2 -- Info
+	- 3 -- Debug
 
 * `clean`: false
 	
@@ -53,23 +56,27 @@ Plugin takes following options:
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
-	Passes all .ts files through typescript compiler. 
+	By default passes all .ts files through typescript compiler. 
 
 * `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
 
-	But excludes types.
+	But excludes type definitions.
 
 * `abortOnError`: true
 
-	Bail out on first syntactic error. In most cases setting this to false will result in exception in rollup itself.
+	Bail out on first syntactic or semantic error. In some cases setting this to false will result in exception in rollup itself (for example for unresolvable imports).
 
 * `rollupCommonJSResolveHack`: false
 
-	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in namedExports being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with commonjs. 
+	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in `namedExports` being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with `rollup-plugin-commonjs`. 
 
-### TypeScript version
+### Version
 
-This plugin currently requires TypeScript 2.0+.
+This plugin currently requires TypeScript `2.0+`.
+
+### Rollup version
+
+Tested on rollup `0.41.4`.
 
 ### Reporting bugs
 

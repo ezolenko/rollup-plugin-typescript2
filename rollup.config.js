@@ -19,7 +19,7 @@ export default {
 	],
 
 	plugins: [
-		ts(),
+		ts({ verbosity: 2 }),
 	],
 
 	banner: '/* eslint-disable */',

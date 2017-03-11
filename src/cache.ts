@@ -86,6 +86,8 @@ export class Cache
 			.map((id) => { return { id, snapshot: this.host.getScriptSnapshot(id) }; });
 
 		this.init();
+
+		this.checkAmbientTypes();
 	}
 
 	public clean()
@@ -96,51 +98,17 @@ export class Cache
 		this.init();
 	}
 
-	public walkTree(cb: (id: string) => void | false): void
-	{
-		const acyclic = graph.alg.isAcyclic(this.dependencyTree);
-
-		if (acyclic)
-		{
-			_.each(graph.alg.topsort(this.dependencyTree), (id: string) => cb(id));
-			return;
-		}
-
-		this.context.info(colors.yellow("import tree has cycles"));
-
-		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
-	}
-
 	public setDependency(importee: string, importer: string): void
 	{
 		// importee -> importer
-		this.context.debug(`${importee}`);
-		this.context.debug(`    imported by ${importer}`);
+		this.context.debug(`${colors.blue("dependency")} '${importee}'`);
+		this.context.debug(`    imported by '${importer}'`);
 		this.dependencyTree.setEdge(importer, importee);
 	}
 
-	public compileDone(): void
+	public done()
 	{
-		this.context.debug(colors.blue("Ambient types:"));
-		const typeNames = _
-			.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
-			.map((snapshot) =>
-			{
-				this.context.debug(`    ${snapshot.id}`);
-				return this.makeName(snapshot.id, snapshot.snapshot!);
-			});
-
-		// types dirty if any d.ts changed, added or removed
-		this.ambientTypesDirty = !this.typesCache.match(typeNames);
-
-		if (this.ambientTypesDirty)
-			this.context.info(colors.yellow("ambient types changed, redoing all diagnostics"));
-
-		_.each(typeNames, (name) => this.typesCache.touch(name));
-	}
-
-	public diagnosticsDone()
-	{
+		this.context.info(colors.blue("rolling caches"));
 		this.codeCache.roll();
 		this.semanticDiagnosticsCache.roll();
 		this.syntacticDiagnosticsCache.roll();
@@ -151,7 +119,7 @@ export class Cache
 	{
 		const name = this.makeName(id, snapshot);
 
-		this.context.debug(`${colors.blue("transpiling")} '${id}'`);
+		this.context.info(`${colors.blue("transpiling")} '${id}'`);
 		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
 
 		if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false))
@@ -181,11 +149,30 @@ export class Cache
 		return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
 	}
 
+	private checkAmbientTypes(): void
+	{
+		this.context.debug(colors.blue("Ambient types:"));
+		const typeNames = _
+			.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+			.map((snapshot) =>
+			{
+				this.context.debug(`    ${snapshot.id}`);
+				return this.makeName(snapshot.id, snapshot.snapshot!);
+			});
+
+		// types dirty if any d.ts changed, added or removed
+		this.ambientTypesDirty = !this.typesCache.match(typeNames);
+
+		if (this.ambientTypesDirty)
+			this.context.info(colors.yellow("ambient types changed, redoing all semantic diagnostics"));
+
+		_.each(typeNames, (name) => this.typesCache.touch(name));
+	}
+
 	private getDiagnostics(cache: RollingCache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
 		const name = this.makeName(id, snapshot);
 
-		this.context.debug(`diagnostics for '${id}'`);
 		this.context.debug(`    cache: '${cache.path(name)}'`);
 
 		if (!cache.exists(name) || this.isDirty(id, snapshot, true))

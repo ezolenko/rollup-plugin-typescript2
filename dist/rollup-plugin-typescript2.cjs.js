@@ -251,42 +251,21 @@ var Cache = (function () {
             .concat(automaticTypes)
             .map(function (id) { return { id: id, snapshot: _this.host.getScriptSnapshot(id) }; });
         this.init();
+        this.checkAmbientTypes();
     }
     Cache.prototype.clean = function () {
         this.context.info(colors.blue("cleaning cache: " + this.cacheDir));
         fs.emptyDirSync(this.cacheDir);
         this.init();
     };
-    Cache.prototype.walkTree = function (cb) {
-        var acyclic = graph.alg.isAcyclic(this.dependencyTree);
-        if (acyclic) {
-            _.each(graph.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
-            return;
-        }
-        this.context.info(colors.yellow("import tree has cycles"));
-        _.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
-    };
     Cache.prototype.setDependency = function (importee, importer) {
         // importee -> importer
-        this.context.debug("" + importee);
-        this.context.debug("    imported by " + importer);
+        this.context.debug(colors.blue("dependency") + " '" + importee + "'");
+        this.context.debug("    imported by '" + importer + "'");
         this.dependencyTree.setEdge(importer, importee);
     };
-    Cache.prototype.compileDone = function () {
-        var _this = this;
-        this.context.debug(colors.blue("Ambient types:"));
-        var typeNames = _.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
-            .map(function (snapshot) {
-            _this.context.debug("    " + snapshot.id);
-            return _this.makeName(snapshot.id, snapshot.snapshot);
-        });
-        // types dirty if any d.ts changed, added or removed
-        this.ambientTypesDirty = !this.typesCache.match(typeNames);
-        if (this.ambientTypesDirty)
-            this.context.info(colors.yellow("ambient types changed, redoing all diagnostics"));
-        _.each(typeNames, function (name) { return _this.typesCache.touch(name); });
-    };
-    Cache.prototype.diagnosticsDone = function () {
+    Cache.prototype.done = function () {
+        this.context.info(colors.blue("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
@@ -294,7 +273,7 @@ var Cache = (function () {
     };
     Cache.prototype.getCompiled = function (id, snapshot, transform) {
         var name = this.makeName(id, snapshot);
-        this.context.debug(colors.blue("transpiling") + " '" + id + "'");
+        this.context.info(colors.blue("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
         if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
             this.context.debug(colors.yellow("    cache miss"));
@@ -314,9 +293,22 @@ var Cache = (function () {
     Cache.prototype.getSemanticDiagnostics = function (id, snapshot, check) {
         return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
     };
+    Cache.prototype.checkAmbientTypes = function () {
+        var _this = this;
+        this.context.debug(colors.blue("Ambient types:"));
+        var typeNames = _.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
+            .map(function (snapshot) {
+            _this.context.debug("    " + snapshot.id);
+            return _this.makeName(snapshot.id, snapshot.snapshot);
+        });
+        // types dirty if any d.ts changed, added or removed
+        this.ambientTypesDirty = !this.typesCache.match(typeNames);
+        if (this.ambientTypesDirty)
+            this.context.info(colors.yellow("ambient types changed, redoing all semantic diagnostics"));
+        _.each(typeNames, function (name) { return _this.typesCache.touch(name); });
+    };
     Cache.prototype.getDiagnostics = function (cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
-        this.context.debug("diagnostics for '" + id + "'");
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
             this.context.debug(colors.yellow("    cache miss"));
@@ -433,7 +425,7 @@ function typescript(options) {
     options = __assign({}, options);
     _.defaults(options, {
         check: true,
-        verbosity: VerbosityLevel.Info,
+        verbosity: VerbosityLevel.Warning,
         clean: false,
         cacheRoot: process.cwd() + "/.rpt2_cache",
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
@@ -442,13 +434,14 @@ function typescript(options) {
         rollupCommonJSResolveHack: false,
     });
     var context = new ConsoleContext(options.verbosity, "rpt2: ");
-    context.debug("Typescript version: " + ts.version);
+    context.info("Typescript version: " + ts.version);
     context.debug("Options: " + JSON.stringify(options, undefined, 4));
     var filter$$1 = createFilter(options.include, options.exclude);
     var parsedConfig = parseTsConfig(context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
     var cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+    var cleanTranspile = true;
     if (options.clean)
         cache.clean();
     // printing compiler option errors
@@ -470,7 +463,8 @@ function typescript(options) {
                 var resolved = options.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug("resolving " + importee + " to " + resolved);
+                context.debug(colors.blue("resolving") + " '" + importee + "'");
+                context.debug("    to '" + resolved + "'");
                 return resolved;
             }
             return null;
@@ -486,18 +480,20 @@ function typescript(options) {
                 return undefined;
             var contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rpt2: ");
             var snapshot = servicesHost.setSnapshot(id, code);
-            // getting compiled file from cache of from ts
+            // getting compiled file from cache or from ts
             var result = cache.getCompiled(id, snapshot, function () {
                 var output = services.getEmitOutput(id);
                 if (output.emitSkipped) {
-                    if (options.check) {
-                        var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
-                            return services.getSyntacticDiagnostics(id);
-                        });
-                        printDiagnostics(contextWrapper, diagnostics);
-                    }
-                    // if no output was generated, aborting compilation
-                    _this.error(colors.red("failed to transpile " + id));
+                    cleanTranspile = false;
+                    // always checking on fatal errors, even if options.check is set to false
+                    var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
+                        return services.getSyntacticDiagnostics(id);
+                    }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
+                        return services.getSemanticDiagnostics(id);
+                    }));
+                    printDiagnostics(contextWrapper, diagnostics);
+                    // since no output was generated, aborting compilation
+                    _this.error(colors.red("failed to transpile '" + id + "'"));
                 }
                 var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js"); });
                 var map$$1 = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
@@ -506,33 +502,22 @@ function typescript(options) {
                     map: map$$1 ? JSON.parse(map$$1.text) : { mappings: "" },
                 };
             });
-            // printing syntactic errors
             if (options.check) {
                 var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
                     return services.getSyntacticDiagnostics(id);
-                });
+                }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
+                    return services.getSemanticDiagnostics(id);
+                }));
+                if (diagnostics.length !== 0)
+                    cleanTranspile = false;
                 printDiagnostics(contextWrapper, diagnostics);
             }
             return result;
         },
-        outro: function () {
-            context.debug("outro");
-            cache.compileDone();
-            // printing semantic errors
-            if (options.check) {
-                cache.walkTree(function (id) {
-                    var snapshot = servicesHost.getScriptSnapshot(id);
-                    if (!snapshot) {
-                        context.error(colors.red("failed lo load snapshot for " + id));
-                        return;
-                    }
-                    var diagnostics = cache.getSemanticDiagnostics(id, snapshot, function () {
-                        return services.getSemanticDiagnostics(id);
-                    });
-                    printDiagnostics(context, diagnostics);
-                });
-            }
-            cache.diagnosticsDone();
+        ongenerate: function () {
+            cache.done();
+            if (!cleanTranspile)
+                context.info(colors.yellow("there were errors or warnings above."));
         },
     };
 }
