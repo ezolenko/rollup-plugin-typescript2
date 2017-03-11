@@ -16,7 +16,6 @@ function getOptionsOverrides(): ts.CompilerOptions
 {
 	return {
 		module: ts.ModuleKind.ES2015,
-		sourceMap: true,
 		noEmitHelpers: true,
 		importHelpers: true,
 		noResolve: false,

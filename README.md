@@ -28,7 +28,6 @@ The plugin depends on existence of `tsconfig.json` file. All compiler options an
 
 Following compiler options are forced though:
 * `module`: es2015
-* `sourceMap`: true
 * `noEmitHelpers`: true
 * `importHelpers`: true
 * `noResolve`: false

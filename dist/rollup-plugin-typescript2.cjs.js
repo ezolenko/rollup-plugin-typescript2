@@ -364,7 +364,6 @@ var createFilter = require("rollup-pluginutils").createFilter;
 function getOptionsOverrides() {
     return {
         module: ts.ModuleKind.ES2015,
-        sourceMap: true,
         noEmitHelpers: true,
         importHelpers: true,
         noResolve: false,
