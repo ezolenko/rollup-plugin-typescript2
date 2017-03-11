@@ -4,7 +4,7 @@
   ],
   "rules": {
     "forin": false,
-    "interface-name": [false],
+    "interface-name": [true],
     "no-console": [false],
     "indent": [true, "tabs"],
     "variable-name":
@@ -21,6 +21,6 @@
     "curly": false,
     "ordered-imports": [],
     "only-arrow-functions": [],
-    "class-name": false
+    "class-name": true
   }
 }
