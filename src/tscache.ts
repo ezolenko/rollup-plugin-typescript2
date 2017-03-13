@@ -6,6 +6,7 @@ import * as _ from "lodash";
 import { RollingCache } from "./rollingcache";
 import * as fs from "fs-extra";
 import * as colors from "colors/safe";
+import { ICache } from "./icache";
 
 export interface ICode
 {
@@ -51,17 +52,17 @@ export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
 	});
 }
 
-export class Cache
+export class TsCache
 {
-	private cacheVersion = "2";
+	private cacheVersion = "3";
 	private dependencyTree: graph.Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
 	private cacheDir: string;
-	private codeCache: RollingCache<ICode | undefined>;
-	private typesCache: RollingCache<string>;
-	private semanticDiagnosticsCache: RollingCache<IDiagnostics[]>;
-	private syntacticDiagnosticsCache: RollingCache<IDiagnostics[]>;
+	private codeCache: ICache<ICode | undefined>;
+	private typesCache: ICache<string>;
+	private semanticDiagnosticsCache: ICache<IDiagnostics[]>;
+	private syntacticDiagnosticsCache: ICache<IDiagnostics[]>;
 
 	constructor(private host: ts.LanguageServiceHost, cache: string, private options: ts.CompilerOptions, rootFilenames: string[], private context: IContext)
 	{
@@ -159,7 +160,6 @@ export class Cache
 				this.context.debug(`    ${snapshot.id}`);
 				return this.makeName(snapshot.id, snapshot.snapshot!);
 			});
-
 		// types dirty if any d.ts changed, added or removed
 		this.ambientTypesDirty = !this.typesCache.match(typeNames);
 
@@ -169,7 +169,7 @@ export class Cache
 		_.each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
-	private getDiagnostics(cache: RollingCache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	private getDiagnostics(cache: ICache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
 		const name = this.makeName(id, snapshot);
 
@@ -195,9 +195,9 @@ export class Cache
 	private init()
 	{
 		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
-		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, false);
-		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, false);
-		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, false);
+		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
+		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
+		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
 	}
 
 	private markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void

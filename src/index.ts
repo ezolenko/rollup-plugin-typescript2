@@ -1,7 +1,7 @@
 import { RollupContext } from "./rollupcontext";
 import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { Cache, convertDiagnostic, ICode, IDiagnostics } from "./cache";
+import { TsCache, convertDiagnostic, ICode, IDiagnostics } from "./tscache";
 import * as ts from "typescript";
 import * as fs from "fs-extra";
 import * as path from "path";
@@ -115,6 +115,9 @@ export default function typescript (options: IOptions)
 		rollupCommonJSResolveHack: false,
 	});
 
+	let watchMode = false;
+	let round = 0;
+
 	const context = new ConsoleContext(options.verbosity, "rpt2: ");
 
 	context.info(`Typescript version: ${ts.version}`);
@@ -126,18 +129,18 @@ export default function typescript (options: IOptions)
 
 	const servicesHost = new LanguageServiceHost(parsedConfig);
 
-	const services = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+	const service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	const cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+	const cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
 
-	let cleanTranspile = true;
+	let noErrors = true;
 
 	if (options.clean)
 		cache.clean();
 
 	// printing compiler option errors
 	if (options.check)
-		printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
+		printDiagnostics(context, convertDiagnostic(service.getCompilerOptionsDiagnostics()));
 
 	return {
 
@@ -194,19 +197,19 @@ export default function typescript (options: IOptions)
 			// getting compiled file from cache or from ts
 			const result = cache.getCompiled(id, snapshot, () =>
 			{
-				const output = services.getEmitOutput(id);
+				const output = service.getEmitOutput(id);
 
 				if (output.emitSkipped)
 				{
-					cleanTranspile = false;
+					noErrors = false;
 
 					// always checking on fatal errors, even if options.check is set to false
 					const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
 					{
-						return services.getSyntacticDiagnostics(id);
+						return service.getSyntacticDiagnostics(id);
 					}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
 					{
-						return services.getSemanticDiagnostics(id);
+						return service.getSemanticDiagnostics(id);
 					}));
 					printDiagnostics(contextWrapper, diagnostics);
 
@@ -227,14 +230,14 @@ export default function typescript (options: IOptions)
 			{
 				const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
 				{
-					return services.getSyntacticDiagnostics(id);
+					return service.getSyntacticDiagnostics(id);
 				}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
 				{
-					return services.getSemanticDiagnostics(id);
+					return service.getSemanticDiagnostics(id);
 				}));
 
 				if (diagnostics.length !== 0)
-					cleanTranspile = false;
+					noErrors = false;
 
 				printDiagnostics(contextWrapper, diagnostics);
 			}
@@ -244,9 +247,17 @@ export default function typescript (options: IOptions)
 
 		ongenerate(): void
 		{
-			cache.done();
-			if (!cleanTranspile)
+			if (watchMode)
+				context.debug("running in watch mode");
+			else
+				cache.done();
+
+			if (!noErrors)
 				context.info(colors.yellow("there were errors or warnings above."));
+
+			noErrors = true;
+			watchMode = true;
+			round++;
 		},
 	};
 }

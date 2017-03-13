@@ -39,9 +39,9 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 		return this.cwd;
 	}
 
-	public getScriptVersion(_fileName: string)
+	public getScriptVersion(fileName: string)
 	{
-		return (this.versions[_fileName] || 0).toString();
+		return (this.versions[fileName] || 0).toString();
 	}
 
 	public getScriptFileNames()
