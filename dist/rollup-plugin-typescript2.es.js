@@ -3,7 +3,7 @@ import { emptyDirSync, ensureFileSync, existsSync, move, readFileSync, readJsonS
 import * as fs from 'fs-extra';
 import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, findConfigFile, flattenDiagnosticMessageText, getAutomaticTypeDirectiveNames, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, resolveTypeReferenceDirective, sys, version } from 'typescript';
 import * as ts from 'typescript';
-import { defaults, each, endsWith, filter, find, has, isEqual, map, some } from 'lodash';
+import { defaults, each, endsWith, filter, find, has, isArray, isEqual, map, some } from 'lodash';
 import * as _ from 'lodash';
 import { Graph, alg } from 'graphlib';
 import * as graph from 'graphlib';
@@ -78,8 +78,6 @@ var ConsoleContext = (function () {
     return ConsoleContext;
 }());
 
-//# sourceMappingURL=context.js.map
-
 var RollupContext = (function () {
     function RollupContext(verbosity, bail, context, prefix) {
         if (prefix === void 0) { prefix = ""; }
@@ -113,8 +111,6 @@ var RollupContext = (function () {
     };
     return RollupContext;
 }());
-
-//# sourceMappingURL=rollupcontext.js.map
 
 var LanguageServiceHost = (function () {
     function LanguageServiceHost(parsedConfig) {
@@ -156,8 +152,10 @@ var LanguageServiceHost = (function () {
     return LanguageServiceHost;
 }());
 
-//# sourceMappingURL=host.js.map
-
+/**
+ * Saves data in new cache folder or reads it from old one.
+ * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
+ */
 var RollingCache = (function () {
     /**
      * @param cacheRoot: root folder for the cache
@@ -225,8 +223,6 @@ var RollingCache = (function () {
     return RollingCache;
 }());
 
-//# sourceMappingURL=rollingcache.js.map
-
 function convertDiagnostic(data) {
     return map(data, function (diagnostic) {
         var entry = {
@@ -275,6 +271,15 @@ var TsCache = (function () {
         this.context.debug(blue("dependency") + " '" + importee + "'");
         this.context.debug("    imported by '" + importer + "'");
         this.dependencyTree.setEdge(importer, importee);
+    };
+    TsCache.prototype.walkTree = function (cb) {
+        var acyclic = alg.isAcyclic(this.dependencyTree);
+        if (acyclic) {
+            each(alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+            return;
+        }
+        this.context.info(yellow("import tree has cycles"));
+        each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     TsCache.prototype.done = function () {
         this.context.info(blue("rolling caches"));
@@ -371,8 +376,7 @@ var TsCache = (function () {
     return TsCache;
 }());
 
-//# sourceMappingURL=tscache.js.map
-
+// tslint:disable-next-line:no-var-requires
 var createFilter = require("rollup-pluginutils").createFilter;
 function getOptionsOverrides() {
     return {
@@ -447,6 +451,7 @@ function typescript(options) {
     });
     var watchMode = false;
     var round = 0;
+    var targetCount = 0;
     var context = new ConsoleContext(options.verbosity, "rpt2: ");
     context.info("Typescript version: " + version);
     context.debug("Options: " + JSON.stringify(options, undefined, 4));
@@ -528,19 +533,36 @@ function typescript(options) {
             }
             return result;
         },
-        ongenerate: function () {
-            if (watchMode)
-                context.debug("running in watch mode");
-            else
-                cache.done();
+        ongenerate: function (options) {
+            if (isArray(options.targets))
+                targetCount = options.targets.length;
             if (!noErrors)
                 context.info(yellow("there were errors or warnings above."));
-            noErrors = true;
-            watchMode = true;
+            if (round >= targetCount) {
+                noErrors = true;
+                watchMode = true;
+                round = 0;
+            }
+            if (watchMode && round === 0) {
+                context.debug("running in watch mode");
+                cache.walkTree(function (id) {
+                    var snapshot = servicesHost.getScriptSnapshot(id);
+                    if (!snapshot) {
+                        context.error(red("failed lo load snapshot for " + id));
+                        return;
+                    }
+                    var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
+                        return service.getSyntacticDiagnostics(id);
+                    }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
+                        return service.getSemanticDiagnostics(id);
+                    }));
+                    printDiagnostics(context, diagnostics);
+                });
+            }
+            cache.done();
             round++;
         },
     };
 }
-//# sourceMappingURL=index.js.map
 
 export default typescript;

@@ -107,6 +107,21 @@ export class TsCache
 		this.dependencyTree.setEdge(importer, importee);
 	}
 
+	public walkTree(cb: (id: string) => void | false): void
+	{
+		const acyclic = graph.alg.isAcyclic(this.dependencyTree);
+
+		if (acyclic)
+		{
+			_.each(graph.alg.topsort(this.dependencyTree), (id: string) => cb(id));
+			return;
+		}
+
+		this.context.info(colors.yellow("import tree has cycles"));
+
+		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
+	}
+
 	public done()
 	{
 		this.context.info(colors.blue("rolling caches"));

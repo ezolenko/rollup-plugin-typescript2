@@ -117,6 +117,7 @@ export default function typescript (options: IOptions)
 
 	let watchMode = false;
 	let round = 0;
+	let targetCount = 0;
 
 	const context = new ConsoleContext(options.verbosity, "rpt2: ");
 
@@ -245,18 +246,47 @@ export default function typescript (options: IOptions)
 			return result;
 		},
 
-		ongenerate(): void
+		ongenerate(options: any): void
 		{
-			if (watchMode)
-				context.debug("running in watch mode");
-			else
-				cache.done();
+			if (_.isArray(options.targets))
+				targetCount = options.targets.length;
 
 			if (!noErrors)
 				context.info(colors.yellow("there were errors or warnings above."));
 
-			noErrors = true;
-			watchMode = true;
+			if (round >= targetCount) // ongenerate() is called for each target
+			{
+				noErrors = true;
+				watchMode = true;
+				round = 0;
+			}
+
+			if (watchMode && round === 0)
+			{
+				context.debug("running in watch mode");
+				cache.walkTree((id) =>
+				{
+					const snapshot = servicesHost.getScriptSnapshot(id);
+					if (!snapshot)
+					{
+						context.error(colors.red(`failed lo load snapshot for ${id}`));
+						return;
+					}
+
+					const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
+					{
+						return service.getSyntacticDiagnostics(id);
+					}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
+					{
+						return service.getSemanticDiagnostics(id);
+					}));
+
+					printDiagnostics(context, diagnostics);
+				});
+			}
+
+			cache.done();
+
 			round++;
 		},
 	};
