@@ -12,6 +12,12 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 	{
 	}
 
+	public reset()
+	{
+		this.snapshots = {};
+		this.versions = {};
+	}
+
 	public setSnapshot(fileName: string, data: string): ts.IScriptSnapshot
 	{
 		let snapshot = ts.ScriptSnapshot.fromString(data);

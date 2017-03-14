@@ -30,6 +30,9 @@ export class RollingCache <DataType> implements ICache<DataType>
 	 */
 	public exists(name: string): boolean
 	{
+		if (this.rolled)
+			return false;
+
 		if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
 			return true;
 
@@ -46,6 +49,9 @@ export class RollingCache <DataType> implements ICache<DataType>
 	 */
 	public match(names: string[]): boolean
 	{
+		if (this.rolled)
+			return false;
+
 		if (!fs.existsSync(this.oldCacheRoot))
 			return names.length === 0; // empty folder matches
 
@@ -65,6 +71,9 @@ export class RollingCache <DataType> implements ICache<DataType>
 
 	public write(name: string, data: DataType): void
 	{
+		if (this.rolled)
+			return;
+
 		if (data === undefined)
 			return;
 
@@ -77,9 +86,8 @@ export class RollingCache <DataType> implements ICache<DataType>
 	public touch(name: string)
 	{
 		if (this.rolled)
-			fs.ensureFileSync(`${this.oldCacheRoot}/${name}`);
-		else
-			fs.ensureFileSync(`${this.newCacheRoot}/${name}`);
+			return;
+		fs.ensureFileSync(`${this.newCacheRoot}/${name}`);
 	}
 
 	/**

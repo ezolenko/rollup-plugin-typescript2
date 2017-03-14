@@ -128,9 +128,9 @@ export default function typescript (options: IOptions)
 
 	const parsedConfig = parseTsConfig(context);
 
-	const servicesHost = new LanguageServiceHost(parsedConfig);
+	let servicesHost = new LanguageServiceHost(parsedConfig);
 
-	const service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+	let service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
 	const cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
 
@@ -246,43 +246,42 @@ export default function typescript (options: IOptions)
 			return result;
 		},
 
-		ongenerate(options: any): void
+		ongenerate(bundleOptions: any): void
 		{
-			if (_.isArray(options.targets))
-				targetCount = options.targets.length;
-
-			if (!noErrors)
-				context.info(colors.yellow("there were errors or warnings above."));
+			if (_.isArray(bundleOptions.targets))
+				targetCount = bundleOptions.targets.length;
 
 			if (round >= targetCount) // ongenerate() is called for each target
 			{
-				noErrors = true;
 				watchMode = true;
 				round = 0;
 			}
+			context.debug(`generating target ${round} of ${bundleOptions.targets.length}`);
 
 			if (watchMode && round === 0)
 			{
 				context.debug("running in watch mode");
+
+				// hack to fix ts lagging
+				servicesHost.reset();
+				service.cleanupSemanticCache();
+
 				cache.walkTree((id) =>
 				{
-					const snapshot = servicesHost.getScriptSnapshot(id);
-					if (!snapshot)
-					{
-						context.error(colors.red(`failed lo load snapshot for ${id}`));
-						return;
-					}
+					const diagnostics = convertDiagnostic(service.getSyntacticDiagnostics(id)).concat(convertDiagnostic(service.getSemanticDiagnostics(id)));
 
-					const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
-					{
-						return service.getSyntacticDiagnostics(id);
-					}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
-					{
-						return service.getSemanticDiagnostics(id);
-					}));
+					if (diagnostics.length > 0)
+						noErrors = false;
 
 					printDiagnostics(context, diagnostics);
 				});
+
+			}
+
+			if (!noErrors)
+			{
+				noErrors = true;
+				context.info(colors.yellow("there were errors or warnings above."));
 			}
 
 			cache.done();

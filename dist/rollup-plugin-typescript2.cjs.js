@@ -113,6 +113,10 @@ var LanguageServiceHost = (function () {
         this.snapshots = {};
         this.versions = {};
     }
+    LanguageServiceHost.prototype.reset = function () {
+        this.snapshots = {};
+        this.versions = {};
+    };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         var snapshot = ts.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
@@ -167,6 +171,8 @@ var RollingCache = (function () {
      * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
      */
     RollingCache.prototype.exists = function (name) {
+        if (this.rolled)
+            return false;
         if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
             return true;
         return fs.existsSync(this.oldCacheRoot + "/" + name);
@@ -178,6 +184,8 @@ var RollingCache = (function () {
      * @returns true if old cache contains all names and nothing more
      */
     RollingCache.prototype.match = function (names) {
+        if (this.rolled)
+            return false;
         if (!fs.existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
         return _.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
@@ -191,6 +199,8 @@ var RollingCache = (function () {
         return fs.readJsonSync(this.oldCacheRoot + "/" + name, "utf8");
     };
     RollingCache.prototype.write = function (name, data) {
+        if (this.rolled)
+            return;
         if (data === undefined)
             return;
         if (this.rolled)
@@ -200,9 +210,8 @@ var RollingCache = (function () {
     };
     RollingCache.prototype.touch = function (name) {
         if (this.rolled)
-            fs.ensureFileSync(this.oldCacheRoot + "/" + name);
-        else
-            fs.ensureFileSync(this.newCacheRoot + "/" + name);
+            return;
+        fs.ensureFileSync(this.newCacheRoot + "/" + name);
     };
     /**
      * clears old cache and moves new in its place
@@ -527,31 +536,29 @@ function typescript(options) {
             }
             return result;
         },
-        ongenerate: function (options) {
-            if (_.isArray(options.targets))
-                targetCount = options.targets.length;
-            if (!noErrors)
-                context.info(colors.yellow("there were errors or warnings above."));
+        ongenerate: function (bundleOptions) {
+            if (_.isArray(bundleOptions.targets))
+                targetCount = bundleOptions.targets.length;
             if (round >= targetCount) {
-                noErrors = true;
                 watchMode = true;
                 round = 0;
             }
+            context.debug("generating target " + round + " of " + bundleOptions.targets.length);
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
+                // hack to fix ts lagging
+                servicesHost.reset();
+                service.cleanupSemanticCache();
                 cache.walkTree(function (id) {
-                    var snapshot = servicesHost.getScriptSnapshot(id);
-                    if (!snapshot) {
-                        context.error(colors.red("failed lo load snapshot for " + id));
-                        return;
-                    }
-                    var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
-                        return service.getSyntacticDiagnostics(id);
-                    }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
-                        return service.getSemanticDiagnostics(id);
-                    }));
+                    var diagnostics = convertDiagnostic(service.getSyntacticDiagnostics(id)).concat(convertDiagnostic(service.getSemanticDiagnostics(id)));
+                    if (diagnostics.length > 0)
+                        noErrors = false;
                     printDiagnostics(context, diagnostics);
                 });
+            }
+            if (!noErrors) {
+                noErrors = true;
+                context.info(colors.yellow("there were errors or warnings above."));
             }
             cache.done();
             round++;

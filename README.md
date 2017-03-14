@@ -70,6 +70,12 @@ Plugin takes following options:
 
 	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in `namedExports` being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with `rollup-plugin-commonjs`. 
 
+### Watch mode
+
+The way typescript handles type-only imports and ambient types effectively hides them from rollup watch, because import statements are not generated and changing them doesn't trigger a rebuild.
+
+Otherwise the plugin should work in watch mode. Make sure to run a normal build after watch session to catch any type errors. 
+
 ### Version
 
 This plugin currently requires TypeScript `2.0+`.
