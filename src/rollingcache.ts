@@ -1,3 +1,4 @@
+import { ICache } from "./icache";
 import * as fs from "fs-extra";
 import * as _ from "lodash";
 
@@ -5,10 +6,12 @@ import * as _ from "lodash";
  * Saves data in new cache folder or reads it from old one.
  * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
  */
-export class RollingCache <DataType>
+export class RollingCache <DataType> implements ICache<DataType>
 {
 	private oldCacheRoot: string;
 	private newCacheRoot: string;
+
+	private rolled: boolean = false;
 
 	/**
 	 * @param cacheRoot: root folder for the cache
@@ -27,6 +30,9 @@ export class RollingCache <DataType>
 	 */
 	public exists(name: string): boolean
 	{
+		if (this.rolled)
+			return false;
+
 		if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
 			return true;
 
@@ -43,6 +49,9 @@ export class RollingCache <DataType>
 	 */
 	public match(names: string[]): boolean
 	{
+		if (this.rolled)
+			return false;
+
 		if (!fs.existsSync(this.oldCacheRoot))
 			return names.length === 0; // empty folder matches
 
@@ -62,21 +71,23 @@ export class RollingCache <DataType>
 
 	public write(name: string, data: DataType): void
 	{
+		if (this.rolled)
+			return;
+
 		if (data === undefined)
 			return;
 
-		if (this.checkNewCache)
+		if (this.rolled)
+			fs.writeJsonSync(`${this.oldCacheRoot}/${name}`, data);
+		else
 			fs.writeJsonSync(`${this.newCacheRoot}/${name}`, data);
-		else // won't be reading it this run
-			fs.writeJson(`${this.newCacheRoot}/${name}`, data, { encoding: "utf8" }, () => { ; });
 	}
 
 	public touch(name: string)
 	{
-		if (this.checkNewCache)
-			fs.ensureFileSync(`${this.newCacheRoot}/${name}`);
-		else // won't be reading it this run
-			fs.ensureFile(`${this.newCacheRoot}/${name}`, () => { ; });
+		if (this.rolled)
+			return;
+		fs.ensureFileSync(`${this.newCacheRoot}/${name}`);
 	}
 
 	/**
@@ -84,9 +95,11 @@ export class RollingCache <DataType>
 	 */
 	public roll()
 	{
-		fs.remove(this.oldCacheRoot, () =>
-		{
-			fs.move(this.newCacheRoot, this.oldCacheRoot, () => { ; });
-		});
+		if (this.rolled)
+			return;
+
+		this.rolled = true;
+		fs.removeSync(this.oldCacheRoot);
+		fs.move(this.newCacheRoot, this.oldCacheRoot, () => { ; });
 	}
 }

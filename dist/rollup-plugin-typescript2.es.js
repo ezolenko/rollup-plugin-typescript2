@@ -1,9 +1,9 @@
 /* eslint-disable */
-import { emptyDirSync, ensureFile, ensureFileSync, existsSync, move, readFileSync, readJsonSync, readdirSync, remove, writeJson, writeJsonSync } from 'fs-extra';
+import { emptyDirSync, ensureFileSync, existsSync, move, readFileSync, readJsonSync, readdirSync, removeSync, writeJsonSync } from 'fs-extra';
 import * as fs from 'fs-extra';
 import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, findConfigFile, flattenDiagnosticMessageText, getAutomaticTypeDirectiveNames, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, resolveTypeReferenceDirective, sys, version } from 'typescript';
 import * as ts from 'typescript';
-import { defaults, each, endsWith, filter, find, has, isEqual, map, some } from 'lodash';
+import { defaults, each, endsWith, filter, find, has, isArray, isEqual, map, some } from 'lodash';
 import * as _ from 'lodash';
 import { Graph, alg } from 'graphlib';
 import * as graph from 'graphlib';
@@ -119,6 +119,10 @@ var LanguageServiceHost = (function () {
         this.snapshots = {};
         this.versions = {};
     }
+    LanguageServiceHost.prototype.reset = function () {
+        this.snapshots = {};
+        this.versions = {};
+    };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         var snapshot = ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
@@ -137,8 +141,8 @@ var LanguageServiceHost = (function () {
     LanguageServiceHost.prototype.getCurrentDirectory = function () {
         return this.cwd;
     };
-    LanguageServiceHost.prototype.getScriptVersion = function (_fileName) {
-        return (this.versions[_fileName] || 0).toString();
+    LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
+        return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
         return this.parsedConfig.fileNames;
@@ -164,6 +168,7 @@ var RollingCache = (function () {
     function RollingCache(cacheRoot, checkNewCache) {
         this.cacheRoot = cacheRoot;
         this.checkNewCache = checkNewCache;
+        this.rolled = false;
         this.oldCacheRoot = this.cacheRoot + "/cache";
         this.newCacheRoot = this.cacheRoot + "/cache_";
         emptyDirSync(this.newCacheRoot);
@@ -172,6 +177,8 @@ var RollingCache = (function () {
      * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
      */
     RollingCache.prototype.exists = function (name) {
+        if (this.rolled)
+            return false;
         if (this.checkNewCache && existsSync(this.newCacheRoot + "/" + name))
             return true;
         return existsSync(this.oldCacheRoot + "/" + name);
@@ -183,6 +190,8 @@ var RollingCache = (function () {
      * @returns true if old cache contains all names and nothing more
      */
     RollingCache.prototype.match = function (names) {
+        if (this.rolled)
+            return false;
         if (!existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
         return isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
@@ -196,27 +205,29 @@ var RollingCache = (function () {
         return readJsonSync(this.oldCacheRoot + "/" + name, "utf8");
     };
     RollingCache.prototype.write = function (name, data) {
+        if (this.rolled)
+            return;
         if (data === undefined)
             return;
-        if (this.checkNewCache)
-            writeJsonSync(this.newCacheRoot + "/" + name, data);
+        if (this.rolled)
+            writeJsonSync(this.oldCacheRoot + "/" + name, data);
         else
-            writeJson(this.newCacheRoot + "/" + name, data, { encoding: "utf8" }, function () {  });
+            writeJsonSync(this.newCacheRoot + "/" + name, data);
     };
     RollingCache.prototype.touch = function (name) {
-        if (this.checkNewCache)
-            ensureFileSync(this.newCacheRoot + "/" + name);
-        else
-            ensureFile(this.newCacheRoot + "/" + name, function () {  });
+        if (this.rolled)
+            return;
+        ensureFileSync(this.newCacheRoot + "/" + name);
     };
     /**
      * clears old cache and moves new in its place
      */
     RollingCache.prototype.roll = function () {
-        var _this = this;
-        remove(this.oldCacheRoot, function () {
-            move(_this.newCacheRoot, _this.oldCacheRoot, function () {  });
-        });
+        if (this.rolled)
+            return;
+        this.rolled = true;
+        removeSync(this.oldCacheRoot);
+        move(this.newCacheRoot, this.oldCacheRoot, function () {  });
     };
     return RollingCache;
 }());
@@ -234,13 +245,13 @@ function convertDiagnostic(data) {
         return entry;
     });
 }
-var Cache = (function () {
-    function Cache(host, cache, options, rootFilenames, context) {
+var TsCache = (function () {
+    function TsCache(host, cache, options, rootFilenames, context) {
         var _this = this;
         this.host = host;
         this.options = options;
         this.context = context;
-        this.cacheVersion = "2";
+        this.cacheVersion = "3";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + sha1({
             version: this.cacheVersion,
@@ -259,25 +270,34 @@ var Cache = (function () {
         this.init();
         this.checkAmbientTypes();
     }
-    Cache.prototype.clean = function () {
+    TsCache.prototype.clean = function () {
         this.context.info(blue("cleaning cache: " + this.cacheDir));
         emptyDirSync(this.cacheDir);
         this.init();
     };
-    Cache.prototype.setDependency = function (importee, importer) {
+    TsCache.prototype.setDependency = function (importee, importer) {
         // importee -> importer
         this.context.debug(blue("dependency") + " '" + importee + "'");
         this.context.debug("    imported by '" + importer + "'");
         this.dependencyTree.setEdge(importer, importee);
     };
-    Cache.prototype.done = function () {
+    TsCache.prototype.walkTree = function (cb) {
+        var acyclic = alg.isAcyclic(this.dependencyTree);
+        if (acyclic) {
+            each(alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+            return;
+        }
+        this.context.info(yellow("import tree has cycles"));
+        each(this.dependencyTree.nodes(), function (id) { return cb(id); });
+    };
+    TsCache.prototype.done = function () {
         this.context.info(blue("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
         this.typesCache.roll();
     };
-    Cache.prototype.getCompiled = function (id, snapshot, transform) {
+    TsCache.prototype.getCompiled = function (id, snapshot, transform) {
         var name = this.makeName(id, snapshot);
         this.context.info(blue("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
@@ -293,13 +313,13 @@ var Cache = (function () {
         this.codeCache.write(name, data);
         return data;
     };
-    Cache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
+    TsCache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
         return this.getDiagnostics(this.syntacticDiagnosticsCache, id, snapshot, check);
     };
-    Cache.prototype.getSemanticDiagnostics = function (id, snapshot, check) {
+    TsCache.prototype.getSemanticDiagnostics = function (id, snapshot, check) {
         return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
     };
-    Cache.prototype.checkAmbientTypes = function () {
+    TsCache.prototype.checkAmbientTypes = function () {
         var _this = this;
         this.context.debug(blue("Ambient types:"));
         var typeNames = filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
@@ -313,7 +333,7 @@ var Cache = (function () {
             this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
         each(typeNames, function (name) { return _this.typesCache.touch(name); });
     };
-    Cache.prototype.getDiagnostics = function (cache, id, snapshot, check) {
+    TsCache.prototype.getDiagnostics = function (cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
@@ -328,17 +348,17 @@ var Cache = (function () {
         cache.write(name, data);
         return data;
     };
-    Cache.prototype.init = function () {
+    TsCache.prototype.init = function () {
         this.codeCache = new RollingCache(this.cacheDir + "/code", true);
-        this.typesCache = new RollingCache(this.cacheDir + "/types", false);
-        this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", false);
-        this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", false);
+        this.typesCache = new RollingCache(this.cacheDir + "/types", true);
+        this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", true);
+        this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", true);
     };
-    Cache.prototype.markAsDirty = function (id, _snapshot) {
+    TsCache.prototype.markAsDirty = function (id, _snapshot) {
         this.dependencyTree.setNode(id, { dirty: true });
     };
     // returns true if node or any of its imports or any of global types changed
-    Cache.prototype.isDirty = function (id, _snapshot, checkImports) {
+    TsCache.prototype.isDirty = function (id, _snapshot, checkImports) {
         var _this = this;
         var label = this.dependencyTree.node(id);
         if (!label)
@@ -358,11 +378,11 @@ var Cache = (function () {
             return dirty;
         });
     };
-    Cache.prototype.makeName = function (id, snapshot) {
+    TsCache.prototype.makeName = function (id, snapshot) {
         var data = snapshot.getText(0, snapshot.getLength());
         return sha1({ data: data, id: id });
     };
-    return Cache;
+    return TsCache;
 }());
 
 // tslint:disable-next-line:no-var-requires
@@ -438,20 +458,23 @@ function typescript(options) {
         abortOnError: true,
         rollupCommonJSResolveHack: false,
     });
+    var watchMode = false;
+    var round = 0;
+    var targetCount = 0;
     var context = new ConsoleContext(options.verbosity, "rpt2: ");
     context.info("Typescript version: " + version);
     context.debug("Options: " + JSON.stringify(options, undefined, 4));
     var filter$$1 = createFilter(options.include, options.exclude);
     var parsedConfig = parseTsConfig(context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
-    var services = createLanguageService(servicesHost, createDocumentRegistry());
-    var cache = new Cache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
-    var cleanTranspile = true;
+    var service = createLanguageService(servicesHost, createDocumentRegistry());
+    var cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+    var noErrors = true;
     if (options.clean)
         cache.clean();
     // printing compiler option errors
     if (options.check)
-        printDiagnostics(context, convertDiagnostic(services.getCompilerOptionsDiagnostics()));
+        printDiagnostics(context, convertDiagnostic(service.getCompilerOptionsDiagnostics()));
     return {
         resolveId: function (importee, importer) {
             if (importee === TSLIB)
@@ -487,14 +510,14 @@ function typescript(options) {
             var snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
             var result = cache.getCompiled(id, snapshot, function () {
-                var output = services.getEmitOutput(id);
+                var output = service.getEmitOutput(id);
                 if (output.emitSkipped) {
-                    cleanTranspile = false;
+                    noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
                     var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
-                        return services.getSyntacticDiagnostics(id);
+                        return service.getSyntacticDiagnostics(id);
                     }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
-                        return services.getSemanticDiagnostics(id);
+                        return service.getSemanticDiagnostics(id);
                     }));
                     printDiagnostics(contextWrapper, diagnostics);
                     // since no output was generated, aborting compilation
@@ -509,20 +532,42 @@ function typescript(options) {
             });
             if (options.check) {
                 var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
-                    return services.getSyntacticDiagnostics(id);
+                    return service.getSyntacticDiagnostics(id);
                 }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
-                    return services.getSemanticDiagnostics(id);
+                    return service.getSemanticDiagnostics(id);
                 }));
                 if (diagnostics.length !== 0)
-                    cleanTranspile = false;
+                    noErrors = false;
                 printDiagnostics(contextWrapper, diagnostics);
             }
             return result;
         },
-        ongenerate: function () {
-            cache.done();
-            if (!cleanTranspile)
+        ongenerate: function (bundleOptions) {
+            if (isArray(bundleOptions.targets))
+                targetCount = bundleOptions.targets.length;
+            if (round >= targetCount) {
+                watchMode = true;
+                round = 0;
+            }
+            context.debug("generating target " + round + " of " + bundleOptions.targets.length);
+            if (watchMode && round === 0) {
+                context.debug("running in watch mode");
+                // hack to fix ts lagging
+                servicesHost.reset();
+                service.cleanupSemanticCache();
+                cache.walkTree(function (id) {
+                    var diagnostics = convertDiagnostic(service.getSyntacticDiagnostics(id)).concat(convertDiagnostic(service.getSemanticDiagnostics(id)));
+                    if (diagnostics.length > 0)
+                        noErrors = false;
+                    printDiagnostics(context, diagnostics);
+                });
+            }
+            if (!noErrors) {
+                noErrors = true;
                 context.info(yellow("there were errors or warnings above."));
+            }
+            cache.done();
+            round++;
         },
     };
 }
