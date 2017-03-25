@@ -226,7 +226,9 @@ export default function typescript (options: IOptions)
 					printDiagnostics(contextWrapper, diagnostics);
 
 					// since no output was generated, aborting compilation
-					this.error(colors.red(`failed to transpile '${id}'`));
+					cache.done();
+					if (_.isFunction(this.error))
+						this.error(colors.red(`failed to transpile '${id}'`));
 				}
 
 				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") );
@@ -286,18 +288,12 @@ export default function typescript (options: IOptions)
 						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
 					);
 
-					if (diagnostics.length > 0)
-						noErrors = false;
-
 					printDiagnostics(context, diagnostics);
 				});
-
-				if (!noErrors)
-				{
-					noErrors = true;
-					context.info(colors.yellow("there were errors or warnings above."));
-				}
 			}
+
+			if (!watchMode && !noErrors)
+				context.info(colors.yellow("there were errors or warnings above."));
 
 			cache.done();
 
