@@ -34,6 +34,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 		if (fs.existsSync(fileName))
 		{
 			this.snapshots[fileName] = ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName));
+			this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 			return this.snapshots[fileName];
 		}
 

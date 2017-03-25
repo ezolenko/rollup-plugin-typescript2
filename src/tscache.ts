@@ -24,6 +24,8 @@ export interface IDiagnostics
 	flatMessage: string;
 	fileLine?: string;
 	category: ts.DiagnosticCategory;
+	code: number;
+	type: string;
 }
 
 interface ITypeSnapshot
@@ -32,7 +34,7 @@ interface ITypeSnapshot
 	snapshot: ts.IScriptSnapshot | undefined;
 }
 
-export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
+export function convertDiagnostic(type: string, data: ts.Diagnostic[]): IDiagnostics[]
 {
 	return _.map(data, (diagnostic) =>
 	{
@@ -40,6 +42,8 @@ export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
 		{
 			flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
 			category: diagnostic.category,
+			code: diagnostic.code,
+			type,
 		};
 
 		if (diagnostic.file)
@@ -54,7 +58,7 @@ export function convertDiagnostic(data: ts.Diagnostic[]): IDiagnostics[]
 
 export class TsCache
 {
-	private cacheVersion = "3";
+	private cacheVersion = "4";
 	private dependencyTree: graph.Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
@@ -157,12 +161,12 @@ export class TsCache
 
 	public getSyntacticDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
-		return this.getDiagnostics(this.syntacticDiagnosticsCache, id, snapshot, check);
+		return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
 	}
 
 	public getSemanticDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
-		return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
+		return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
 	}
 
 	private checkAmbientTypes(): void
@@ -184,7 +188,7 @@ export class TsCache
 		_.each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
-	private getDiagnostics(cache: ICache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
 	{
 		const name = this.makeName(id, snapshot);
 
@@ -194,7 +198,7 @@ export class TsCache
 		{
 			this.context.debug(colors.yellow("    cache miss"));
 
-			const data = convertDiagnostic(check());
+			const data = convertDiagnostic(type, check());
 			cache.write(name, data);
 			this.markAsDirty(id, snapshot);
 			return data;

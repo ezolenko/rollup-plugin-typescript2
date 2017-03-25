@@ -48,7 +48,7 @@ function parseTsConfig(context: IContext)
 
 	if (result.error)
 	{
-		printDiagnostics(context, convertDiagnostic([result.error]));
+		printDiagnostics(context, convertDiagnostic("config", [result.error]));
 		throw new Error(`failed to parse ${fileName}`);
 	}
 
@@ -63,27 +63,34 @@ function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 	{
 		let print;
 		let color;
+		let category;
 		switch (diagnostic.category)
 		{
 			case ts.DiagnosticCategory.Message:
 				print = context.info;
 				color = colors.white;
+				category = "";
 				break;
 			case ts.DiagnosticCategory.Error:
 				print = context.error;
 				color = colors.red;
+				category = "error";
 				break;
 			case ts.DiagnosticCategory.Warning:
 			default:
 				print = context.warn;
 				color = colors.yellow;
+				category = "warning";
 				break;
 		}
 
+		// const type = "";
+		const type = diagnostic.type + " ";
+
 		if (diagnostic.fileLine)
-			print.call(context, [`${diagnostic.fileLine}: ${color(diagnostic.flatMessage)}`]);
+			print.call(context, [`${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
 		else
-			print.call(context, [color(diagnostic.flatMessage)]);
+			print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
 	});
 };
 
@@ -141,7 +148,7 @@ export default function typescript (options: IOptions)
 
 	// printing compiler option errors
 	if (options.check)
-		printDiagnostics(context, convertDiagnostic(service.getCompilerOptionsDiagnostics()));
+		printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
 
 	return {
 
@@ -155,6 +162,7 @@ export default function typescript (options: IOptions)
 
 			importer = importer.split("\\").join("/");
 
+			// TODO: use module resolution cache
 			const result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
 
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
@@ -205,13 +213,16 @@ export default function typescript (options: IOptions)
 					noErrors = false;
 
 					// always checking on fatal errors, even if options.check is set to false
-					const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
-					{
-						return service.getSyntacticDiagnostics(id);
-					}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
-					{
-						return service.getSemanticDiagnostics(id);
-					}));
+					const diagnostics = _.concat(
+						cache.getSyntacticDiagnostics(id, snapshot, () =>
+						{
+							return service.getSyntacticDiagnostics(id);
+						}),
+						cache.getSemanticDiagnostics(id, snapshot, () =>
+						{
+							return service.getSemanticDiagnostics(id);
+						}),
+					);
 					printDiagnostics(contextWrapper, diagnostics);
 
 					// since no output was generated, aborting compilation
@@ -229,15 +240,18 @@ export default function typescript (options: IOptions)
 
 			if (options.check)
 			{
-				const diagnostics = cache.getSyntacticDiagnostics(id, snapshot, () =>
-				{
-					return service.getSyntacticDiagnostics(id);
-				}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
-				{
-					return service.getSemanticDiagnostics(id);
-				}));
+				const diagnostics = _.concat(
+					cache.getSyntacticDiagnostics(id, snapshot, () =>
+					{
+						return service.getSyntacticDiagnostics(id);
+					}),
+					cache.getSemanticDiagnostics(id, snapshot, () =>
+					{
+						return service.getSemanticDiagnostics(id);
+					}),
+				);
 
-				if (diagnostics.length !== 0)
+				if (diagnostics.length > 0)
 					noErrors = false;
 
 				printDiagnostics(contextWrapper, diagnostics);
@@ -248,15 +262,14 @@ export default function typescript (options: IOptions)
 
 		ongenerate(bundleOptions: any): void
 		{
-			if (_.isArray(bundleOptions.targets))
-				targetCount = bundleOptions.targets.length;
+			targetCount = _.get(bundleOptions, "targets.length", 1);
 
 			if (round >= targetCount) // ongenerate() is called for each target
 			{
 				watchMode = true;
 				round = 0;
 			}
-			context.debug(`generating target ${round} of ${bundleOptions.targets.length}`);
+			context.debug(`generating target ${round + 1} of ${targetCount}`);
 
 			if (watchMode && round === 0)
 			{
@@ -268,7 +281,10 @@ export default function typescript (options: IOptions)
 
 				cache.walkTree((id) =>
 				{
-					const diagnostics = convertDiagnostic(service.getSyntacticDiagnostics(id)).concat(convertDiagnostic(service.getSemanticDiagnostics(id)));
+					const diagnostics = _.concat(
+						convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)),
+						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
+					);
 
 					if (diagnostics.length > 0)
 						noErrors = false;
@@ -276,12 +292,11 @@ export default function typescript (options: IOptions)
 					printDiagnostics(context, diagnostics);
 				});
 
-			}
-
-			if (!noErrors)
-			{
-				noErrors = true;
-				context.info(colors.yellow("there were errors or warnings above."));
+				if (!noErrors)
+				{
+					noErrors = true;
+					context.info(colors.yellow("there were errors or warnings above."));
+				}
 			}
 
 			cache.done();
