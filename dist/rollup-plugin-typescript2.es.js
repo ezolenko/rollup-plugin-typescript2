@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { concat, defaults, each, endsWith, filter, find, get, has, isEqual, isFunction, map, some } from 'lodash';
 import * as _ from 'lodash';
-import { emptyDirSync, ensureFileSync, existsSync, move, readFileSync, readJsonSync, readdirSync, removeSync, writeJsonSync } from 'fs-extra';
+import { emptyDirSync, ensureFileSync, existsSync, readFileSync, readJsonSync, readdirSync, removeSync, renameSync, writeJsonSync } from 'fs-extra';
 import * as fs from 'fs-extra';
 import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, findConfigFile, flattenDiagnosticMessageText, getAutomaticTypeDirectiveNames, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, resolveTypeReferenceDirective, sys, version } from 'typescript';
 import * as ts from 'typescript';
@@ -237,7 +237,7 @@ var RollingCache = (function () {
             return;
         this.rolled = true;
         removeSync(this.oldCacheRoot);
-        move(this.newCacheRoot, this.oldCacheRoot, function () {  });
+        renameSync(this.newCacheRoot, this.oldCacheRoot);
     };
     return RollingCache;
 }());
@@ -540,7 +540,9 @@ function typescript(options) {
                     }));
                     printDiagnostics(contextWrapper, diagnostics);
                     // since no output was generated, aborting compilation
-                    _this.error(red("failed to transpile '" + id + "'"));
+                    cache.done();
+                    if (isFunction(_this.error))
+                        _this.error(red("failed to transpile '" + id + "'"));
                 }
                 var transpiled = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
                 var map$$1 = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
@@ -570,20 +572,13 @@ function typescript(options) {
             context.debug("generating target " + (round + 1) + " of " + targetCount);
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
-                // hack to fix ts lagging
-                servicesHost.reset();
-                service.cleanupSemanticCache();
                 cache.walkTree(function (id) {
                     var diagnostics = concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
-                    if (diagnostics.length > 0)
-                        noErrors = false;
                     printDiagnostics(context, diagnostics);
                 });
-                if (!noErrors) {
-                    noErrors = true;
-                    context.info(yellow("there were errors or warnings above."));
-                }
             }
+            if (!watchMode && !noErrors)
+                context.info(yellow("there were errors or warnings above."));
             cache.done();
             round++;
         },

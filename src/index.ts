@@ -277,10 +277,6 @@ export default function typescript (options: IOptions)
 			{
 				context.debug("running in watch mode");
 
-				// hack to fix ts lagging
-				servicesHost.reset();
-				service.cleanupSemanticCache();
-
 				cache.walkTree((id) =>
 				{
 					const diagnostics = _.concat(

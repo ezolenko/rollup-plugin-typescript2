@@ -231,7 +231,7 @@ var RollingCache = (function () {
             return;
         this.rolled = true;
         fs.removeSync(this.oldCacheRoot);
-        fs.move(this.newCacheRoot, this.oldCacheRoot, function () {  });
+        fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
     };
     return RollingCache;
 }());
@@ -534,7 +534,9 @@ function typescript(options) {
                     }));
                     printDiagnostics(contextWrapper, diagnostics);
                     // since no output was generated, aborting compilation
-                    _this.error(colors.red("failed to transpile '" + id + "'"));
+                    cache.done();
+                    if (_.isFunction(_this.error))
+                        _this.error(colors.red("failed to transpile '" + id + "'"));
                 }
                 var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js"); });
                 var map$$1 = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
@@ -564,20 +566,13 @@ function typescript(options) {
             context.debug("generating target " + (round + 1) + " of " + targetCount);
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
-                // hack to fix ts lagging
-                servicesHost.reset();
-                service.cleanupSemanticCache();
                 cache.walkTree(function (id) {
                     var diagnostics = _.concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
-                    if (diagnostics.length > 0)
-                        noErrors = false;
                     printDiagnostics(context, diagnostics);
                 });
-                if (!noErrors) {
-                    noErrors = true;
-                    context.info(colors.yellow("there were errors or warnings above."));
-                }
             }
+            if (!watchMode && !noErrors)
+                context.info(colors.yellow("there were errors or warnings above."));
             cache.done();
             round++;
         },
