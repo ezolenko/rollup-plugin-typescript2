@@ -1,16 +1,24 @@
 import { IContext, IRollupContext, VerbosityLevel } from "./context";
+import * as _ from "lodash";
 
 export class RollupContext implements IContext
 {
+	private hasContext: boolean = true;
+
 	constructor(private verbosity: VerbosityLevel, private bail: boolean, private context: IRollupContext, private prefix: string = "")
 	{
+		this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
 	}
 
 	public warn(message: string): void
 	{
 		if (this.verbosity < VerbosityLevel.Warning)
 			return;
-		this.context.warn(`${this.prefix}${message}`);
+
+		if (this.hasContext)
+			this.context.warn(`${this.prefix}${message}`);
+		else
+			console.log(`${this.prefix}${message}`);
 	}
 
 	public error(message: string): void
@@ -18,10 +26,15 @@ export class RollupContext implements IContext
 		if (this.verbosity < VerbosityLevel.Error)
 			return;
 
-		if (this.bail)
-			this.context.error(`${this.prefix}${message}`);
+		if (this.hasContext)
+		{
+			if (this.bail)
+				this.context.error(`${this.prefix}${message}`);
+			else
+				this.context.warn(`${this.prefix}${message}`);
+		}
 		else
-			this.context.warn(`${this.prefix}${message}`);
+			console.log(`${this.prefix}${message}`);
 	}
 
 	public info(message: string): void

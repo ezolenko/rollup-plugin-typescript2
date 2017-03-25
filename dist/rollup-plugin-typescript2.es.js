@@ -1,10 +1,10 @@
 /* eslint-disable */
+import { concat, defaults, each, endsWith, filter, find, get, has, isEqual, isFunction, map, some } from 'lodash';
+import * as _ from 'lodash';
 import { emptyDirSync, ensureFileSync, existsSync, move, readFileSync, readJsonSync, readdirSync, removeSync, writeJsonSync } from 'fs-extra';
 import * as fs from 'fs-extra';
 import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, findConfigFile, flattenDiagnosticMessageText, getAutomaticTypeDirectiveNames, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, resolveTypeReferenceDirective, sys, version } from 'typescript';
 import * as ts from 'typescript';
-import { defaults, each, endsWith, filter, find, has, isArray, isEqual, map, some } from 'lodash';
-import * as _ from 'lodash';
 import { Graph, alg } from 'graphlib';
 import * as graph from 'graphlib';
 import { sha1 } from 'object-hash';
@@ -85,19 +85,28 @@ var RollupContext = (function () {
         this.bail = bail;
         this.context = context;
         this.prefix = prefix;
+        this.hasContext = true;
+        this.hasContext = isFunction(this.context.warn) && isFunction(this.context.error);
     }
     RollupContext.prototype.warn = function (message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        this.context.warn("" + this.prefix + message);
+        if (this.hasContext)
+            this.context.warn("" + this.prefix + message);
+        else
+            console.log("" + this.prefix + message);
     };
     RollupContext.prototype.error = function (message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        if (this.bail)
-            this.context.error("" + this.prefix + message);
+        if (this.hasContext) {
+            if (this.bail)
+                this.context.error("" + this.prefix + message);
+            else
+                this.context.warn("" + this.prefix + message);
+        }
         else
-            this.context.warn("" + this.prefix + message);
+            console.log("" + this.prefix + message);
     };
     RollupContext.prototype.info = function (message) {
         if (this.verbosity < VerbosityLevel.Info)
@@ -134,6 +143,7 @@ var LanguageServiceHost = (function () {
             return this.snapshots[fileName];
         if (existsSync(fileName)) {
             this.snapshots[fileName] = ScriptSnapshot.fromString(sys.readFile(fileName));
+            this.versions[fileName] = (this.versions[fileName] || 0) + 1;
             return this.snapshots[fileName];
         }
         return undefined;
@@ -232,11 +242,13 @@ var RollingCache = (function () {
     return RollingCache;
 }());
 
-function convertDiagnostic(data) {
+function convertDiagnostic(type, data) {
     return map(data, function (diagnostic) {
         var entry = {
             flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             category: diagnostic.category,
+            code: diagnostic.code,
+            type: type,
         };
         if (diagnostic.file) {
             var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
@@ -251,7 +263,7 @@ var TsCache = (function () {
         this.host = host;
         this.options = options;
         this.context = context;
-        this.cacheVersion = "3";
+        this.cacheVersion = "4";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + sha1({
             version: this.cacheVersion,
@@ -314,10 +326,10 @@ var TsCache = (function () {
         return data;
     };
     TsCache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
-        return this.getDiagnostics(this.syntacticDiagnosticsCache, id, snapshot, check);
+        return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
     };
     TsCache.prototype.getSemanticDiagnostics = function (id, snapshot, check) {
-        return this.getDiagnostics(this.semanticDiagnosticsCache, id, snapshot, check);
+        return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
     };
     TsCache.prototype.checkAmbientTypes = function () {
         var _this = this;
@@ -333,12 +345,12 @@ var TsCache = (function () {
             this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
         each(typeNames, function (name) { return _this.typesCache.touch(name); });
     };
-    TsCache.prototype.getDiagnostics = function (cache, id, snapshot, check) {
+    TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
             this.context.debug(yellow("    cache miss"));
-            var data_2 = convertDiagnostic(check());
+            var data_2 = convertDiagnostic(type, check());
             cache.write(name, data_2);
             this.markAsDirty(id, snapshot);
             return data_2;
@@ -414,7 +426,7 @@ function parseTsConfig(context) {
     var text = sys.readFile(fileName);
     var result = parseConfigFileTextToJson(fileName, text);
     if (result.error) {
-        printDiagnostics(context, convertDiagnostic([result.error]));
+        printDiagnostics(context, convertDiagnostic("config", [result.error]));
         throw new Error("failed to parse " + fileName);
     }
     var configParseResult = parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(), fileName);
@@ -424,25 +436,31 @@ function printDiagnostics(context, diagnostics) {
     each(diagnostics, function (diagnostic) {
         var print;
         var color;
+        var category;
         switch (diagnostic.category) {
             case DiagnosticCategory.Message:
                 print = context.info;
                 color = white;
+                category = "";
                 break;
             case DiagnosticCategory.Error:
                 print = context.error;
                 color = red;
+                category = "error";
                 break;
             case DiagnosticCategory.Warning:
             default:
                 print = context.warn;
                 color = yellow;
+                category = "warning";
                 break;
         }
+        // const type = "";
+        var type = diagnostic.type + " ";
         if (diagnostic.fileLine)
-            print.call(context, [diagnostic.fileLine + ": " + color(diagnostic.flatMessage)]);
+            print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
         else
-            print.call(context, [color(diagnostic.flatMessage)]);
+            print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
     });
 }
 
@@ -474,7 +492,7 @@ function typescript(options) {
         cache.clean();
     // printing compiler option errors
     if (options.check)
-        printDiagnostics(context, convertDiagnostic(service.getCompilerOptionsDiagnostics()));
+        printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
     return {
         resolveId: function (importee, importer) {
             if (importee === TSLIB)
@@ -482,6 +500,7 @@ function typescript(options) {
             if (!importer)
                 return null;
             importer = importer.split("\\").join("/");
+            // TODO: use module resolution cache
             var result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter$$1(result.resolvedModule.resolvedFileName))
@@ -514,9 +533,9 @@ function typescript(options) {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
+                    var diagnostics = concat(cache.getSyntacticDiagnostics(id, snapshot, function () {
                         return service.getSyntacticDiagnostics(id);
-                    }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
+                    }), cache.getSemanticDiagnostics(id, snapshot, function () {
                         return service.getSemanticDiagnostics(id);
                     }));
                     printDiagnostics(contextWrapper, diagnostics);
@@ -531,40 +550,39 @@ function typescript(options) {
                 };
             });
             if (options.check) {
-                var diagnostics = cache.getSyntacticDiagnostics(id, snapshot, function () {
+                var diagnostics = concat(cache.getSyntacticDiagnostics(id, snapshot, function () {
                     return service.getSyntacticDiagnostics(id);
-                }).concat(cache.getSemanticDiagnostics(id, snapshot, function () {
+                }), cache.getSemanticDiagnostics(id, snapshot, function () {
                     return service.getSemanticDiagnostics(id);
                 }));
-                if (diagnostics.length !== 0)
+                if (diagnostics.length > 0)
                     noErrors = false;
                 printDiagnostics(contextWrapper, diagnostics);
             }
             return result;
         },
         ongenerate: function (bundleOptions) {
-            if (isArray(bundleOptions.targets))
-                targetCount = bundleOptions.targets.length;
+            targetCount = get(bundleOptions, "targets.length", 1);
             if (round >= targetCount) {
                 watchMode = true;
                 round = 0;
             }
-            context.debug("generating target " + round + " of " + bundleOptions.targets.length);
+            context.debug("generating target " + (round + 1) + " of " + targetCount);
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
                 // hack to fix ts lagging
                 servicesHost.reset();
                 service.cleanupSemanticCache();
                 cache.walkTree(function (id) {
-                    var diagnostics = convertDiagnostic(service.getSyntacticDiagnostics(id)).concat(convertDiagnostic(service.getSemanticDiagnostics(id)));
+                    var diagnostics = concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     if (diagnostics.length > 0)
                         noErrors = false;
                     printDiagnostics(context, diagnostics);
                 });
-            }
-            if (!noErrors) {
-                noErrors = true;
-                context.info(yellow("there were errors or warnings above."));
+                if (!noErrors) {
+                    noErrors = true;
+                    context.info(yellow("there were errors or warnings above."));
+                }
             }
             cache.done();
             round++;
