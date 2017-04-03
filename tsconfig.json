@@ -11,7 +11,7 @@
 		"listFiles": true,
 		"pretty": true,
 		"moduleResolution": "node",
-		"noEmitOnError": true,
+		"noEmitOnError": false,
 		"strictNullChecks": true,
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitReturns": true

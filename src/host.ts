@@ -20,6 +20,8 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 
 	public setSnapshot(fileName: string, data: string): ts.IScriptSnapshot
 	{
+		fileName = this.normalize(fileName);
+
 		let snapshot = ts.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
@@ -28,6 +30,8 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 
 	public getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined
 	{
+		fileName = this.normalize(fileName);
+
 		if (_.has(this.snapshots, fileName))
 			return this.snapshots[fileName];
 
@@ -48,6 +52,8 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 
 	public getScriptVersion(fileName: string)
 	{
+		fileName = this.normalize(fileName);
+		
 		return (this.versions[fileName] || 0).toString();
 	}
 
@@ -64,5 +70,10 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 	public getDefaultLibFileName(opts: ts.CompilerOptions)
 	{
 		return ts.getDefaultLibFilePath(opts);
+	}
+
+	private normalize(fileName: string)
+	{
+		return fileName.split("\\").join("/");
 	}
 }

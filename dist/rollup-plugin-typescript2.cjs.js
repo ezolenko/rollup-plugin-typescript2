@@ -127,12 +127,14 @@ var LanguageServiceHost = (function () {
         this.versions = {};
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
+        fileName = this.normalize(fileName);
         var snapshot = ts.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
+        fileName = this.normalize(fileName);
         if (_.has(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (fs.existsSync(fileName)) {
@@ -146,6 +148,7 @@ var LanguageServiceHost = (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
+        fileName = this.normalize(fileName);
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
@@ -156,6 +159,9 @@ var LanguageServiceHost = (function () {
     };
     LanguageServiceHost.prototype.getDefaultLibFileName = function (opts) {
         return ts.getDefaultLibFilePath(opts);
+    };
+    LanguageServiceHost.prototype.normalize = function (fileName) {
+        return fileName.split("\\").join("/");
     };
     return LanguageServiceHost;
 }());
