@@ -53,7 +53,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 	public getScriptVersion(fileName: string)
 	{
 		fileName = this.normalize(fileName);
-		
+
 		return (this.versions[fileName] || 0).toString();
 	}
 
