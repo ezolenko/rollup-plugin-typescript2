@@ -25,13 +25,15 @@ export default {
 }
 ```
 
-The plugin depends on existence of `tsconfig.json` file. All compiler options and file lists are loaded from that. 
+The plugin depends on existence of `tsconfig.json` file. All compiler options and file lists are loaded from that.
 
 Following compiler options are forced though:
 * `module`: es2015
 * `noEmitHelpers`: true
 * `importHelpers`: true
 * `noResolve`: false
+
+You will need to set `"moduleResolution": "node"` in `tsconfig.json` if typescript complains about missing `tslib`. See #12 and #14.
 
 Plugin takes following options:
 
