@@ -27,7 +27,7 @@
     "fs-extra": "^2.1.2",
     "graphlib": "^2.1.1",
     "lodash": "^4.17.4",
-    "object-hash": "^1.1.5",
+    "object-hash": "^1.1.8",
     "rollup-pluginutils": "^2.0.1"
   },
   "peerDependencies": {
@@ -36,21 +36,21 @@
     "resolve": "^1.1.0"
   },
   "devDependencies": {
-    "@types/colors": "^1.1.1",
-    "@types/fs-extra": "0.0.37",
-    "@types/graphlib": "^2.1.3",
-    "@types/lodash": "^4.14.52",
+    "@types/colors": "^1.1.3",
+    "@types/fs-extra": "2.1.0",
+    "@types/graphlib": "^2.1.4",
+    "@types/lodash": "^4.14.62",
     "@types/node": "^6.0.53",
     "@types/object-hash": "^0.5.28",
     "@types/resolve": "0.0.4",
-    "resolve": "^1.1.7",
-    "rimraf": "^2.5.4",
-    "rollup": "^0.41.4",
+    "resolve": "^1.3.3",
+    "rimraf": "^2.6.1",
+    "rollup": "^0.41.6",
     "rollup-plugin-typescript2": "^0.4.0",
     "rollup-watch": "^3.2.2",
-    "tslib": "^1.6.0",
-    "tslint": "^4.5.1",
-    "typescript": "^2.2.1"
+    "tslib": "^1.6.1",
+    "tslint": "^5.1.0",
+    "typescript": "^2.2.2"
   },
   "repository": {
     "type": "git",
