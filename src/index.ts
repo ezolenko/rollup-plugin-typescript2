@@ -92,7 +92,7 @@ function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 		else
 			print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
 	});
-};
+}
 
 interface IOptions
 {
@@ -106,7 +106,7 @@ interface IOptions
 	rollupCommonJSResolveHack: boolean;
 }
 
-export default function typescript (options: IOptions)
+export default function typescript(options: IOptions)
 {
 	options = { ... options };
 
@@ -122,6 +122,8 @@ export default function typescript (options: IOptions)
 		rollupCommonJSResolveHack: false,
 	});
 
+	let rollupConfig: any;
+
 	let watchMode = false;
 	let round = 0;
 	let targetCount = 0;
@@ -135,22 +137,36 @@ export default function typescript (options: IOptions)
 
 	const parsedConfig = parseTsConfig(context);
 
-	let servicesHost = new LanguageServiceHost(parsedConfig);
+	const servicesHost = new LanguageServiceHost(parsedConfig);
 
-	let service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
+	const service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
 
-	const cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+	let _cache: TsCache;
+
+	const cache = (): TsCache =>
+	{
+		if (!_cache)
+			_cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, rollupConfig, parsedConfig.fileNames, context);
+		return _cache;
+	};
 
 	let noErrors = true;
-
-	if (options.clean)
-		cache.clean();
 
 	// printing compiler option errors
 	if (options.check)
 		printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
 
 	return {
+
+		options(config: any)
+		{
+			rollupConfig = config;
+
+			context.debug(`rollupConfig: ${JSON.stringify(rollupConfig, undefined, 4)}`);
+
+			if (options.clean)
+				cache().clean();
+		},
 
 		resolveId(importee: string, importer: string)
 		{
@@ -168,7 +184,7 @@ export default function typescript (options: IOptions)
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
 			{
 				if (filter(result.resolvedModule.resolvedFileName))
-					cache.setDependency(result.resolvedModule.resolvedFileName, importer);
+					cache().setDependency(result.resolvedModule.resolvedFileName, importer);
 
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
@@ -204,7 +220,7 @@ export default function typescript (options: IOptions)
 			const snapshot = servicesHost.setSnapshot(id, code);
 
 			// getting compiled file from cache or from ts
-			const result = cache.getCompiled(id, snapshot, () =>
+			const result = cache().getCompiled(id, snapshot, () =>
 			{
 				const output = service.getEmitOutput(id);
 
@@ -214,11 +230,11 @@ export default function typescript (options: IOptions)
 
 					// always checking on fatal errors, even if options.check is set to false
 					const diagnostics = _.concat(
-						cache.getSyntacticDiagnostics(id, snapshot, () =>
+						cache().getSyntacticDiagnostics(id, snapshot, () =>
 						{
 							return service.getSyntacticDiagnostics(id);
 						}),
-						cache.getSemanticDiagnostics(id, snapshot, () =>
+						cache().getSemanticDiagnostics(id, snapshot, () =>
 						{
 							return service.getSemanticDiagnostics(id);
 						}),
@@ -226,7 +242,7 @@ export default function typescript (options: IOptions)
 					printDiagnostics(contextWrapper, diagnostics);
 
 					// since no output was generated, aborting compilation
-					cache.done();
+					cache().done();
 					if (_.isFunction(this.error))
 						this.error(colors.red(`failed to transpile '${id}'`));
 				}
@@ -243,11 +259,11 @@ export default function typescript (options: IOptions)
 			if (options.check)
 			{
 				const diagnostics = _.concat(
-					cache.getSyntacticDiagnostics(id, snapshot, () =>
+					cache().getSyntacticDiagnostics(id, snapshot, () =>
 					{
 						return service.getSyntacticDiagnostics(id);
 					}),
-					cache.getSemanticDiagnostics(id, snapshot, () =>
+					cache().getSemanticDiagnostics(id, snapshot, () =>
 					{
 						return service.getSemanticDiagnostics(id);
 					}),
@@ -277,7 +293,7 @@ export default function typescript (options: IOptions)
 			{
 				context.debug("running in watch mode");
 
-				cache.walkTree((id) =>
+				cache().walkTree((id) =>
 				{
 					const diagnostics = _.concat(
 						convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)),
@@ -291,7 +307,7 @@ export default function typescript (options: IOptions)
 			if (!watchMode && !noErrors)
 				context.info(colors.yellow("there were errors or warnings above."));
 
-			cache.done();
+			cache().done();
 
 			round++;
 		},

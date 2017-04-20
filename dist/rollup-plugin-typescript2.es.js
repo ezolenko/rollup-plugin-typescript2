@@ -225,10 +225,7 @@ var RollingCache = (function () {
             return;
         if (data === undefined)
             return;
-        if (this.rolled)
-            writeJsonSync(this.oldCacheRoot + "/" + name, data);
-        else
-            writeJsonSync(this.newCacheRoot + "/" + name, data);
+        writeJsonSync(this.newCacheRoot + "/" + name, data);
     };
     RollingCache.prototype.touch = function (name) {
         if (this.rolled)
@@ -264,27 +261,29 @@ function convertDiagnostic(type, data) {
     });
 }
 var TsCache = (function () {
-    function TsCache(host, cache, options, rootFilenames, context) {
+    function TsCache(host, cache, options, rollupConfig, rootFilenames, context) {
         var _this = this;
         this.host = host;
         this.options = options;
+        this.rollupConfig = rollupConfig;
         this.context = context;
-        this.cacheVersion = "4";
+        this.cacheVersion = "5";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + sha1({
             version: this.cacheVersion,
             rootFilenames: rootFilenames,
             options: this.options,
+            rollupConfig: this.rollupConfig,
             tsVersion: version,
         });
         this.dependencyTree = new Graph({ directed: true });
-        this.dependencyTree.setDefaultNodeLabel(function (_node) { return { dirty: false }; });
+        this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
         var automaticTypes = map(getAutomaticTypeDirectiveNames(options, sys), function (entry) { return resolveTypeReferenceDirective(entry, undefined, options, sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
             .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
         this.ambientTypes = filter(rootFilenames, function (file) { return endsWith(file, ".d.ts"); })
             .concat(automaticTypes)
-            .map(function (id) { return { id: id, snapshot: _this.host.getScriptSnapshot(id) }; });
+            .map(function (id) { return ({ id: id, snapshot: _this.host.getScriptSnapshot(id) }); });
         this.init();
         this.checkAmbientTypes();
     }
@@ -469,7 +468,6 @@ function printDiagnostics(context, diagnostics) {
             print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
     });
 }
-
 function typescript(options) {
     options = __assign({}, options);
     defaults(options, {
@@ -482,6 +480,7 @@ function typescript(options) {
         abortOnError: true,
         rollupCommonJSResolveHack: false,
     });
+    var rollupConfig;
     var watchMode = false;
     var round = 0;
     var targetCount = 0;
@@ -492,14 +491,23 @@ function typescript(options) {
     var parsedConfig = parseTsConfig(context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var service = createLanguageService(servicesHost, createDocumentRegistry());
-    var cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, parsedConfig.fileNames, context);
+    var _cache;
+    var cache = function () {
+        if (!_cache)
+            _cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, rollupConfig, parsedConfig.fileNames, context);
+        return _cache;
+    };
     var noErrors = true;
-    if (options.clean)
-        cache.clean();
     // printing compiler option errors
     if (options.check)
         printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
     return {
+        options: function (config) {
+            rollupConfig = config;
+            context.debug("rollupConfig: " + JSON.stringify(rollupConfig, undefined, 4));
+            if (options.clean)
+                cache().clean();
+        },
         resolveId: function (importee, importer) {
             if (importee === TSLIB)
                 return "\0" + TSLIB;
@@ -510,7 +518,7 @@ function typescript(options) {
             var result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter$$1(result.resolvedModule.resolvedFileName))
-                    cache.setDependency(result.resolvedModule.resolvedFileName, importer);
+                    cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
                 var resolved = options.rollupCommonJSResolveHack
@@ -534,19 +542,19 @@ function typescript(options) {
             var contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rpt2: ");
             var snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
-            var result = cache.getCompiled(id, snapshot, function () {
+            var result = cache().getCompiled(id, snapshot, function () {
                 var output = service.getEmitOutput(id);
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    var diagnostics = concat(cache.getSyntacticDiagnostics(id, snapshot, function () {
+                    var diagnostics = concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
                         return service.getSyntacticDiagnostics(id);
-                    }), cache.getSemanticDiagnostics(id, snapshot, function () {
+                    }), cache().getSemanticDiagnostics(id, snapshot, function () {
                         return service.getSemanticDiagnostics(id);
                     }));
                     printDiagnostics(contextWrapper, diagnostics);
                     // since no output was generated, aborting compilation
-                    cache.done();
+                    cache().done();
                     if (isFunction(_this.error))
                         _this.error(red("failed to transpile '" + id + "'"));
                 }
@@ -558,9 +566,9 @@ function typescript(options) {
                 };
             });
             if (options.check) {
-                var diagnostics = concat(cache.getSyntacticDiagnostics(id, snapshot, function () {
+                var diagnostics = concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
                     return service.getSyntacticDiagnostics(id);
-                }), cache.getSemanticDiagnostics(id, snapshot, function () {
+                }), cache().getSemanticDiagnostics(id, snapshot, function () {
                     return service.getSemanticDiagnostics(id);
                 }));
                 if (diagnostics.length > 0)
@@ -578,14 +586,14 @@ function typescript(options) {
             context.debug("generating target " + (round + 1) + " of " + targetCount);
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
-                cache.walkTree(function (id) {
+                cache().walkTree(function (id) {
                     var diagnostics = concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     printDiagnostics(context, diagnostics);
                 });
             }
             if (!watchMode && !noErrors)
                 context.info(yellow("there were errors or warnings above."));
-            cache.done();
+            cache().done();
             round++;
         },
     };

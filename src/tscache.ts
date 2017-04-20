@@ -58,7 +58,7 @@ export function convertDiagnostic(type: string, data: ts.Diagnostic[]): IDiagnos
 
 export class TsCache
 {
-	private cacheVersion = "4";
+	private cacheVersion = "5";
 	private dependencyTree: graph.Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
@@ -68,17 +68,18 @@ export class TsCache
 	private semanticDiagnosticsCache: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache: ICache<IDiagnostics[]>;
 
-	constructor(private host: ts.LanguageServiceHost, cache: string, private options: ts.CompilerOptions, rootFilenames: string[], private context: IContext)
+	constructor(private host: ts.LanguageServiceHost, cache: string, private options: ts.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
 		this.cacheDir = `${cache}/${hash.sha1({
 			version: this.cacheVersion,
 			rootFilenames,
 			options: this.options,
+			rollupConfig: this.rollupConfig,
 			tsVersion : ts.version,
 		})}`;
 
 		this.dependencyTree = new graph.Graph({ directed: true });
-		this.dependencyTree.setDefaultNodeLabel((_node: string) => { return { dirty: false }; });
+		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }) );
 
 		const automaticTypes = _
 			.map(ts.getAutomaticTypeDirectiveNames(options, ts.sys), (entry) => ts.resolveTypeReferenceDirective(entry, undefined, options, ts.sys))
@@ -88,7 +89,7 @@ export class TsCache
 		this.ambientTypes = _
 			.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
 			.concat(automaticTypes)
-			.map((id) => { return { id, snapshot: this.host.getScriptSnapshot(id) }; });
+			.map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
 
 		this.init();
 
