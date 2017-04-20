@@ -77,10 +77,7 @@ export class RollingCache <DataType> implements ICache<DataType>
 		if (data === undefined)
 			return;
 
-		if (this.rolled)
-			fs.writeJsonSync(`${this.oldCacheRoot}/${name}`, data);
-		else
-			fs.writeJsonSync(`${this.newCacheRoot}/${name}`, data);
+		fs.writeJsonSync(`${this.newCacheRoot}/${name}`, data);
 	}
 
 	public touch(name: string)
