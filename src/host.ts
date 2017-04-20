@@ -22,7 +22,7 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 	{
 		fileName = this.normalize(fileName);
 
-		let snapshot = ts.ScriptSnapshot.fromString(data);
+		const snapshot = ts.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 		return snapshot;

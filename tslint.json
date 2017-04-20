@@ -19,8 +19,8 @@
     "max-line-length": [false],
     "object-literal-sort-keys": false,
     "curly": false,
-    "ordered-imports": [],
-    "only-arrow-functions": [],
+    "ordered-imports": [ false ],
+    "only-arrow-functions": [ false ],
     "class-name": true
   }
 }
