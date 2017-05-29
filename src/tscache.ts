@@ -12,6 +12,7 @@ export interface ICode
 {
 	code: string | undefined;
 	map: string | undefined;
+	dts?: ts.OutputFile | undefined;
 }
 
 interface INodeLabel

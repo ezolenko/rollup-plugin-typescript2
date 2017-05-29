@@ -152,6 +152,8 @@ export default function typescript(options: IOptions)
 
 	let noErrors = true;
 
+	const declarations: ts.OutputFile[] = [];
+
 	// printing compiler option errors
 	if (options.check)
 		printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
@@ -249,10 +251,12 @@ export default function typescript(options: IOptions)
 
 				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") );
 				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map") );
+				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 
 				return {
 					code: transpiled ? transpiled.text : undefined,
 					map: map ? JSON.parse(map.text) : { mappings: "" },
+					dts,
 				};
 			});
 
@@ -273,6 +277,10 @@ export default function typescript(options: IOptions)
 					noErrors = false;
 
 				printDiagnostics(contextWrapper, diagnostics);
+			}
+
+			if (result && result.dts) {
+				declarations.push(result.dts);
 			}
 
 			return result;
@@ -310,6 +318,12 @@ export default function typescript(options: IOptions)
 			cache().done();
 
 			round++;
+		},
+
+		onwrite() {
+			declarations.forEach(({ name, text, writeByteOrderMark }) => {
+				ts.sys.writeFile(name, text, writeByteOrderMark);
+			});
 		},
 	};
 }

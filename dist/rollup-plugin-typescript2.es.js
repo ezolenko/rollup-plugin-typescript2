@@ -498,6 +498,7 @@ function typescript(options) {
         return _cache;
     };
     var noErrors = true;
+    var declarations = [];
     // printing compiler option errors
     if (options.check)
         printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
@@ -560,9 +561,11 @@ function typescript(options) {
                 }
                 var transpiled = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".js"); });
                 var map$$1 = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".map"); });
+                var dts = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".d.ts"); });
                 return {
                     code: transpiled ? transpiled.text : undefined,
                     map: map$$1 ? JSON.parse(map$$1.text) : { mappings: "" },
+                    dts: dts,
                 };
             });
             if (options.check) {
@@ -574,6 +577,9 @@ function typescript(options) {
                 if (diagnostics.length > 0)
                     noErrors = false;
                 printDiagnostics(contextWrapper, diagnostics);
+            }
+            if (result && result.dts) {
+                declarations.push(result.dts);
             }
             return result;
         },
@@ -595,6 +601,12 @@ function typescript(options) {
                 context.info(yellow("there were errors or warnings above."));
             cache().done();
             round++;
+        },
+        onwrite: function () {
+            declarations.forEach(function (_a) {
+                var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
+                sys.writeFile(name, text, writeByteOrderMark);
+            });
         },
     };
 }
