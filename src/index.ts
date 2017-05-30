@@ -94,7 +94,7 @@ function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 	});
 }
 
-interface IOptions
+export interface IOptions
 {
 	include: string;
 	exclude: string;
@@ -152,7 +152,7 @@ export default function typescript(options: IOptions)
 
 	let noErrors = true;
 
-	const declarations: ts.OutputFile[] = [];
+	const declarations: { [name: string]: ts.OutputFile } = {};
 
 	// printing compiler option errors
 	if (options.check)
@@ -249,8 +249,8 @@ export default function typescript(options: IOptions)
 						this.error(colors.red(`failed to transpile '${id}'`));
 				}
 
-				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") );
-				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map") );
+				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js"));
+				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map"));
 				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 
 				return {
@@ -279,8 +279,10 @@ export default function typescript(options: IOptions)
 				printDiagnostics(contextWrapper, diagnostics);
 			}
 
-			if (result && result.dts) {
-				declarations.push(result.dts);
+			if (result && result.dts)
+			{
+				declarations[result.dts.name] = result.dts;
+				result.dts = undefined;
 			}
 
 			return result;
@@ -320,8 +322,10 @@ export default function typescript(options: IOptions)
 			round++;
 		},
 
-		onwrite() {
-			declarations.forEach(({ name, text, writeByteOrderMark }) => {
+		onwrite()
+		{
+			_.each(declarations, ({ name, text, writeByteOrderMark }) =>
+			{
 				ts.sys.writeFile(name, text, writeByteOrderMark);
 			});
 		},

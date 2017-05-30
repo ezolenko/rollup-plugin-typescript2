@@ -498,7 +498,7 @@ function typescript(options) {
         return _cache;
     };
     var noErrors = true;
-    var declarations = [];
+    var declarations = {};
     // printing compiler option errors
     if (options.check)
         printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
@@ -579,7 +579,8 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics);
             }
             if (result && result.dts) {
-                declarations.push(result.dts);
+                declarations[result.dts.name] = result.dts;
+                result.dts = undefined;
             }
             return result;
         },
@@ -603,7 +604,7 @@ function typescript(options) {
             round++;
         },
         onwrite: function () {
-            declarations.forEach(function (_a) {
+            each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
                 sys.writeFile(name, text, writeByteOrderMark);
             });
