@@ -36,12 +36,12 @@ try
 	throw e;
 }
 
-function parseTsConfig(context: IContext)
+function parseTsConfig(tsconfig: string, context: IContext)
 {
-	const fileName = ts.findConfigFile(process.cwd(), ts.sys.fileExists, "tsconfig.json");
+	const fileName = ts.findConfigFile(process.cwd(), ts.sys.fileExists, tsconfig);
 
 	if (!fileName)
-		throw new Error(`couldn't find 'tsconfig.json' in ${process.cwd()}`);
+		throw new Error(`couldn't find '${tsconfig}' in ${process.cwd()}`);
 
 	const text = ts.sys.readFile(fileName);
 	const result = ts.parseConfigFileTextToJson(fileName, text);
@@ -104,6 +104,7 @@ export interface IOptions
 	cacheRoot: string;
 	abortOnError: boolean;
 	rollupCommonJSResolveHack: boolean;
+	tsconfig: string;
 }
 
 export default function typescript(options: IOptions)
@@ -120,6 +121,7 @@ export default function typescript(options: IOptions)
 		exclude: [ "*.d.ts", "**/*.d.ts" ],
 		abortOnError: true,
 		rollupCommonJSResolveHack: false,
+		tsconfig: "tsconfig.json"
 	});
 
 	let rollupConfig: any;
@@ -135,7 +137,7 @@ export default function typescript(options: IOptions)
 
 	const filter = createFilter(options.include, options.exclude);
 
-	const parsedConfig = parseTsConfig(context);
+	const parsedConfig = parseTsConfig(options.tsconfig, context);
 
 	const servicesHost = new LanguageServiceHost(parsedConfig);
 
