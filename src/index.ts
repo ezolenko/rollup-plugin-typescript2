@@ -121,7 +121,7 @@ export default function typescript(options: IOptions)
 		exclude: [ "*.d.ts", "**/*.d.ts" ],
 		abortOnError: true,
 		rollupCommonJSResolveHack: false,
-		tsconfig: "tsconfig.json"
+		tsconfig: "tsconfig.json",
 	});
 
 	let rollupConfig: any;
