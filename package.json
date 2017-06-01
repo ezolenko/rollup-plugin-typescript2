@@ -5,6 +5,7 @@
   "main": "dist/rollup-plugin-typescript2.cjs.js",
   "module": "dist/rollup-plugin-typescript2.es.js",
   "jsnext:main": "dist/rollup-plugin-typescript2.es.js",
+  "types": "dist/index.d.ts",
   "files": [
     "dist",
     "src"
@@ -49,8 +50,8 @@
     "rollup-plugin-typescript2": "^0.4.2",
     "rollup-watch": "^3.2.2",
     "tslib": "^1.7.1",
-    "tslint": "^5.3.2",
-    "typescript": "^2.3.3"
+    "tslint": "^5.4.0",
+    "typescript": "^2.3.4"
   },
   "repository": {
     "type": "git",
