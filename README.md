@@ -5,7 +5,7 @@
 ![npm-monthly-downloads](https://img.shields.io/npm/dm/rollup-plugin-typescript2.svg?maxAge=2592000)
 [![Codeship Status](https://app.codeship.com/projects/fe9cf8f0-e8d4-0134-ec88-4e3d33dcd7ed/status?branch=master)](https://app.codeship.com/projects/207445)
 
-Rollup plugin for typescript with compiler errors. 
+Rollup plugin for typescript with compiler errors.
 
 This is a rewrite of original rollup-plugin-typescript, starting and borrowing from [this fork](https://github.com/alexlur/rollup-plugin-typescript).
 
@@ -26,9 +26,21 @@ export default {
 }
 ```
 
-The plugin depends on existence of `tsconfig.json` file. All compiler options and file lists are loaded from that.
+The plugin inherits all compiler options and file lists from your `tsconfig.json` file.
+If your tsconfig has another name or another relative path from the root directory, you can pass in a custom path:
 
-Following compiler options are forced though:
+```js
+// ...
+plugins: [
+	typescript({
+		tsconfig: "other_dir/tsconfig.json"
+	})
+]
+```
+
+This also allows for passing in different tsconfig files depending on your build target.
+
+The following compiler options are forced though:
 * `module`: es2015
 * `noEmitHelpers`: true
 * `importHelpers`: true
@@ -37,6 +49,10 @@ Following compiler options are forced though:
 You will need to set `"moduleResolution": "node"` in `tsconfig.json` if typescript complains about missing `tslib`. See [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14).
 
 Plugin takes following options:
+
+* `tsconfig`: "tsconfig.json"
+
+    Override this if your tsconfig has another name or relative location from the project directory.
 
 * `check`: true
 

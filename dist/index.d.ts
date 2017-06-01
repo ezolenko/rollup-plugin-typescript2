@@ -9,6 +9,7 @@ export interface IOptions {
     cacheRoot: string;
     abortOnError: boolean;
     rollupCommonJSResolveHack: boolean;
+    tsconfig: string;
 }
 export default function typescript(options: IOptions): {
     options(config: any): void;

@@ -424,10 +424,10 @@ catch (e) {
     console.warn("Error loading `tslib` helper library.");
     throw e;
 }
-function parseTsConfig(context) {
-    var fileName = findConfigFile(process.cwd(), sys.fileExists, "tsconfig.json");
+function parseTsConfig(tsconfig, context) {
+    var fileName = findConfigFile(process.cwd(), sys.fileExists, tsconfig);
     if (!fileName)
-        throw new Error("couldn't find 'tsconfig.json' in " + process.cwd());
+        throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
     var text = sys.readFile(fileName);
     var result = parseConfigFileTextToJson(fileName, text);
     if (result.error) {
@@ -479,6 +479,7 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
+        tsconfig: "tsconfig.json"
     });
     var rollupConfig;
     var watchMode = false;
@@ -488,7 +489,7 @@ function typescript(options) {
     context.info("Typescript version: " + version);
     context.debug("Options: " + JSON.stringify(options, undefined, 4));
     var filter$$1 = createFilter(options.include, options.exclude);
-    var parsedConfig = parseTsConfig(context);
+    var parsedConfig = parseTsConfig(options.tsconfig, context);
     var servicesHost = new LanguageServiceHost(parsedConfig);
     var service = createLanguageService(servicesHost, createDocumentRegistry());
     var _cache;
