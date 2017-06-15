@@ -96,18 +96,18 @@ function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 
 export interface IOptions
 {
-	include: string;
-	exclude: string;
-	check: boolean;
-	verbosity: number;
-	clean: boolean;
-	cacheRoot: string;
-	abortOnError: boolean;
-	rollupCommonJSResolveHack: boolean;
-	tsconfig: string;
+	include?: string;
+	exclude?: string;
+	check?: boolean;
+	verbosity?: number;
+	clean?: boolean;
+	cacheRoot?: string;
+	abortOnError?: boolean;
+	rollupCommonJSResolveHack?: boolean;
+	tsconfig?: string;
 }
 
-export default function typescript(options: IOptions)
+export default function typescript(options?: IOptions)
 {
 	options = { ... options };
 
@@ -130,14 +130,14 @@ export default function typescript(options: IOptions)
 	let round = 0;
 	let targetCount = 0;
 
-	const context = new ConsoleContext(options.verbosity, "rpt2: ");
+	const context = new ConsoleContext(options.verbosity!, "rpt2: ");
 
 	context.info(`Typescript version: ${ts.version}`);
 	context.debug(`Options: ${JSON.stringify(options, undefined, 4)}`);
 
 	const filter = createFilter(options.include, options.exclude);
 
-	const parsedConfig = parseTsConfig(options.tsconfig, context);
+	const parsedConfig = parseTsConfig(options.tsconfig!, context);
 
 	const servicesHost = new LanguageServiceHost(parsedConfig);
 
@@ -148,7 +148,7 @@ export default function typescript(options: IOptions)
 	const cache = (): TsCache =>
 	{
 		if (!_cache)
-			_cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, rollupConfig, parsedConfig.fileNames, context);
+			_cache = new TsCache(servicesHost, options!.cacheRoot!, parsedConfig.options, rollupConfig, parsedConfig.fileNames, context);
 		return _cache;
 	};
 
@@ -168,7 +168,7 @@ export default function typescript(options: IOptions)
 
 			context.debug(`rollupConfig: ${JSON.stringify(rollupConfig, undefined, 4)}`);
 
-			if (options.clean)
+			if (options!.clean)
 				cache().clean();
 		},
 
@@ -193,7 +193,7 @@ export default function typescript(options: IOptions)
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
 
-				const resolved = options.rollupCommonJSResolveHack
+				const resolved = options!.rollupCommonJSResolveHack
 						? resolve.sync(result.resolvedModule.resolvedFileName)
 						: result.resolvedModule.resolvedFileName;
 
@@ -219,7 +219,7 @@ export default function typescript(options: IOptions)
 			if (!filter(id))
 				return undefined;
 
-			const contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rpt2: ");
+			const contextWrapper = new RollupContext(options!.verbosity!, options!.abortOnError!, this, "rpt2: ");
 
 			const snapshot = servicesHost.setSnapshot(id, code);
 
@@ -262,7 +262,7 @@ export default function typescript(options: IOptions)
 				};
 			});
 
-			if (options.check)
+			if (options!.check)
 			{
 				const diagnostics = _.concat(
 					cache().getSyntacticDiagnostics(id, snapshot, () =>

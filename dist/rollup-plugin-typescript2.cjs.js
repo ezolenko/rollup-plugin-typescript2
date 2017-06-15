@@ -473,7 +473,7 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
-        tsconfig: "tsconfig.json"
+        tsconfig: "tsconfig.json",
     });
     var rollupConfig;
     var watchMode = false;
