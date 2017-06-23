@@ -107,7 +107,7 @@ export interface IOptions
 	tsconfig?: string;
 }
 
-export default function typescript(options?: IOptions)
+export function typescript(options?: IOptions)
 {
 	options = { ... options };
 

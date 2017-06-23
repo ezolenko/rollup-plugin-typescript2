@@ -11,7 +11,7 @@ export interface IOptions {
     rollupCommonJSResolveHack?: boolean;
     tsconfig?: string;
 }
-export default function typescript(options?: IOptions): {
+export declare function typescript(options?: IOptions): {
     options(config: any): void;
     resolveId(importee: string, importer: string): string | null;
     load(id: string): string | undefined;

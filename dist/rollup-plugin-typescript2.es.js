@@ -613,4 +613,4 @@ function typescript(options) {
     };
 }
 
-export default typescript;
+export { typescript };

@@ -49,11 +49,13 @@
     "@types/node": "^8.0.1",
     "@types/object-hash": "^0.5.28",
     "@types/resolve": "^0.0.4",
+    "@types/rollup": "^0.0.4",
     "rimraf": "^2.6.1",
     "rollup": "^0.43.0",
     "rollup-plugin-typescript2": "^0.4.4",
     "rollup-watch": "^4.0.0",
-    "tslint": "^5.4.3"
+    "tslint": "^5.4.3",
+    "ts-node": "^3.1.0"
   },
   "repository": {
     "type": "git",

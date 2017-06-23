@@ -1,6 +1,8 @@
 /* eslint-disable */
 'use strict';
 
+Object.defineProperty(exports, '__esModule', { value: true });
+
 var _ = require('lodash');
 var fs = require('fs-extra');
 var ts = require('typescript');
@@ -607,4 +609,4 @@ function typescript(options) {
     };
 }
 
-module.exports = typescript;
+exports.typescript = typescript;
