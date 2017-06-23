@@ -49,7 +49,7 @@
     "@types/node": "^8.0.1",
     "@types/object-hash": "^0.5.28",
     "@types/resolve": "^0.0.4",
-    "@types/rollup": "^0.0.4",
+    "@types/rollup": "^0.41.0",
     "rimraf": "^2.6.1",
     "rollup": "^0.43.0",
     "rollup-plugin-typescript2": "^0.4.4",
