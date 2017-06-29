@@ -45,7 +45,7 @@
     "@types/colors": "^1.1.3",
     "@types/fs-extra": "^3.0.3",
     "@types/graphlib": "^2.1.4",
-    "@types/lodash": "^4.14.62",
+    "@types/lodash": "^4.14.67",
     "@types/node": "^8.0.1",
     "@types/object-hash": "^0.5.28",
     "@types/resolve": "^0.0.4",

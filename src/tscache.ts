@@ -47,7 +47,7 @@ export function convertDiagnostic(type: string, data: ts.Diagnostic[]): IDiagnos
 			type,
 		};
 
-		if (diagnostic.file)
+		if (diagnostic.file && diagnostic.start !== undefined)
 		{
 			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
 			entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
@@ -59,7 +59,7 @@ export function convertDiagnostic(type: string, data: ts.Diagnostic[]): IDiagnos
 
 export class TsCache
 {
-	private cacheVersion = "5";
+	private cacheVersion = "6";
 	private dependencyTree: graph.Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;

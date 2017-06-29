@@ -13,5 +13,12 @@ export declare class LanguageServiceHost implements ts.LanguageServiceHost {
     getScriptFileNames(): string[];
     getCompilationSettings(): ts.CompilerOptions;
     getDefaultLibFileName(opts: ts.CompilerOptions): string;
+    useCaseSensitiveFileNames(): boolean;
+    readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[];
+    readFile(path: string, encoding?: string): string;
+    fileExists(path: string): boolean;
+    getTypeRootsVersion(): number;
+    directoryExists(directoryName: string): boolean;
+    getDirectories(directoryName: string): string[];
     private normalize(fileName);
 }

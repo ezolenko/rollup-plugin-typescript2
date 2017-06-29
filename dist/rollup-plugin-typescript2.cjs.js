@@ -160,6 +160,29 @@ var LanguageServiceHost = (function () {
     LanguageServiceHost.prototype.getDefaultLibFileName = function (opts) {
         return ts.getDefaultLibFilePath(opts);
     };
+    LanguageServiceHost.prototype.useCaseSensitiveFileNames = function () {
+        return ts.sys.useCaseSensitiveFileNames;
+    };
+    LanguageServiceHost.prototype.readDirectory = function (path$$1, extensions, exclude, include) {
+        return ts.sys.readDirectory(path$$1, extensions, exclude, include);
+    };
+    LanguageServiceHost.prototype.readFile = function (path$$1, encoding) {
+        return ts.sys.readFile(path$$1, encoding);
+    };
+    LanguageServiceHost.prototype.fileExists = function (path$$1) {
+        return ts.sys.fileExists(path$$1);
+    };
+    LanguageServiceHost.prototype.getTypeRootsVersion = function () {
+        return 0;
+    };
+    // public resolveModuleNames(moduleNames: string[], containingFile: string): ts.ResolvedModule[]
+    // public resolveTypeReferenceDirectives?(typeDirectiveNames: string[], containingFile: string): ResolvedTypeReferenceDirective[]
+    LanguageServiceHost.prototype.directoryExists = function (directoryName) {
+        return ts.sys.directoryExists(directoryName);
+    };
+    LanguageServiceHost.prototype.getDirectories = function (directoryName) {
+        return ts.sys.getDirectories(directoryName);
+    };
     LanguageServiceHost.prototype.normalize = function (fileName) {
         return fileName.split("\\").join("/");
     };
@@ -211,8 +234,8 @@ var RollingCache = (function () {
      */
     RollingCache.prototype.read = function (name) {
         if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
-            return fs.readJsonSync(this.newCacheRoot + "/" + name, "utf8");
-        return fs.readJsonSync(this.oldCacheRoot + "/" + name, "utf8");
+            return fs.readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8" });
+        return fs.readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8" });
     };
     RollingCache.prototype.write = function (name, data) {
         if (this.rolled)
@@ -247,7 +270,7 @@ function convertDiagnostic(type, data) {
             code: diagnostic.code,
             type: type,
         };
-        if (diagnostic.file) {
+        if (diagnostic.file && diagnostic.start !== undefined) {
             var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
             entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
         }
@@ -261,7 +284,7 @@ var TsCache = (function () {
         this.options = options;
         this.rollupConfig = rollupConfig;
         this.context = context;
-        this.cacheVersion = "5";
+        this.cacheVersion = "6";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + hash.sha1({
             version: this.cacheVersion,

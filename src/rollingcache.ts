@@ -64,9 +64,9 @@ export class RollingCache <DataType> implements ICache<DataType>
 	public read(name: string): DataType
 	{
 		if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
-			return fs.readJsonSync(`${this.newCacheRoot}/${name}`, "utf8");
+			return fs.readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8" });
 
-		return fs.readJsonSync(`${this.oldCacheRoot}/${name}`, "utf8");
+		return fs.readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8" });
 	}
 
 	public write(name: string, data: DataType): void

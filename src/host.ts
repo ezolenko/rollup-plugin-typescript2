@@ -72,6 +72,45 @@ export class LanguageServiceHost implements ts.LanguageServiceHost
 		return ts.getDefaultLibFilePath(opts);
 	}
 
+	public useCaseSensitiveFileNames(): boolean
+	{
+		return ts.sys.useCaseSensitiveFileNames;
+	}
+
+	public readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[]
+	{
+		return ts.sys.readDirectory(path, extensions, exclude, include);
+	}
+
+	public readFile(path: string, encoding?: string): string
+	{
+		return ts.sys.readFile(path, encoding);
+	}
+
+	public fileExists(path: string): boolean
+	{
+		return ts.sys.fileExists(path);
+	}
+
+	public getTypeRootsVersion(): number
+	{
+		return 0;
+	}
+
+	// public resolveModuleNames(moduleNames: string[], containingFile: string): ts.ResolvedModule[]
+
+	// public resolveTypeReferenceDirectives?(typeDirectiveNames: string[], containingFile: string): ResolvedTypeReferenceDirective[]
+
+	public directoryExists(directoryName: string): boolean
+	{
+		return ts.sys.directoryExists(directoryName);
+	}
+
+	public getDirectories(directoryName: string): string[]
+	{
+		return ts.sys.getDirectories(directoryName);
+	}
+
 	private normalize(fileName: string)
 	{
 		return fileName.split("\\").join("/");
