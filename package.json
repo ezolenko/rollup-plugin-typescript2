@@ -51,7 +51,7 @@
     "@types/resolve": "^0.0.4",
     "rimraf": "^2.6.1",
     "rollup": "^0.43.0",
-    "rollup-plugin-typescript2": "^0.4.4",
+    "rollup-plugin-typescript2": "github:ezolenko/rollup-plugin-typescript2#master",
     "rollup-watch": "^4.0.0",
     "tslint": "^5.4.3"
   },
