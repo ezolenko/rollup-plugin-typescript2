@@ -577,7 +577,7 @@ function typescript(options) {
                     if (_.isFunction(_this.error))
                         _this.error(colors.red("failed to transpile '" + id + "'"));
                 }
-                var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js"); });
+                var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"); });
                 var map$$1 = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
                 var dts = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".d.ts"); });
                 return {

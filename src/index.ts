@@ -251,7 +251,7 @@ export default function typescript(options?: IOptions)
 						this.error(colors.red(`failed to transpile '${id}'`));
 				}
 
-				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js"));
+				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"));
 				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map"));
 				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 
