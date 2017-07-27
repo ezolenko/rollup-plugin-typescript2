@@ -1,5 +1,6 @@
 import { IRollupContext } from "./context";
 import { ICode } from "./tscache";
+import { IRollupOptions } from "./irollup-options";
 export interface IOptions {
     include?: string;
     exclude?: string;
@@ -17,5 +18,5 @@ export default function typescript(options?: IOptions): {
     load(id: string): string | undefined;
     transform(this: IRollupContext, code: string, id: string): ICode | undefined;
     ongenerate(bundleOptions: any): void;
-    onwrite(): void;
+    onwrite({dest}: IRollupOptions): void;
 };

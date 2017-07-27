@@ -148,10 +148,10 @@ export class TsCache
 		{
 			this.context.debug(colors.yellow("    cache miss"));
 
-			const data = transform();
-			this.codeCache.write(name, data);
+			const transformedData = transform();
+			this.codeCache.write(name, transformedData);
 			this.markAsDirty(id, snapshot);
-			return data;
+			return transformedData;
 		}
 
 		this.context.debug(colors.green("    cache hit"));
@@ -200,10 +200,10 @@ export class TsCache
 		{
 			this.context.debug(colors.yellow("    cache miss"));
 
-			const data = convertDiagnostic(type, check());
-			cache.write(name, data);
+			const convertedData = convertDiagnostic(type, check());
+			cache.write(name, convertedData);
 			this.markAsDirty(id, snapshot);
-			return data;
+			return convertedData;
 		}
 
 		this.context.debug(colors.green("    cache hit"));

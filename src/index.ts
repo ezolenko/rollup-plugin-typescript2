@@ -3,11 +3,13 @@ import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./cont
 import { LanguageServiceHost } from "./host";
 import { TsCache, convertDiagnostic, ICode, IDiagnostics } from "./tscache";
 import * as ts from "typescript";
+import {basename, dirname, extname, join} from "path";
 import * as fs from "fs-extra";
 import * as path from "path";
 import * as _ from "lodash";
 import * as colors from "colors/safe";
 import * as resolve from "resolve";
+import { IRollupOptions } from "./irollup-options";
 
 // tslint:disable-next-line:no-var-requires
 const createFilter = require("rollup-pluginutils").createFilter;
@@ -324,11 +326,23 @@ export default function typescript(options?: IOptions)
 			round++;
 		},
 
-		onwrite()
+		onwrite({dest}: IRollupOptions)
 		{
+			// Expect the destination path given in the rollup bundle to be a relative path (if given). Join it with process.cwd()
+			const bundleDirectory = dest == null ? null : join(process.cwd(), dirname(dest));
+			const bundleName = dest == null ? null : basename(dest);
+			const bundleExt = dest == null ? null : extname(dest);
 			_.each(declarations, ({ name, text, writeByteOrderMark }) =>
 			{
-				ts.sys.writeFile(name, text, writeByteOrderMark);
+				// If no 'dest' is given, the bundle has no directory, name or extension. In that case, use the default declaration path given by Typescript.
+				if (bundleName == null || bundleExt == null || bundleDirectory == null) return ts.sys.writeFile(name, text, writeByteOrderMark);
+
+				// Otherwise, try to play nice with the destination from the rollup config.
+				// Make sure that the declaration file has the same name as the bundle (but a different extension)
+				const declarationName = bundleExt === "" ? `${bundleName}.d.ts` : `${bundleName.slice(0, bundleName.indexOf(bundleExt))}.d.ts`;
+				const declarationFilepath = join(bundleDirectory, declarationName);
+
+				ts.sys.writeFile(declarationFilepath, text, writeByteOrderMark);
 			});
 		},
 	};

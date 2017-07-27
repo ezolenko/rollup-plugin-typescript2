@@ -337,10 +337,10 @@ var TsCache = (function () {
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
         if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
             this.context.debug(colors.yellow("    cache miss"));
-            var data_1 = transform();
-            this.codeCache.write(name, data_1);
+            var transformedData = transform();
+            this.codeCache.write(name, transformedData);
             this.markAsDirty(id, snapshot);
-            return data_1;
+            return transformedData;
         }
         this.context.debug(colors.green("    cache hit"));
         var data = this.codeCache.read(name);
@@ -372,10 +372,10 @@ var TsCache = (function () {
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
             this.context.debug(colors.yellow("    cache miss"));
-            var data_2 = convertDiagnostic(type, check());
-            cache.write(name, data_2);
+            var data_1 = convertDiagnostic(type, check());
+            cache.write(name, data_1);
             this.markAsDirty(id, snapshot);
-            return data_2;
+            return data_1;
         }
         this.context.debug(colors.green("    cache hit"));
         var data = cache.read(name);
@@ -621,10 +621,22 @@ function typescript(options) {
             cache().done();
             round++;
         },
-        onwrite: function () {
+        onwrite: function (_a) {
+            var dest = _a.dest;
+            // Expect the destination path given in the rollup bundle to be a relative path (if given). Join it with process.cwd()
+            var bundleDirectory = dest == null ? null : path.join(process.cwd(), path.dirname(dest));
+            var bundleName = dest == null ? null : path.basename(dest);
+            var bundleExt = dest == null ? null : path.extname(dest);
             _.each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                ts.sys.writeFile(name, text, writeByteOrderMark);
+                // If no 'dest' is given, the bundle has no directory, name or extension. In that case, use the default declaration path given by Typescript.
+                if (bundleName == null || bundleExt == null || bundleDirectory == null)
+                    return ts.sys.writeFile(name, text, writeByteOrderMark);
+                // Otherwise, try to play nice with the destination from the rollup config.
+                // Make sure that the declaration file has the same name as the bundle (but a different extension)
+                var declarationName = bundleExt === "" ? bundleName + ".d.ts" : bundleName.slice(0, bundleName.indexOf(bundleExt)) + ".d.ts";
+                var declarationFilepath = path.join(bundleDirectory, declarationName);
+                ts.sys.writeFile(declarationFilepath, text, writeByteOrderMark);
             });
         },
     };

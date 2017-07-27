@@ -11,7 +11,7 @@ import { sha1 } from 'object-hash';
 import * as hash from 'object-hash';
 import { blue, green, red, white, yellow } from 'colors/safe';
 import * as colors from 'colors/safe';
-import { dirname } from 'path';
+import { basename, dirname, extname, join } from 'path';
 import * as path from 'path';
 import { sync } from 'resolve';
 import * as resolve from 'resolve';
@@ -343,10 +343,10 @@ var TsCache = (function () {
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
         if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
             this.context.debug(yellow("    cache miss"));
-            var data_1 = transform();
-            this.codeCache.write(name, data_1);
+            var transformedData = transform();
+            this.codeCache.write(name, transformedData);
             this.markAsDirty(id, snapshot);
-            return data_1;
+            return transformedData;
         }
         this.context.debug(green("    cache hit"));
         var data = this.codeCache.read(name);
@@ -378,10 +378,10 @@ var TsCache = (function () {
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
             this.context.debug(yellow("    cache miss"));
-            var data_2 = convertDiagnostic(type, check());
-            cache.write(name, data_2);
+            var data_1 = convertDiagnostic(type, check());
+            cache.write(name, data_1);
             this.markAsDirty(id, snapshot);
-            return data_2;
+            return data_1;
         }
         this.context.debug(green("    cache hit"));
         var data = cache.read(name);
@@ -627,10 +627,22 @@ function typescript(options) {
             cache().done();
             round++;
         },
-        onwrite: function () {
+        onwrite: function (_a) {
+            var dest = _a.dest;
+            // Expect the destination path given in the rollup bundle to be a relative path (if given). Join it with process.cwd()
+            var bundleDirectory = dest == null ? null : join(process.cwd(), dirname(dest));
+            var bundleName = dest == null ? null : basename(dest);
+            var bundleExt = dest == null ? null : extname(dest);
             each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                sys.writeFile(name, text, writeByteOrderMark);
+                // If no 'dest' is given, the bundle has no directory, name or extension. In that case, use the default declaration path given by Typescript.
+                if (bundleName == null || bundleExt == null || bundleDirectory == null)
+                    return sys.writeFile(name, text, writeByteOrderMark);
+                // Otherwise, try to play nice with the destination from the rollup config.
+                // Make sure that the declaration file has the same name as the bundle (but a different extension)
+                var declarationName = bundleExt === "" ? bundleName + ".d.ts" : bundleName.slice(0, bundleName.indexOf(bundleExt)) + ".d.ts";
+                var declarationFilepath = join(bundleDirectory, declarationName);
+                sys.writeFile(declarationFilepath, text, writeByteOrderMark);
             });
         },
     };
