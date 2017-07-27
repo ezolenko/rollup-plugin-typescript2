@@ -45,6 +45,7 @@ The following compiler options are forced though:
 * `noEmitHelpers`: true
 * `importHelpers`: true
 * `noResolve`: false
+* `outDir`: `process.cwd()`
 
 You will need to set `"moduleResolution": "node"` in `tsconfig.json` if typescript complains about missing `tslib`. See [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14).
 
