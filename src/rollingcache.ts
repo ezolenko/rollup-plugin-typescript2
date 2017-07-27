@@ -1,6 +1,7 @@
 import { ICache } from "./icache";
-import * as fs from "fs-extra";
-import * as _ from "lodash";
+import {emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync} from "fs-extra";
+import {existsSync, readdirSync, renameSync} from "fs";
+import {isEqual} from "lodash";
 
 /**
  * Saves data in new cache folder or reads it from old one.
@@ -22,7 +23,7 @@ export class RollingCache <DataType> implements ICache<DataType>
 		this.oldCacheRoot = `${this.cacheRoot}/cache`;
 		this.newCacheRoot = `${this.cacheRoot}/cache_`;
 
-		fs.emptyDirSync(this.newCacheRoot);
+		emptyDirSync(this.newCacheRoot);
 	}
 
 	/**
@@ -33,10 +34,10 @@ export class RollingCache <DataType> implements ICache<DataType>
 		if (this.rolled)
 			return false;
 
-		if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
+		if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
 			return true;
 
-		return fs.existsSync(`${this.oldCacheRoot}/${name}`);
+		return existsSync(`${this.oldCacheRoot}/${name}`);
 	}
 
 	public path(name: string): string
@@ -52,10 +53,10 @@ export class RollingCache <DataType> implements ICache<DataType>
 		if (this.rolled)
 			return false;
 
-		if (!fs.existsSync(this.oldCacheRoot))
+		if (!existsSync(this.oldCacheRoot))
 			return names.length === 0; // empty folder matches
 
-		return _.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
+		return isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
 	}
 
 	/**
@@ -63,10 +64,10 @@ export class RollingCache <DataType> implements ICache<DataType>
 	 */
 	public read(name: string): DataType
 	{
-		if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
-			return fs.readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8" });
+		if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
+			return readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8" });
 
-		return fs.readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8" });
+		return readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8" });
 	}
 
 	public write(name: string, data: DataType): void
@@ -77,14 +78,14 @@ export class RollingCache <DataType> implements ICache<DataType>
 		if (data === undefined)
 			return;
 
-		fs.writeJsonSync(`${this.newCacheRoot}/${name}`, data);
+		writeJsonSync(`${this.newCacheRoot}/${name}`, data);
 	}
 
 	public touch(name: string)
 	{
 		if (this.rolled)
 			return;
-		fs.ensureFileSync(`${this.newCacheRoot}/${name}`);
+		ensureFileSync(`${this.newCacheRoot}/${name}`);
 	}
 
 	/**
@@ -96,7 +97,7 @@ export class RollingCache <DataType> implements ICache<DataType>
 			return;
 
 		this.rolled = true;
-		fs.removeSync(this.oldCacheRoot);
-		fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
+		removeSync(this.oldCacheRoot);
+		renameSync(this.newCacheRoot, this.oldCacheRoot);
 	}
 }

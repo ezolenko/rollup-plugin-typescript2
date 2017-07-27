@@ -1,18 +1,18 @@
 import { IContext } from "./context";
-import * as ts from "typescript";
-import * as graph from "graphlib";
-import * as hash from "object-hash";
-import * as _ from "lodash";
+import {Graph, alg} from "graphlib";
+import {sha1} from "object-hash";
 import { RollingCache } from "./rollingcache";
-import * as fs from "fs-extra";
-import * as colors from "colors/safe";
 import { ICache } from "./icache";
+import {map, endsWith, filter, each, some} from "lodash";
+import {Diagnostic, DiagnosticCategory, IScriptSnapshot, OutputFile, LanguageServiceHost, version, getAutomaticTypeDirectiveNames, sys, resolveTypeReferenceDirective, flattenDiagnosticMessageText, CompilerOptions} from "typescript";
+import {blue, yellow, green} from "colors/safe";
+import {emptyDirSync} from "fs-extra";
 
 export interface ICode
 {
 	code: string | undefined;
 	map: string | undefined;
-	dts?: ts.OutputFile | undefined;
+	dts?: OutputFile | undefined;
 }
 
 interface INodeLabel
@@ -24,7 +24,7 @@ export interface IDiagnostics
 {
 	flatMessage: string;
 	fileLine?: string;
-	category: ts.DiagnosticCategory;
+	category: DiagnosticCategory;
 	code: number;
 	type: string;
 }
@@ -32,16 +32,16 @@ export interface IDiagnostics
 interface ITypeSnapshot
 {
 	id: string;
-	snapshot: ts.IScriptSnapshot | undefined;
+	snapshot: IScriptSnapshot | undefined;
 }
 
-export function convertDiagnostic(type: string, data: ts.Diagnostic[]): IDiagnostics[]
+export function convertDiagnostic(type: string, data: Diagnostic[]): IDiagnostics[]
 {
-	return _.map(data, (diagnostic) =>
+	return map(data, (diagnostic) =>
 	{
 		const entry: IDiagnostics =
 		{
-			flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+			flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
 			category: diagnostic.category,
 			code: diagnostic.code,
 			type,
@@ -60,7 +60,7 @@ export function convertDiagnostic(type: string, data: ts.Diagnostic[]): IDiagnos
 export class TsCache
 {
 	private cacheVersion = "6";
-	private dependencyTree: graph.Graph;
+	private dependencyTree: Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
 	private cacheDir: string;
@@ -69,26 +69,24 @@ export class TsCache
 	private semanticDiagnosticsCache: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache: ICache<IDiagnostics[]>;
 
-	constructor(private host: ts.LanguageServiceHost, cache: string, private options: ts.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
+	constructor(private host: LanguageServiceHost, cache: string, private options: CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
-		this.cacheDir = `${cache}/${hash.sha1({
+		this.cacheDir = `${cache}/${sha1({
 			version: this.cacheVersion,
 			rootFilenames,
 			options: this.options,
 			rollupConfig: this.rollupConfig,
-			tsVersion : ts.version,
+			tsVersion : version,
 		})}`;
 
-		this.dependencyTree = new graph.Graph({ directed: true });
+		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }) );
 
-		const automaticTypes = _
-			.map(ts.getAutomaticTypeDirectiveNames(options, ts.sys), (entry) => ts.resolveTypeReferenceDirective(entry, undefined, options, ts.sys))
+		const automaticTypes = map(getAutomaticTypeDirectiveNames(options, sys), (entry) => resolveTypeReferenceDirective(entry, undefined, options, sys))
 			.filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
 			.map((entry) => entry.resolvedTypeReferenceDirective!.resolvedFileName!);
 
-		this.ambientTypes = _
-			.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
+		this.ambientTypes = filter(rootFilenames, (file) => endsWith(file, ".d.ts"))
 			.concat(automaticTypes)
 			.map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
 
@@ -99,8 +97,8 @@ export class TsCache
 
 	public clean()
 	{
-		this.context.info(colors.blue(`cleaning cache: ${this.cacheDir}`));
-		fs.emptyDirSync(this.cacheDir);
+		this.context.info(blue(`cleaning cache: ${this.cacheDir}`));
+		emptyDirSync(this.cacheDir);
 
 		this.init();
 	}
@@ -108,74 +106,73 @@ export class TsCache
 	public setDependency(importee: string, importer: string): void
 	{
 		// importee -> importer
-		this.context.debug(`${colors.blue("dependency")} '${importee}'`);
+		this.context.debug(`${blue("dependency")} '${importee}'`);
 		this.context.debug(`    imported by '${importer}'`);
 		this.dependencyTree.setEdge(importer, importee);
 	}
 
 	public walkTree(cb: (id: string) => void | false): void
 	{
-		const acyclic = graph.alg.isAcyclic(this.dependencyTree);
+		const acyclic = alg.isAcyclic(this.dependencyTree);
 
 		if (acyclic)
 		{
-			_.each(graph.alg.topsort(this.dependencyTree), (id: string) => cb(id));
+			each(alg.topsort(this.dependencyTree), (id: string) => cb(id));
 			return;
 		}
 
-		this.context.info(colors.yellow("import tree has cycles"));
+		this.context.info(yellow("import tree has cycles"));
 
-		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
+		each(this.dependencyTree.nodes(), (id: string) => cb(id));
 	}
 
 	public done()
 	{
-		this.context.info(colors.blue("rolling caches"));
+		this.context.info(blue("rolling caches"));
 		this.codeCache.roll();
 		this.semanticDiagnosticsCache.roll();
 		this.syntacticDiagnosticsCache.roll();
 		this.typesCache.roll();
 	}
 
-	public getCompiled(id: string, snapshot: ts.IScriptSnapshot, transform: () =>  ICode | undefined): ICode | undefined
+	public getCompiled(id: string, snapshot: IScriptSnapshot, transform: () =>  ICode | undefined): ICode | undefined
 	{
 		const name = this.makeName(id, snapshot);
 
-		this.context.info(`${colors.blue("transpiling")} '${id}'`);
+		this.context.info(`${blue("transpiling")} '${id}'`);
 		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
 
-		if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false))
+		if (!this.codeCache.exists(name) || this.isDirty(id, false))
 		{
-			this.context.debug(colors.yellow("    cache miss"));
+			this.context.debug(yellow("    cache miss"));
 
 			const transformedData = transform();
 			this.codeCache.write(name, transformedData);
-			this.markAsDirty(id, snapshot);
+			this.markAsDirty(id);
 			return transformedData;
 		}
 
-		this.context.debug(colors.green("    cache hit"));
+		this.context.debug(green("    cache hit"));
 
 		const data = this.codeCache.read(name);
 		this.codeCache.write(name, data);
 		return data;
 	}
 
-	public getSyntacticDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	public getSyntacticDiagnostics(id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[]
 	{
 		return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
 	}
 
-	public getSemanticDiagnostics(id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	public getSemanticDiagnostics(id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[]
 	{
 		return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
 	}
 
 	private checkAmbientTypes(): void
 	{
-		this.context.debug(colors.blue("Ambient types:"));
-		const typeNames = _
-			.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+		this.context.debug(blue("Ambient types:"));
+		const typeNames = filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
 			{
 				this.context.debug(`    ${snapshot.id}`);
@@ -185,28 +182,28 @@ export class TsCache
 		this.ambientTypesDirty = !this.typesCache.match(typeNames);
 
 		if (this.ambientTypesDirty)
-			this.context.info(colors.yellow("ambient types changed, redoing all semantic diagnostics"));
+			this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
 
-		_.each(typeNames, (name) => this.typesCache.touch(name));
+		each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
-	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: ts.IScriptSnapshot, check: () => ts.Diagnostic[]): IDiagnostics[]
+	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[]
 	{
 		const name = this.makeName(id, snapshot);
 
 		this.context.debug(`    cache: '${cache.path(name)}'`);
 
-		if (!cache.exists(name) || this.isDirty(id, snapshot, true))
+		if (!cache.exists(name) || this.isDirty(id, true))
 		{
-			this.context.debug(colors.yellow("    cache miss"));
+			this.context.debug(yellow("    cache miss"));
 
 			const convertedData = convertDiagnostic(type, check());
 			cache.write(name, convertedData);
-			this.markAsDirty(id, snapshot);
+			this.markAsDirty(id);
 			return convertedData;
 		}
 
-		this.context.debug(colors.green("    cache hit"));
+		this.context.debug(green("    cache hit"));
 
 		const data = cache.read(name);
 		cache.write(name, data);
@@ -221,13 +218,13 @@ export class TsCache
 		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
 	}
 
-	private markAsDirty(id: string, _snapshot: ts.IScriptSnapshot): void
+	private markAsDirty(id: string): void
 	{
 		this.dependencyTree.setNode(id, { dirty: true });
 	}
 
 	// returns true if node or any of its imports or any of global types changed
-	private isDirty(id: string, _snapshot: ts.IScriptSnapshot, checkImports: boolean): boolean
+	private isDirty(id: string, checkImports: boolean): boolean
 	{
 		const label = this.dependencyTree.node(id) as INodeLabel;
 
@@ -240,9 +237,9 @@ export class TsCache
 		if (this.ambientTypesDirty)
 			return true;
 
-		const dependencies = graph.alg.dijkstra(this.dependencyTree, id);
+		const dependencies = alg.dijkstra(this.dependencyTree, id);
 
-		return _.some(dependencies, (dependency, node) =>
+		return some(dependencies, (dependency, node) =>
 		{
 			if (!node || dependency.distance === Infinity)
 				return false;
@@ -257,9 +254,9 @@ export class TsCache
 		});
 	}
 
-	private makeName(id: string, snapshot: ts.IScriptSnapshot)
+	private makeName(id: string, snapshot: IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
-		return hash.sha1({ data, id });
+		return sha1({ data, id });
 	}
 }

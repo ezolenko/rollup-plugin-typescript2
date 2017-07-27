@@ -1,119 +1,47 @@
 import { RollupContext } from "./rollupcontext";
-import { IContext, ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
+import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, ICode, IDiagnostics } from "./tscache";
-import * as ts from "typescript";
-import {basename, dirname, extname, join} from "path";
-import * as fs from "fs-extra";
-import * as path from "path";
-import * as _ from "lodash";
-import * as colors from "colors/safe";
+import { TsCache, convertDiagnostic, ICode } from "./tscache";
+import { createLanguageService, version, createDocumentRegistry, OutputFile, ParsedCommandLine, sys, LanguageService, nodeModuleNameResolver } from "typescript";
 import * as resolve from "resolve";
+import {defaults, endsWith, concat, find, isFunction, get, each} from "lodash";
 import { IRollupOptions } from "./irollup-options";
+import { IOptions } from "./ioptions";
+import { Partial } from "./partial";
+import { parseTsConfig } from "./parse-ts-config";
+import { printDiagnostics } from "./print-diagnostics";
+import { TSLIB, tslibSource } from "./tslib";
+import {blue, red, yellow} from "colors/safe";
+import {join, relative, dirname} from "path";
 
 // tslint:disable-next-line:no-var-requires
 const createFilter = require("rollup-pluginutils").createFilter;
+let watchMode = false;
+let round = 0;
+let targetCount = 0;
+let rollupOptions: IRollupOptions;
+let pluginOptions: IOptions;
+let context: ConsoleContext;
+let filter: any;
+let parsedConfig: ParsedCommandLine;
+let servicesHost: LanguageServiceHost;
+let service: LanguageService;
+let _cache: TsCache;
+let noErrors = true;
+const declarations: { [name: string]: OutputFile } = {};
 
-function getOptionsOverrides(): ts.CompilerOptions
+const cache = (): TsCache =>
 {
-	return {
-		module: ts.ModuleKind.ES2015,
-		noEmitHelpers: true,
-		importHelpers: true,
-		noResolve: false,
-	};
-}
+	if (!_cache)
+		_cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+	return _cache;
+};
 
-// The injected id for helpers.
-const TSLIB = "tslib";
-let tslibSource: string;
-try
+export default function typescript(options?: Partial<IOptions>)
 {
-	// tslint:disable-next-line:no-string-literal no-var-requires
-	const tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
-	tslibSource = fs.readFileSync(tslibPath, "utf8");
-} catch (e)
-{
-	console.warn("Error loading `tslib` helper library.");
-	throw e;
-}
+	pluginOptions = { ... options } as IOptions;
 
-function parseTsConfig(tsconfig: string, context: IContext)
-{
-	const fileName = ts.findConfigFile(process.cwd(), ts.sys.fileExists, tsconfig);
-
-	if (!fileName)
-		throw new Error(`couldn't find '${tsconfig}' in ${process.cwd()}`);
-
-	const text = ts.sys.readFile(fileName);
-	const result = ts.parseConfigFileTextToJson(fileName, text);
-
-	if (result.error)
-	{
-		printDiagnostics(context, convertDiagnostic("config", [result.error]));
-		throw new Error(`failed to parse ${fileName}`);
-	}
-
-	const configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
-
-	return configParseResult;
-}
-
-function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
-{
-	_.each(diagnostics, (diagnostic) =>
-	{
-		let print;
-		let color;
-		let category;
-		switch (diagnostic.category)
-		{
-			case ts.DiagnosticCategory.Message:
-				print = context.info;
-				color = colors.white;
-				category = "";
-				break;
-			case ts.DiagnosticCategory.Error:
-				print = context.error;
-				color = colors.red;
-				category = "error";
-				break;
-			case ts.DiagnosticCategory.Warning:
-			default:
-				print = context.warn;
-				color = colors.yellow;
-				category = "warning";
-				break;
-		}
-
-		// const type = "";
-		const type = diagnostic.type + " ";
-
-		if (diagnostic.fileLine)
-			print.call(context, [`${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
-		else
-			print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
-	});
-}
-
-export interface IOptions
-{
-	include?: string;
-	exclude?: string;
-	check?: boolean;
-	verbosity?: number;
-	clean?: boolean;
-	cacheRoot?: string;
-	abortOnError?: boolean;
-	rollupCommonJSResolveHack?: boolean;
-	tsconfig?: string;
-}
-
-export default function typescript(options?: IOptions)
-{
-	options = { ... options };
-
-	_.defaults(options,
+	defaults(pluginOptions,
 	{
 		check: true,
 		verbosity: VerbosityLevel.Warning,
@@ -126,51 +54,31 @@ export default function typescript(options?: IOptions)
 		tsconfig: "tsconfig.json",
 	});
 
-	let rollupConfig: any;
-
-	let watchMode = false;
-	let round = 0;
-	let targetCount = 0;
-
-	const context = new ConsoleContext(options.verbosity!, "rpt2: ");
-
-	context.info(`Typescript version: ${ts.version}`);
-	context.debug(`Options: ${JSON.stringify(options, undefined, 4)}`);
-
-	const filter = createFilter(options.include, options.exclude);
-
-	const parsedConfig = parseTsConfig(options.tsconfig!, context);
-
-	const servicesHost = new LanguageServiceHost(parsedConfig);
-
-	const service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
-
-	let _cache: TsCache;
-
-	const cache = (): TsCache =>
-	{
-		if (!_cache)
-			_cache = new TsCache(servicesHost, options!.cacheRoot!, parsedConfig.options, rollupConfig, parsedConfig.fileNames, context);
-		return _cache;
-	};
-
-	let noErrors = true;
-
-	const declarations: { [name: string]: ts.OutputFile } = {};
-
-	// printing compiler option errors
-	if (options.check)
-		printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
-
 	return {
 
-		options(config: any)
+		options(config: IRollupOptions)
 		{
-			rollupConfig = config;
+			rollupOptions = config;
+			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
-			context.debug(`rollupConfig: ${JSON.stringify(rollupConfig, undefined, 4)}`);
+			context.info(`Typescript version: ${version}`);
+			context.debug(`Plugin Options: ${JSON.stringify(pluginOptions, undefined, 4)}`);
 
-			if (options!.clean)
+			filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+
+			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context);
+
+			servicesHost = new LanguageServiceHost(parsedConfig);
+
+			service = createLanguageService(servicesHost, createDocumentRegistry());
+
+			// printing compiler option errors
+			if (pluginOptions.check)
+				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
+
+			context.debug(`rollupConfig: ${JSON.stringify(rollupOptions, undefined, 4)}`);
+
+			if (pluginOptions.clean)
 				cache().clean();
 		},
 
@@ -185,21 +93,21 @@ export default function typescript(options?: IOptions)
 			importer = importer.split("\\").join("/");
 
 			// TODO: use module resolution cache
-			const result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
+			const result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
 
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
 			{
 				if (filter(result.resolvedModule.resolvedFileName))
 					cache().setDependency(result.resolvedModule.resolvedFileName, importer);
 
-				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+				if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
 
-				const resolved = options!.rollupCommonJSResolveHack
-						? resolve.sync(result.resolvedModule.resolvedFileName)
-						: result.resolvedModule.resolvedFileName;
+				const resolved = pluginOptions.rollupCommonJSResolveHack
+					? resolve.sync(result.resolvedModule.resolvedFileName)
+					: result.resolvedModule.resolvedFileName;
 
-				context.debug(`${colors.blue("resolving")} '${importee}'`);
+				context.debug(`${blue("resolving")} '${importee}'`);
 				context.debug(`    to '${resolved}'`);
 
 				return resolved;
@@ -221,7 +129,7 @@ export default function typescript(options?: IOptions)
 			if (!filter(id))
 				return undefined;
 
-			const contextWrapper = new RollupContext(options!.verbosity!, options!.abortOnError!, this, "rpt2: ");
+			const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
 
 			const snapshot = servicesHost.setSnapshot(id, code);
 
@@ -235,7 +143,7 @@ export default function typescript(options?: IOptions)
 					noErrors = false;
 
 					// always checking on fatal errors, even if options.check is set to false
-					const diagnostics = _.concat(
+					const diagnostics = concat(
 						cache().getSyntacticDiagnostics(id, snapshot, () =>
 						{
 							return service.getSyntacticDiagnostics(id);
@@ -249,13 +157,13 @@ export default function typescript(options?: IOptions)
 
 					// since no output was generated, aborting compilation
 					cache().done();
-					if (_.isFunction(this.error))
-						this.error(colors.red(`failed to transpile '${id}'`));
+					if (isFunction(this.error))
+						this.error(red(`failed to transpile '${id}'`));
 				}
 
-				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"));
-				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map"));
-				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
+				const transpiled = find(output.outputFiles, (entry) => endsWith(entry.name, ".js") || endsWith(entry.name, ".jsx"));
+				const map = find(output.outputFiles, (entry) => endsWith(entry.name, ".map"));
+				const dts = find(output.outputFiles, (entry) => endsWith(entry.name, ".d.ts"));
 
 				return {
 					code: transpiled ? transpiled.text : undefined,
@@ -264,9 +172,9 @@ export default function typescript(options?: IOptions)
 				};
 			});
 
-			if (options!.check)
+			if (pluginOptions.check)
 			{
-				const diagnostics = _.concat(
+				const diagnostics = concat(
 					cache().getSyntacticDiagnostics(id, snapshot, () =>
 					{
 						return service.getSyntacticDiagnostics(id);
@@ -294,7 +202,7 @@ export default function typescript(options?: IOptions)
 
 		ongenerate(bundleOptions: any): void
 		{
-			targetCount = _.get(bundleOptions, "targets.length", 1);
+			targetCount = get(bundleOptions, "targets.length", 1);
 
 			if (round >= targetCount) // ongenerate() is called for each target
 			{
@@ -309,7 +217,7 @@ export default function typescript(options?: IOptions)
 
 				cache().walkTree((id) =>
 				{
-					const diagnostics = _.concat(
+					const diagnostics = concat(
 						convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)),
 						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
 					);
@@ -319,7 +227,7 @@ export default function typescript(options?: IOptions)
 			}
 
 			if (!watchMode && !noErrors)
-				context.info(colors.yellow("there were errors or warnings above."));
+				context.info(yellow("there were errors or warnings above."));
 
 			cache().done();
 
@@ -328,21 +236,13 @@ export default function typescript(options?: IOptions)
 
 		onwrite({dest}: IRollupOptions)
 		{
-			// Expect the destination path given in the rollup bundle to be a relative path (if given). Join it with process.cwd()
-			const bundleDirectory = dest == null ? null : join(process.cwd(), dirname(dest));
-			const bundleName = dest == null ? null : basename(dest);
-			const bundleExt = dest == null ? null : extname(dest);
-			_.each(declarations, ({ name, text, writeByteOrderMark }) =>
+			const destDirectory = join(process.cwd(), dirname(dest as string));
+			const baseDeclarationDir = parsedConfig.options.outDir as string;
+			each(declarations, ({ name, text, writeByteOrderMark }) =>
 			{
-				// If no 'dest' is given, the bundle has no directory, name or extension. In that case, use the default declaration path given by Typescript.
-				if (bundleName == null || bundleExt == null || bundleDirectory == null) return ts.sys.writeFile(name, text, writeByteOrderMark);
-
-				// Otherwise, try to play nice with the destination from the rollup config.
-				// Make sure that the declaration file has the same name as the bundle (but a different extension)
-				const declarationName = bundleExt === "" ? `${bundleName}.d.ts` : `${bundleName.slice(0, bundleName.indexOf(bundleExt))}.d.ts`;
-				const declarationFilepath = join(bundleDirectory, declarationName);
-
-				ts.sys.writeFile(declarationFilepath, text, writeByteOrderMark);
+				const relativeFromBaseDeclarationDir = relative(baseDeclarationDir, name);
+				const writeToPath = join(destDirectory, relativeFromBaseDeclarationDir);
+				sys.writeFile(writeToPath, text, writeByteOrderMark);
 			});
 		},
 	};

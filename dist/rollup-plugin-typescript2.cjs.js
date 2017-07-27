@@ -1,14 +1,15 @@
 /* eslint-disable */
 'use strict';
 
-var _ = require('lodash');
-var fs = require('fs-extra');
-var ts = require('typescript');
-var graph = require('graphlib');
-var hash = require('object-hash');
-var colors = require('colors/safe');
-var path = require('path');
+var lodash = require('lodash');
+var typescript = require('typescript');
+var fs = require('fs');
+var graphlib = require('graphlib');
+var objectHash = require('object-hash');
+var fsExtra = require('fs-extra');
+var colors_safe = require('colors/safe');
 var resolve = require('resolve');
+var path = require('path');
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -80,7 +81,7 @@ var RollupContext = (function () {
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
-        this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
+        this.hasContext = lodash.isFunction(this.context.warn) && lodash.isFunction(this.context.error);
     }
     RollupContext.prototype.warn = function (message) {
         if (this.verbosity < VerbosityLevel.Warning)
@@ -128,17 +129,17 @@ var LanguageServiceHost = (function () {
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         fileName = this.normalize(fileName);
-        var snapshot = ts.ScriptSnapshot.fromString(data);
+        var snapshot = typescript.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
         fileName = this.normalize(fileName);
-        if (_.has(this.snapshots, fileName))
+        if (lodash.has(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (fs.existsSync(fileName)) {
-            this.snapshots[fileName] = ts.ScriptSnapshot.fromString(ts.sys.readFile(fileName));
+            this.snapshots[fileName] = typescript.ScriptSnapshot.fromString(typescript.sys.readFile(fileName));
             this.versions[fileName] = (this.versions[fileName] || 0) + 1;
             return this.snapshots[fileName];
         }
@@ -158,30 +159,28 @@ var LanguageServiceHost = (function () {
         return this.parsedConfig.options;
     };
     LanguageServiceHost.prototype.getDefaultLibFileName = function (opts) {
-        return ts.getDefaultLibFilePath(opts);
+        return typescript.getDefaultLibFilePath(opts);
     };
     LanguageServiceHost.prototype.useCaseSensitiveFileNames = function () {
-        return ts.sys.useCaseSensitiveFileNames;
+        return typescript.sys.useCaseSensitiveFileNames;
     };
     LanguageServiceHost.prototype.readDirectory = function (path$$1, extensions, exclude, include) {
-        return ts.sys.readDirectory(path$$1, extensions, exclude, include);
+        return typescript.sys.readDirectory(path$$1, extensions, exclude, include);
     };
     LanguageServiceHost.prototype.readFile = function (path$$1, encoding) {
-        return ts.sys.readFile(path$$1, encoding);
+        return typescript.sys.readFile(path$$1, encoding);
     };
     LanguageServiceHost.prototype.fileExists = function (path$$1) {
-        return ts.sys.fileExists(path$$1);
+        return typescript.sys.fileExists(path$$1);
     };
     LanguageServiceHost.prototype.getTypeRootsVersion = function () {
         return 0;
     };
-    // public resolveModuleNames(moduleNames: string[], containingFile: string): ts.ResolvedModule[]
-    // public resolveTypeReferenceDirectives?(typeDirectiveNames: string[], containingFile: string): ResolvedTypeReferenceDirective[]
     LanguageServiceHost.prototype.directoryExists = function (directoryName) {
-        return ts.sys.directoryExists(directoryName);
+        return typescript.sys.directoryExists(directoryName);
     };
     LanguageServiceHost.prototype.getDirectories = function (directoryName) {
-        return ts.sys.getDirectories(directoryName);
+        return typescript.sys.getDirectories(directoryName);
     };
     LanguageServiceHost.prototype.normalize = function (fileName) {
         return fileName.split("\\").join("/");
@@ -204,7 +203,7 @@ var RollingCache = (function () {
         this.rolled = false;
         this.oldCacheRoot = this.cacheRoot + "/cache";
         this.newCacheRoot = this.cacheRoot + "/cache_";
-        fs.emptyDirSync(this.newCacheRoot);
+        fsExtra.emptyDirSync(this.newCacheRoot);
     }
     /**
      * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
@@ -227,27 +226,27 @@ var RollingCache = (function () {
             return false;
         if (!fs.existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return _.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return lodash.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
     };
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
      */
     RollingCache.prototype.read = function (name) {
         if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
-            return fs.readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8" });
-        return fs.readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8" });
+            return fsExtra.readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8" });
+        return fsExtra.readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8" });
     };
     RollingCache.prototype.write = function (name, data) {
         if (this.rolled)
             return;
         if (data === undefined)
             return;
-        fs.writeJsonSync(this.newCacheRoot + "/" + name, data);
+        fsExtra.writeJsonSync(this.newCacheRoot + "/" + name, data);
     };
     RollingCache.prototype.touch = function (name) {
         if (this.rolled)
             return;
-        fs.ensureFileSync(this.newCacheRoot + "/" + name);
+        fsExtra.ensureFileSync(this.newCacheRoot + "/" + name);
     };
     /**
      * clears old cache and moves new in its place
@@ -256,16 +255,16 @@ var RollingCache = (function () {
         if (this.rolled)
             return;
         this.rolled = true;
-        fs.removeSync(this.oldCacheRoot);
+        fsExtra.removeSync(this.oldCacheRoot);
         fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
     };
     return RollingCache;
 }());
 
 function convertDiagnostic(type, data) {
-    return _.map(data, function (diagnostic) {
+    return lodash.map(data, function (diagnostic) {
         var entry = {
-            flatMessage: ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            flatMessage: typescript.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             category: diagnostic.category,
             code: diagnostic.code,
             type: type,
@@ -286,46 +285,46 @@ var TsCache = (function () {
         this.context = context;
         this.cacheVersion = "6";
         this.ambientTypesDirty = false;
-        this.cacheDir = cache + "/" + hash.sha1({
+        this.cacheDir = cache + "/" + objectHash.sha1({
             version: this.cacheVersion,
             rootFilenames: rootFilenames,
             options: this.options,
             rollupConfig: this.rollupConfig,
-            tsVersion: ts.version,
+            tsVersion: typescript.version,
         });
-        this.dependencyTree = new graph.Graph({ directed: true });
+        this.dependencyTree = new graphlib.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
-        var automaticTypes = _.map(ts.getAutomaticTypeDirectiveNames(options, ts.sys), function (entry) { return ts.resolveTypeReferenceDirective(entry, undefined, options, ts.sys); })
+        var automaticTypes = lodash.map(typescript.getAutomaticTypeDirectiveNames(options, typescript.sys), function (entry) { return typescript.resolveTypeReferenceDirective(entry, undefined, options, typescript.sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
             .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
-        this.ambientTypes = _.filter(rootFilenames, function (file) { return _.endsWith(file, ".d.ts"); })
+        this.ambientTypes = lodash.filter(rootFilenames, function (file) { return lodash.endsWith(file, ".d.ts"); })
             .concat(automaticTypes)
             .map(function (id) { return ({ id: id, snapshot: _this.host.getScriptSnapshot(id) }); });
         this.init();
         this.checkAmbientTypes();
     }
     TsCache.prototype.clean = function () {
-        this.context.info(colors.blue("cleaning cache: " + this.cacheDir));
-        fs.emptyDirSync(this.cacheDir);
+        this.context.info(colors_safe.blue("cleaning cache: " + this.cacheDir));
+        fsExtra.emptyDirSync(this.cacheDir);
         this.init();
     };
     TsCache.prototype.setDependency = function (importee, importer) {
         // importee -> importer
-        this.context.debug(colors.blue("dependency") + " '" + importee + "'");
+        this.context.debug(colors_safe.blue("dependency") + " '" + importee + "'");
         this.context.debug("    imported by '" + importer + "'");
         this.dependencyTree.setEdge(importer, importee);
     };
     TsCache.prototype.walkTree = function (cb) {
-        var acyclic = graph.alg.isAcyclic(this.dependencyTree);
+        var acyclic = graphlib.alg.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            _.each(graph.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+            lodash.each(graphlib.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
-        this.context.info(colors.yellow("import tree has cycles"));
-        _.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
+        this.context.info(colors_safe.yellow("import tree has cycles"));
+        lodash.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     TsCache.prototype.done = function () {
-        this.context.info(colors.blue("rolling caches"));
+        this.context.info(colors_safe.blue("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
@@ -333,16 +332,16 @@ var TsCache = (function () {
     };
     TsCache.prototype.getCompiled = function (id, snapshot, transform) {
         var name = this.makeName(id, snapshot);
-        this.context.info(colors.blue("transpiling") + " '" + id + "'");
+        this.context.info(colors_safe.blue("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
-        if (!this.codeCache.exists(name) || this.isDirty(id, snapshot, false)) {
-            this.context.debug(colors.yellow("    cache miss"));
+        if (!this.codeCache.exists(name) || this.isDirty(id, false)) {
+            this.context.debug(colors_safe.yellow("    cache miss"));
             var transformedData = transform();
             this.codeCache.write(name, transformedData);
-            this.markAsDirty(id, snapshot);
+            this.markAsDirty(id);
             return transformedData;
         }
-        this.context.debug(colors.green("    cache hit"));
+        this.context.debug(colors_safe.green("    cache hit"));
         var data = this.codeCache.read(name);
         this.codeCache.write(name, data);
         return data;
@@ -355,8 +354,8 @@ var TsCache = (function () {
     };
     TsCache.prototype.checkAmbientTypes = function () {
         var _this = this;
-        this.context.debug(colors.blue("Ambient types:"));
-        var typeNames = _.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
+        this.context.debug(colors_safe.blue("Ambient types:"));
+        var typeNames = lodash.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
             .map(function (snapshot) {
             _this.context.debug("    " + snapshot.id);
             return _this.makeName(snapshot.id, snapshot.snapshot);
@@ -364,20 +363,20 @@ var TsCache = (function () {
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
-            this.context.info(colors.yellow("ambient types changed, redoing all semantic diagnostics"));
-        _.each(typeNames, function (name) { return _this.typesCache.touch(name); });
+            this.context.info(colors_safe.yellow("ambient types changed, redoing all semantic diagnostics"));
+        lodash.each(typeNames, function (name) { return _this.typesCache.touch(name); });
     };
     TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
         this.context.debug("    cache: '" + cache.path(name) + "'");
-        if (!cache.exists(name) || this.isDirty(id, snapshot, true)) {
-            this.context.debug(colors.yellow("    cache miss"));
-            var data_1 = convertDiagnostic(type, check());
-            cache.write(name, data_1);
-            this.markAsDirty(id, snapshot);
-            return data_1;
+        if (!cache.exists(name) || this.isDirty(id, true)) {
+            this.context.debug(colors_safe.yellow("    cache miss"));
+            var convertedData = convertDiagnostic(type, check());
+            cache.write(name, convertedData);
+            this.markAsDirty(id);
+            return convertedData;
         }
-        this.context.debug(colors.green("    cache hit"));
+        this.context.debug(colors_safe.green("    cache hit"));
         var data = cache.read(name);
         cache.write(name, data);
         return data;
@@ -388,11 +387,11 @@ var TsCache = (function () {
         this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", true);
         this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", true);
     };
-    TsCache.prototype.markAsDirty = function (id, _snapshot) {
+    TsCache.prototype.markAsDirty = function (id) {
         this.dependencyTree.setNode(id, { dirty: true });
     };
     // returns true if node or any of its imports or any of global types changed
-    TsCache.prototype.isDirty = function (id, _snapshot, checkImports) {
+    TsCache.prototype.isDirty = function (id, checkImports) {
         var _this = this;
         var label = this.dependencyTree.node(id);
         if (!label)
@@ -401,8 +400,8 @@ var TsCache = (function () {
             return label.dirty;
         if (this.ambientTypesDirty)
             return true;
-        var dependencies = graph.alg.dijkstra(this.dependencyTree, id);
-        return _.some(dependencies, function (dependency, node) {
+        var dependencies = graphlib.alg.dijkstra(this.dependencyTree, id);
+        return lodash.some(dependencies, function (dependency, node) {
             if (!node || dependency.distance === Infinity)
                 return false;
             var l = _this.dependencyTree.node(node);
@@ -414,21 +413,65 @@ var TsCache = (function () {
     };
     TsCache.prototype.makeName = function (id, snapshot) {
         var data = snapshot.getText(0, snapshot.getLength());
-        return hash.sha1({ data: data, id: id });
+        return objectHash.sha1({ data: data, id: id });
     };
     return TsCache;
 }());
 
-// tslint:disable-next-line:no-var-requires
-var createFilter = require("rollup-pluginutils").createFilter;
+function printDiagnostics(context, diagnostics) {
+    lodash.each(diagnostics, function (diagnostic) {
+        var print;
+        var color;
+        var category;
+        switch (diagnostic.category) {
+            case typescript.DiagnosticCategory.Message:
+                print = context.info;
+                color = colors_safe.white;
+                category = "";
+                break;
+            case typescript.DiagnosticCategory.Error:
+                print = context.error;
+                color = colors_safe.red;
+                category = "error";
+                break;
+            case typescript.DiagnosticCategory.Warning:
+            default:
+                print = context.warn;
+                color = colors_safe.yellow;
+                category = "warning";
+                break;
+        }
+        var type = diagnostic.type + " ";
+        if (diagnostic.fileLine)
+            print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+        else
+            print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+    });
+}
+
 function getOptionsOverrides() {
     return {
-        module: ts.ModuleKind.ES2015,
+        module: typescript.ModuleKind.ES2015,
         noEmitHelpers: true,
         importHelpers: true,
         noResolve: false,
+        outDir: process.cwd(),
     };
 }
+
+function parseTsConfig(tsconfig, context) {
+    var fileName = typescript.findConfigFile(process.cwd(), typescript.sys.fileExists, tsconfig);
+    if (!fileName)
+        throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
+    var text = typescript.sys.readFile(fileName);
+    var result = typescript.parseConfigFileTextToJson(fileName, text);
+    if (result.error) {
+        printDiagnostics(context, convertDiagnostic("config", [result.error]));
+        throw new Error("failed to parse " + fileName);
+    }
+    return typescript.parseJsonConfigFileContent(result.config, typescript.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
+}
+
 // The injected id for helpers.
 var TSLIB = "tslib";
 var tslibSource;
@@ -441,53 +484,30 @@ catch (e) {
     console.warn("Error loading `tslib` helper library.");
     throw e;
 }
-function parseTsConfig(tsconfig, context) {
-    var fileName = ts.findConfigFile(process.cwd(), ts.sys.fileExists, tsconfig);
-    if (!fileName)
-        throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
-    var text = ts.sys.readFile(fileName);
-    var result = ts.parseConfigFileTextToJson(fileName, text);
-    if (result.error) {
-        printDiagnostics(context, convertDiagnostic("config", [result.error]));
-        throw new Error("failed to parse " + fileName);
-    }
-    var configParseResult = ts.parseJsonConfigFileContent(result.config, ts.sys, path.dirname(fileName), getOptionsOverrides(), fileName);
-    return configParseResult;
-}
-function printDiagnostics(context, diagnostics) {
-    _.each(diagnostics, function (diagnostic) {
-        var print;
-        var color;
-        var category;
-        switch (diagnostic.category) {
-            case ts.DiagnosticCategory.Message:
-                print = context.info;
-                color = colors.white;
-                category = "";
-                break;
-            case ts.DiagnosticCategory.Error:
-                print = context.error;
-                color = colors.red;
-                category = "error";
-                break;
-            case ts.DiagnosticCategory.Warning:
-            default:
-                print = context.warn;
-                color = colors.yellow;
-                category = "warning";
-                break;
-        }
-        // const type = "";
-        var type = diagnostic.type + " ";
-        if (diagnostic.fileLine)
-            print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
-        else
-            print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
-    });
-}
-function typescript(options) {
-    options = __assign({}, options);
-    _.defaults(options, {
+
+// tslint:disable-next-line:no-var-requires
+var createFilter = require("rollup-pluginutils").createFilter;
+var watchMode = false;
+var round = 0;
+var targetCount = 0;
+var rollupOptions;
+var pluginOptions;
+var context;
+var filter$1;
+var parsedConfig;
+var servicesHost;
+var service;
+var _cache;
+var noErrors = true;
+var declarations = {};
+var cache = function () {
+    if (!_cache)
+        _cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+    return _cache;
+};
+function typescript$1(options) {
+    pluginOptions = __assign({}, options);
+    lodash.defaults(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -498,33 +518,21 @@ function typescript(options) {
         rollupCommonJSResolveHack: false,
         tsconfig: "tsconfig.json",
     });
-    var rollupConfig;
-    var watchMode = false;
-    var round = 0;
-    var targetCount = 0;
-    var context = new ConsoleContext(options.verbosity, "rpt2: ");
-    context.info("Typescript version: " + ts.version);
-    context.debug("Options: " + JSON.stringify(options, undefined, 4));
-    var filter$$1 = createFilter(options.include, options.exclude);
-    var parsedConfig = parseTsConfig(options.tsconfig, context);
-    var servicesHost = new LanguageServiceHost(parsedConfig);
-    var service = ts.createLanguageService(servicesHost, ts.createDocumentRegistry());
-    var _cache;
-    var cache = function () {
-        if (!_cache)
-            _cache = new TsCache(servicesHost, options.cacheRoot, parsedConfig.options, rollupConfig, parsedConfig.fileNames, context);
-        return _cache;
-    };
-    var noErrors = true;
-    var declarations = {};
-    // printing compiler option errors
-    if (options.check)
-        printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
     return {
         options: function (config) {
-            rollupConfig = config;
-            context.debug("rollupConfig: " + JSON.stringify(rollupConfig, undefined, 4));
-            if (options.clean)
+            rollupOptions = config;
+            context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
+            context.info("Typescript version: " + typescript.version);
+            context.debug("Plugin Options: " + JSON.stringify(pluginOptions, undefined, 4));
+            filter$1 = createFilter(pluginOptions.include, pluginOptions.exclude);
+            parsedConfig = parseTsConfig(pluginOptions.tsconfig, context);
+            servicesHost = new LanguageServiceHost(parsedConfig);
+            service = typescript.createLanguageService(servicesHost, typescript.createDocumentRegistry());
+            // printing compiler option errors
+            if (pluginOptions.check)
+                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
+            context.debug("rollupConfig: " + JSON.stringify(rollupOptions, undefined, 4));
+            if (pluginOptions.clean)
                 cache().clean();
         },
         resolveId: function (importee, importer) {
@@ -534,16 +542,16 @@ function typescript(options) {
                 return null;
             importer = importer.split("\\").join("/");
             // TODO: use module resolution cache
-            var result = ts.nodeModuleNameResolver(importee, importer, parsedConfig.options, ts.sys);
+            var result = typescript.nodeModuleNameResolver(importee, importer, parsedConfig.options, typescript.sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
-                if (filter$$1(result.resolvedModule.resolvedFileName))
+                if (filter$1(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (lodash.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                var resolved = options.rollupCommonJSResolveHack
+                var resolved = pluginOptions.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(colors.blue("resolving") + " '" + importee + "'");
+                context.debug(colors_safe.blue("resolving") + " '" + importee + "'");
                 context.debug("    to '" + resolved + "'");
                 return resolved;
             }
@@ -556,9 +564,9 @@ function typescript(options) {
         },
         transform: function (code, id) {
             var _this = this;
-            if (!filter$$1(id))
+            if (!filter$1(id))
                 return undefined;
-            var contextWrapper = new RollupContext(options.verbosity, options.abortOnError, this, "rpt2: ");
+            var contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
             var snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
             var result = cache().getCompiled(id, snapshot, function () {
@@ -566,7 +574,7 @@ function typescript(options) {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    var diagnostics = _.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
+                    var diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, function () {
                         return service.getSemanticDiagnostics(id);
@@ -574,20 +582,20 @@ function typescript(options) {
                     printDiagnostics(contextWrapper, diagnostics);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (_.isFunction(_this.error))
-                        _this.error(colors.red("failed to transpile '" + id + "'"));
+                    if (lodash.isFunction(_this.error))
+                        _this.error(colors_safe.red("failed to transpile '" + id + "'"));
                 }
-                var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"); });
-                var map$$1 = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
-                var dts = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".d.ts"); });
+                var transpiled = lodash.find(output.outputFiles, function (entry) { return lodash.endsWith(entry.name, ".js") || lodash.endsWith(entry.name, ".jsx"); });
+                var map$$1 = lodash.find(output.outputFiles, function (entry) { return lodash.endsWith(entry.name, ".map"); });
+                var dts = lodash.find(output.outputFiles, function (entry) { return lodash.endsWith(entry.name, ".d.ts"); });
                 return {
                     code: transpiled ? transpiled.text : undefined,
                     map: map$$1 ? JSON.parse(map$$1.text) : { mappings: "" },
                     dts: dts,
                 };
             });
-            if (options.check) {
-                var diagnostics = _.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
+            if (pluginOptions.check) {
+                var diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
                     return service.getSyntacticDiagnostics(id);
                 }), cache().getSemanticDiagnostics(id, snapshot, function () {
                     return service.getSemanticDiagnostics(id);
@@ -603,7 +611,7 @@ function typescript(options) {
             return result;
         },
         ongenerate: function (bundleOptions) {
-            targetCount = _.get(bundleOptions, "targets.length", 1);
+            targetCount = lodash.get(bundleOptions, "targets.length", 1);
             if (round >= targetCount) {
                 watchMode = true;
                 round = 0;
@@ -612,34 +620,27 @@ function typescript(options) {
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
                 cache().walkTree(function (id) {
-                    var diagnostics = _.concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
+                    var diagnostics = lodash.concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     printDiagnostics(context, diagnostics);
                 });
             }
             if (!watchMode && !noErrors)
-                context.info(colors.yellow("there were errors or warnings above."));
+                context.info(colors_safe.yellow("there were errors or warnings above."));
             cache().done();
             round++;
         },
         onwrite: function (_a) {
             var dest = _a.dest;
-            // Expect the destination path given in the rollup bundle to be a relative path (if given). Join it with process.cwd()
-            var bundleDirectory = dest == null ? null : path.join(process.cwd(), path.dirname(dest));
-            var bundleName = dest == null ? null : path.basename(dest);
-            var bundleExt = dest == null ? null : path.extname(dest);
-            _.each(declarations, function (_a) {
+            var destDirectory = path.join(process.cwd(), path.dirname(dest));
+            var baseDeclarationDir = parsedConfig.options.outDir;
+            lodash.each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                // If no 'dest' is given, the bundle has no directory, name or extension. In that case, use the default declaration path given by Typescript.
-                if (bundleName == null || bundleExt == null || bundleDirectory == null)
-                    return ts.sys.writeFile(name, text, writeByteOrderMark);
-                // Otherwise, try to play nice with the destination from the rollup config.
-                // Make sure that the declaration file has the same name as the bundle (but a different extension)
-                var declarationName = bundleExt === "" ? bundleName + ".d.ts" : bundleName.slice(0, bundleName.indexOf(bundleExt)) + ".d.ts";
-                var declarationFilepath = path.join(bundleDirectory, declarationName);
-                ts.sys.writeFile(declarationFilepath, text, writeByteOrderMark);
+                var relativeFromBaseDeclarationDir = path.relative(baseDeclarationDir, name);
+                var writeToPath = path.join(destDirectory, relativeFromBaseDeclarationDir);
+                typescript.sys.writeFile(writeToPath, text, writeByteOrderMark);
             });
         },
     };
 }
 
-module.exports = typescript;
+module.exports = typescript$1;

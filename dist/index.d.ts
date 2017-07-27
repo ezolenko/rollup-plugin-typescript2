@@ -1,19 +1,10 @@
 import { IRollupContext } from "./context";
 import { ICode } from "./tscache";
 import { IRollupOptions } from "./irollup-options";
-export interface IOptions {
-    include?: string;
-    exclude?: string;
-    check?: boolean;
-    verbosity?: number;
-    clean?: boolean;
-    cacheRoot?: string;
-    abortOnError?: boolean;
-    rollupCommonJSResolveHack?: boolean;
-    tsconfig?: string;
-}
-export default function typescript(options?: IOptions): {
-    options(config: any): void;
+import { IOptions } from "./ioptions";
+import { Partial } from "./partial";
+export default function typescript(options?: Partial<IOptions>): {
+    options(config: IRollupOptions): void;
     resolveId(importee: string, importer: string): string | null;
     load(id: string): string | undefined;
     transform(this: IRollupContext, code: string, id: string): ICode | undefined;

@@ -1,18 +1,18 @@
-import * as ts from "typescript";
-export declare class LanguageServiceHost implements ts.LanguageServiceHost {
+import { LanguageServiceHost as TypescriptLanguageServiceHost, IScriptSnapshot, ParsedCommandLine, CompilerOptions } from "typescript";
+export declare class LanguageServiceHost implements TypescriptLanguageServiceHost {
     private parsedConfig;
     private cwd;
     private snapshots;
     private versions;
-    constructor(parsedConfig: ts.ParsedCommandLine);
+    constructor(parsedConfig: ParsedCommandLine);
     reset(): void;
-    setSnapshot(fileName: string, data: string): ts.IScriptSnapshot;
-    getScriptSnapshot(fileName: string): ts.IScriptSnapshot | undefined;
+    setSnapshot(fileName: string, data: string): IScriptSnapshot;
+    getScriptSnapshot(fileName: string): IScriptSnapshot | undefined;
     getCurrentDirectory(): string;
     getScriptVersion(fileName: string): string;
     getScriptFileNames(): string[];
-    getCompilationSettings(): ts.CompilerOptions;
-    getDefaultLibFileName(opts: ts.CompilerOptions): string;
+    getCompilationSettings(): CompilerOptions;
+    getDefaultLibFileName(opts: CompilerOptions): string;
     useCaseSensitiveFileNames(): boolean;
     readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[];
     readFile(path: string, encoding?: string): string;

@@ -1,0 +1,3 @@
+import { IContext } from "./context";
+import { IDiagnostics } from "./tscache";
+export declare function printDiagnostics(context: IContext, diagnostics: IDiagnostics[]): void;
