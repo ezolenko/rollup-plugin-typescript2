@@ -46,7 +46,7 @@ The following compiler options are forced though:
 * `importHelpers`: true
 * `noResolve`: false
 * `outDir`: `process.cwd()`,
-* (`declarationDir`: `process.cwd()`) (*only if `useTsconfigDeclarationDir is false in the plugin options*)
+* (`declarationDir`: `process.cwd()`) (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
 
 You will need to set `"moduleResolution": "node"` in `tsconfig.json` if typescript complains about missing `tslib`. See [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14).
 
@@ -98,7 +98,7 @@ Plugin takes following options:
 ### Declarations
 
 This plugin respects `declaration: true` in your `tsconfig.json` file. When set, it will emit `*.d.ts` files for your bundle. The resulting file(s) can then be used with the `types` property in your `package.json` file as described [here](https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html).
-By default, the declaration files will be located in the same directory as the generated Rollup bundle. If you want to override this behavior and instead use the declarationDir
+By default, the declaration files will be located in the same directory as the generated Rollup bundle. If you want to override this behavior and instead use the declarationDir set `useTsconfigDeclarationDir` to `true` in the plugin options.
 
 ### Watch mode
 
