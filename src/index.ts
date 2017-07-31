@@ -16,6 +16,7 @@ import {join, relative, dirname} from "path";
 
 // tslint:disable-next-line:no-var-requires
 const createFilter = require("rollup-pluginutils").createFilter;
+// tslint:enable-next-line:no-var-requires
 let watchMode = false;
 let round = 0;
 let targetCount = 0;
@@ -66,7 +67,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 			filter = createFilter(pluginOptions.include, pluginOptions.exclude);
 
-			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context);
+			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
 			servicesHost = new LanguageServiceHost(parsedConfig);
 
@@ -240,8 +241,7 @@ export default function typescript(options?: Partial<IOptions>)
 			const baseDeclarationDir = parsedConfig.options.outDir as string;
 			each(declarations, ({ name, text, writeByteOrderMark }) =>
 			{
-				const relativeFromBaseDeclarationDir = relative(baseDeclarationDir, name);
-				const writeToPath = join(destDirectory, relativeFromBaseDeclarationDir);
+				const writeToPath = pluginOptions.useTsconfigDeclarationDir ? name : join(destDirectory, relative(baseDeclarationDir, name));
 				sys.writeFile(writeToPath, text, writeByteOrderMark);
 			});
 		},

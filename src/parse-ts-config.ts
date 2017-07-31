@@ -4,8 +4,9 @@ import {dirname} from "path";
 import {printDiagnostics} from "./print-diagnostics";
 import {convertDiagnostic} from "./tscache";
 import {getOptionsOverrides} from "./get-options-overrides";
+import {IOptions} from "./ioptions";
 
-export function parseTsConfig(tsconfig: string, context: IContext): ParsedCommandLine {
+export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions: IOptions): ParsedCommandLine {
 	const fileName = findConfigFile(process.cwd(), sys.fileExists, tsconfig);
 
 	if (!fileName)
@@ -19,5 +20,5 @@ export function parseTsConfig(tsconfig: string, context: IContext): ParsedComman
 		throw new Error(`failed to parse ${fileName}`);
 	}
 
-	return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(), fileName);
+	return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(pluginOptions), fileName);
 }

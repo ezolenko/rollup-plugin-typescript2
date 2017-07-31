@@ -9,4 +9,5 @@ export interface IOptions
 	abortOnError: boolean;
 	rollupCommonJSResolveHack: boolean;
 	tsconfig: string;
+	useTsconfigDeclarationDir: boolean;
 }
