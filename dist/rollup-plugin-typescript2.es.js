@@ -8,7 +8,7 @@ import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync }
 import { blue, green, red, white, yellow } from 'colors/safe';
 import { sync } from 'resolve';
 import * as resolve from 'resolve';
-import { dirname, join, relative } from 'path';
+import { dirname, isAbsolute, join, relative } from 'path';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -479,29 +479,28 @@ catch (e) {
     throw e;
 }
 
-// tslint:disable-next-line:no-var-requires
-var createFilter = require("rollup-pluginutils").createFilter;
-// tslint:enable-next-line:no-var-requires
-var watchMode = false;
-var round = 0;
-var targetCount = 0;
-var rollupOptions;
-var pluginOptions;
-var context;
-var filter$1;
-var parsedConfig;
-var servicesHost;
-var service;
-var _cache;
-var noErrors = true;
-var declarations = {};
-var cache = function () {
-    if (!_cache)
-        _cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
-    return _cache;
-};
 function typescript$1(options) {
-    pluginOptions = __assign({}, options);
+    // tslint:disable-next-line:no-var-requires
+    var createFilter = require("rollup-pluginutils").createFilter;
+    // tslint:enable-next-line:no-var-requires
+    var watchMode = false;
+    var round = 0;
+    var targetCount = 0;
+    var rollupOptions;
+    var context;
+    var filter$$1;
+    var parsedConfig;
+    var servicesHost;
+    var service;
+    var noErrors = true;
+    var declarations = {};
+    var _cache;
+    var cache = function () {
+        if (!_cache)
+            _cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+        return _cache;
+    };
+    var pluginOptions = __assign({}, options);
     defaults(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
@@ -519,7 +518,7 @@ function typescript$1(options) {
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("Typescript version: " + version);
             context.debug("Plugin Options: " + JSON.stringify(pluginOptions, undefined, 4));
-            filter$1 = createFilter(pluginOptions.include, pluginOptions.exclude);
+            filter$$1 = createFilter(pluginOptions.include, pluginOptions.exclude);
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             servicesHost = new LanguageServiceHost(parsedConfig);
             service = createLanguageService(servicesHost, createDocumentRegistry());
@@ -539,7 +538,7 @@ function typescript$1(options) {
             // TODO: use module resolution cache
             var result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
-                if (filter$1(result.resolvedModule.resolvedFileName))
+                if (filter$$1(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
@@ -559,7 +558,7 @@ function typescript$1(options) {
         },
         transform: function (code, id) {
             var _this = this;
-            if (!filter$1(id))
+            if (!filter$$1(id))
                 return undefined;
             var contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
             var snapshot = servicesHost.setSnapshot(id, code);
@@ -626,11 +625,18 @@ function typescript$1(options) {
         },
         onwrite: function (_a) {
             var dest = _a.dest;
-            var destDirectory = join(process.cwd(), dirname(dest));
             var baseDeclarationDir = parsedConfig.options.outDir;
             each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                var writeToPath = pluginOptions.useTsconfigDeclarationDir ? name : join(destDirectory, relative(baseDeclarationDir, name));
+                // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+                // use the path provided by Typescript's LanguageService.
+                if (dest == null || pluginOptions.useTsconfigDeclarationDir)
+                    return sys.writeFile(name, text, writeByteOrderMark);
+                // Otherwise, take the directory name from the path and make sure it is absolute.
+                var destDirname = dirname(dest);
+                var destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+                var writeToPath = join(destDirectory, relative(baseDeclarationDir, name));
+                // Write the declaration file to disk.
                 sys.writeFile(writeToPath, text, writeByteOrderMark);
             });
         },
