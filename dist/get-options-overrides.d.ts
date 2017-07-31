@@ -1,2 +1,3 @@
 import { CompilerOptions } from "typescript";
-export declare function getOptionsOverrides(): CompilerOptions;
+import { IOptions } from "./ioptions";
+export declare function getOptionsOverrides({useTsconfigDeclarationDir}: IOptions): CompilerOptions;

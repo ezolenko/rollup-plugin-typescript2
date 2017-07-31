@@ -448,17 +448,12 @@ function printDiagnostics(context, diagnostics) {
     });
 }
 
-function getOptionsOverrides() {
-    return {
-        module: ModuleKind.ES2015,
-        noEmitHelpers: true,
-        importHelpers: true,
-        noResolve: false,
-        outDir: process.cwd(),
-    };
+function getOptionsOverrides(_a) {
+    var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
+    return __assign({ module: ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
 }
 
-function parseTsConfig(tsconfig, context) {
+function parseTsConfig(tsconfig, context, pluginOptions) {
     var fileName = findConfigFile(process.cwd(), sys.fileExists, tsconfig);
     if (!fileName)
         throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
@@ -468,7 +463,7 @@ function parseTsConfig(tsconfig, context) {
         printDiagnostics(context, convertDiagnostic("config", [result.error]));
         throw new Error("failed to parse " + fileName);
     }
-    return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(), fileName);
+    return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(pluginOptions), fileName);
 }
 
 // The injected id for helpers.
@@ -486,6 +481,7 @@ catch (e) {
 
 // tslint:disable-next-line:no-var-requires
 var createFilter = require("rollup-pluginutils").createFilter;
+// tslint:enable-next-line:no-var-requires
 var watchMode = false;
 var round = 0;
 var targetCount = 0;
@@ -524,7 +520,7 @@ function typescript$1(options) {
             context.info("Typescript version: " + version);
             context.debug("Plugin Options: " + JSON.stringify(pluginOptions, undefined, 4));
             filter$1 = createFilter(pluginOptions.include, pluginOptions.exclude);
-            parsedConfig = parseTsConfig(pluginOptions.tsconfig, context);
+            parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             servicesHost = new LanguageServiceHost(parsedConfig);
             service = createLanguageService(servicesHost, createDocumentRegistry());
             // printing compiler option errors
@@ -634,8 +630,7 @@ function typescript$1(options) {
             var baseDeclarationDir = parsedConfig.options.outDir;
             each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                var relativeFromBaseDeclarationDir = relative(baseDeclarationDir, name);
-                var writeToPath = join(destDirectory, relativeFromBaseDeclarationDir);
+                var writeToPath = pluginOptions.useTsconfigDeclarationDir ? name : join(destDirectory, relative(baseDeclarationDir, name));
                 sys.writeFile(writeToPath, text, writeByteOrderMark);
             });
         },
