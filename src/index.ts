@@ -12,35 +12,33 @@ import { parseTsConfig } from "./parse-ts-config";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource } from "./tslib";
 import {blue, red, yellow} from "colors/safe";
-import {join, relative, dirname} from "path";
-
-// tslint:disable-next-line:no-var-requires
-const createFilter = require("rollup-pluginutils").createFilter;
-// tslint:enable-next-line:no-var-requires
-let watchMode = false;
-let round = 0;
-let targetCount = 0;
-let rollupOptions: IRollupOptions;
-let pluginOptions: IOptions;
-let context: ConsoleContext;
-let filter: any;
-let parsedConfig: ParsedCommandLine;
-let servicesHost: LanguageServiceHost;
-let service: LanguageService;
-let _cache: TsCache;
-let noErrors = true;
-const declarations: { [name: string]: OutputFile } = {};
-
-const cache = (): TsCache =>
-{
-	if (!_cache)
-		_cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
-	return _cache;
-};
+import {join, relative, dirname, isAbsolute} from "path";
 
 export default function typescript(options?: Partial<IOptions>)
 {
-	pluginOptions = { ... options } as IOptions;
+	// tslint:disable-next-line:no-var-requires
+	const createFilter = require("rollup-pluginutils").createFilter;
+	// tslint:enable-next-line:no-var-requires
+	let watchMode = false;
+	let round = 0;
+	let targetCount = 0;
+	let rollupOptions: IRollupOptions;
+	let context: ConsoleContext;
+	let filter: any;
+	let parsedConfig: ParsedCommandLine;
+	let servicesHost: LanguageServiceHost;
+	let service: LanguageService;
+	let noErrors = true;
+	const declarations: { [name: string]: OutputFile } = {};
+
+	let _cache: TsCache;
+	const cache = (): TsCache =>
+	{
+		if (!_cache)
+			_cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+		return _cache;
+	};
+	const pluginOptions = { ... options } as IOptions;
 
 	defaults(pluginOptions,
 	{
@@ -237,11 +235,18 @@ export default function typescript(options?: Partial<IOptions>)
 
 		onwrite({dest}: IRollupOptions)
 		{
-			const destDirectory = join(process.cwd(), dirname(dest as string));
 			const baseDeclarationDir = parsedConfig.options.outDir as string;
 			each(declarations, ({ name, text, writeByteOrderMark }) =>
 			{
-				const writeToPath = pluginOptions.useTsconfigDeclarationDir ? name : join(destDirectory, relative(baseDeclarationDir, name));
+				// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+				// use the path provided by Typescript's LanguageService.
+				if (dest == null || pluginOptions.useTsconfigDeclarationDir) return sys.writeFile(name, text, writeByteOrderMark);
+
+				// Otherwise, take the directory name from the path and make sure it is absolute.
+				const destDirname = dirname(dest);
+				const destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+				const writeToPath = join(destDirectory, relative(baseDeclarationDir, name));
+				// Write the declaration file to disk.
 				sys.writeFile(writeToPath, text, writeByteOrderMark);
 			});
 		},
