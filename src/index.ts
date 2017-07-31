@@ -11,8 +11,8 @@ import { Partial } from "./partial";
 import { parseTsConfig } from "./parse-ts-config";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource } from "./tslib";
-import {blue, red, yellow} from "colors/safe";
-import {join, relative, dirname, isAbsolute} from "path";
+import { blue, red, yellow } from "colors/safe";
+import { join, relative, dirname, isAbsolute } from "path";
 
 export default function typescript(options?: Partial<IOptions>)
 {
