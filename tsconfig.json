@@ -15,8 +15,7 @@
 		"strictNullChecks": true,
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitReturns": true,
-		"declaration": true,
-		"declarationDir": "./dist"
+		"declaration": true
 	},
 	"include": [
 		"src/**/*.ts"

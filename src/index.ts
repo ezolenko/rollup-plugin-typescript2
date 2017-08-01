@@ -51,6 +51,7 @@ export default function typescript(options?: Partial<IOptions>)
 		abortOnError: true,
 		rollupCommonJSResolveHack: false,
 		tsconfig: "tsconfig.json",
+		useTsconfigDeclarationDir: false,
 	});
 
 	return {
@@ -235,17 +236,22 @@ export default function typescript(options?: Partial<IOptions>)
 
 		onwrite({dest}: IRollupOptions)
 		{
-			const baseDeclarationDir = parsedConfig.options.outDir as string;
+			const baseDeclarationDir = parsedConfig.options.outDir;
 			each(declarations, ({ name, text, writeByteOrderMark }) =>
 			{
+				let writeToPath: string;
 				// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
 				// use the path provided by Typescript's LanguageService.
-				if (dest == null || pluginOptions.useTsconfigDeclarationDir) return sys.writeFile(name, text, writeByteOrderMark);
+				if (!dest || pluginOptions.useTsconfigDeclarationDir)
+					writeToPath = name;
+				else
+				{
+					// Otherwise, take the directory name from the path and make sure it is absolute.
+					const destDirname = dirname(dest);
+					const destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+					writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
+				}
 
-				// Otherwise, take the directory name from the path and make sure it is absolute.
-				const destDirname = dirname(dest);
-				const destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
-				const writeToPath = join(destDirectory, relative(baseDeclarationDir, name));
 				// Write the declaration file to disk.
 				sys.writeFile(writeToPath, text, writeByteOrderMark);
 			});

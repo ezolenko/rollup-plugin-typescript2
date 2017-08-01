@@ -6,7 +6,8 @@ import {convertDiagnostic} from "./tscache";
 import {getOptionsOverrides} from "./get-options-overrides";
 import {IOptions} from "./ioptions";
 
-export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions: IOptions): ParsedCommandLine {
+export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions: IOptions): ParsedCommandLine
+{
 	const fileName = findConfigFile(process.cwd(), sys.fileExists, tsconfig);
 
 	if (!fileName)
@@ -20,5 +21,5 @@ export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions
 		throw new Error(`failed to parse ${fileName}`);
 	}
 
-	return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(pluginOptions), fileName);
+	return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(pluginOptions, result.config), fileName);
 }

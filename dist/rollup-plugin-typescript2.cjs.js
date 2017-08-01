@@ -449,9 +449,10 @@ function printDiagnostics(context, diagnostics) {
     });
 }
 
-function getOptionsOverrides(_a) {
+function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
-    return __assign({ module: typescript.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
+    var declaration = lodash.get(tsConfigJson, "compilerOptions.declaration", false);
+    return __assign({ module: typescript.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
 }
 
 function parseTsConfig(tsconfig, context, pluginOptions) {
@@ -464,7 +465,7 @@ function parseTsConfig(tsconfig, context, pluginOptions) {
         printDiagnostics(context, convertDiagnostic("config", [result.error]));
         throw new Error("failed to parse " + fileName);
     }
-    return typescript.parseJsonConfigFileContent(result.config, typescript.sys, path.dirname(fileName), getOptionsOverrides(pluginOptions), fileName);
+    return typescript.parseJsonConfigFileContent(result.config, typescript.sys, path.dirname(fileName), getOptionsOverrides(pluginOptions, result.config), fileName);
 }
 
 // The injected id for helpers.
@@ -512,6 +513,7 @@ function typescript$1(options) {
         abortOnError: true,
         rollupCommonJSResolveHack: false,
         tsconfig: "tsconfig.json",
+        useTsconfigDeclarationDir: false,
     });
     return {
         options: function (config) {
@@ -629,14 +631,17 @@ function typescript$1(options) {
             var baseDeclarationDir = parsedConfig.options.outDir;
             lodash.each(declarations, function (_a) {
                 var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
+                var writeToPath;
                 // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
                 // use the path provided by Typescript's LanguageService.
-                if (dest == null || pluginOptions.useTsconfigDeclarationDir)
-                    return typescript.sys.writeFile(name, text, writeByteOrderMark);
-                // Otherwise, take the directory name from the path and make sure it is absolute.
-                var destDirname = path.dirname(dest);
-                var destDirectory = path.isAbsolute(dest) ? destDirname : path.join(process.cwd(), destDirname);
-                var writeToPath = path.join(destDirectory, path.relative(baseDeclarationDir, name));
+                if (!dest || pluginOptions.useTsconfigDeclarationDir)
+                    writeToPath = name;
+                else {
+                    // Otherwise, take the directory name from the path and make sure it is absolute.
+                    var destDirname = path.dirname(dest);
+                    var destDirectory = path.isAbsolute(dest) ? destDirname : path.join(process.cwd(), destDirname);
+                    writeToPath = path.join(destDirectory, path.relative(baseDeclarationDir, name));
+                }
                 // Write the declaration file to disk.
                 typescript.sys.writeFile(writeToPath, text, writeByteOrderMark);
             });

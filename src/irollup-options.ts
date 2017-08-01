@@ -1,3 +1,4 @@
-export interface IRollupOptions {
+export interface IRollupOptions
+{
 	dest?: string;
 }

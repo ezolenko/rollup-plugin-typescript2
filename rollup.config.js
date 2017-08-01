@@ -7,6 +7,7 @@ export default {
 
 	external: [
 		'path',
+		'fs',
 		'fs-extra',
 		'object-assign',
 		'rollup-pluginutils',
