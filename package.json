@@ -32,7 +32,6 @@
     "lodash": "^4.17.4",
     "object-hash": "^1.1.8",
     "rollup-pluginutils": "^2.0.1",
-    "typescript": "^2.3.4",
     "tslib": "^1.7.1",
     "resolve": "^1.3.3"
   },
@@ -53,7 +52,8 @@
     "rollup": "^0.43.0",
     "rollup-plugin-typescript2": "github:ezolenko/rollup-plugin-typescript2#master",
     "rollup-watch": "^4.0.0",
-    "tslint": "^5.4.3"
+    "tslint": "^5.4.3",
+    "typescript": "^2.3.4"
   },
   "repository": {
     "type": "git",
