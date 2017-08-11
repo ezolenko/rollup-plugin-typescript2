@@ -1,6 +1,5 @@
 /* eslint-disable */
 import { concat, defaults, each, endsWith, filter, find, get, has, isEqual, isFunction, map, some } from 'lodash';
-import { DiagnosticCategory, ModuleKind, ScriptSnapshot, createDocumentRegistry, createLanguageService, findConfigFile, flattenDiagnosticMessageText, getAutomaticTypeDirectiveNames, getDefaultLibFilePath, nodeModuleNameResolver, parseConfigFileTextToJson, parseJsonConfigFileContent, resolveTypeReferenceDirective, sys, version } from 'typescript';
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
 import { Graph, alg } from 'graphlib';
 import { sha1 } from 'object-hash';
@@ -115,6 +114,11 @@ var RollupContext = (function () {
     return RollupContext;
 }());
 
+var tsModule;
+function setTypescriptModule(override) {
+    tsModule = override;
+}
+
 var LanguageServiceHost = (function () {
     function LanguageServiceHost(parsedConfig) {
         this.parsedConfig = parsedConfig;
@@ -128,7 +132,7 @@ var LanguageServiceHost = (function () {
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         fileName = this.normalize(fileName);
-        var snapshot = ScriptSnapshot.fromString(data);
+        var snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
@@ -138,7 +142,7 @@ var LanguageServiceHost = (function () {
         if (has(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (existsSync(fileName)) {
-            this.snapshots[fileName] = ScriptSnapshot.fromString(sys.readFile(fileName));
+            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
             this.versions[fileName] = (this.versions[fileName] || 0) + 1;
             return this.snapshots[fileName];
         }
@@ -158,28 +162,28 @@ var LanguageServiceHost = (function () {
         return this.parsedConfig.options;
     };
     LanguageServiceHost.prototype.getDefaultLibFileName = function (opts) {
-        return getDefaultLibFilePath(opts);
+        return tsModule.getDefaultLibFilePath(opts);
     };
     LanguageServiceHost.prototype.useCaseSensitiveFileNames = function () {
-        return sys.useCaseSensitiveFileNames;
+        return tsModule.sys.useCaseSensitiveFileNames;
     };
     LanguageServiceHost.prototype.readDirectory = function (path$$1, extensions, exclude, include) {
-        return sys.readDirectory(path$$1, extensions, exclude, include);
+        return tsModule.sys.readDirectory(path$$1, extensions, exclude, include);
     };
     LanguageServiceHost.prototype.readFile = function (path$$1, encoding) {
-        return sys.readFile(path$$1, encoding);
+        return tsModule.sys.readFile(path$$1, encoding);
     };
     LanguageServiceHost.prototype.fileExists = function (path$$1) {
-        return sys.fileExists(path$$1);
+        return tsModule.sys.fileExists(path$$1);
     };
     LanguageServiceHost.prototype.getTypeRootsVersion = function () {
         return 0;
     };
     LanguageServiceHost.prototype.directoryExists = function (directoryName) {
-        return sys.directoryExists(directoryName);
+        return tsModule.sys.directoryExists(directoryName);
     };
     LanguageServiceHost.prototype.getDirectories = function (directoryName) {
-        return sys.getDirectories(directoryName);
+        return tsModule.sys.getDirectories(directoryName);
     };
     LanguageServiceHost.prototype.normalize = function (fileName) {
         return fileName.split("\\").join("/");
@@ -263,7 +267,7 @@ var RollingCache = (function () {
 function convertDiagnostic(type, data) {
     return map(data, function (diagnostic) {
         var entry = {
-            flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             category: diagnostic.category,
             code: diagnostic.code,
             type: type,
@@ -289,11 +293,11 @@ var TsCache = (function () {
             rootFilenames: rootFilenames,
             options: this.options,
             rollupConfig: this.rollupConfig,
-            tsVersion: version,
+            tsVersion: tsModule.version,
         });
         this.dependencyTree = new Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
-        var automaticTypes = map(getAutomaticTypeDirectiveNames(options, sys), function (entry) { return resolveTypeReferenceDirective(entry, undefined, options, sys); })
+        var automaticTypes = map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
             .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
         this.ambientTypes = filter(rootFilenames, function (file) { return endsWith(file, ".d.ts"); })
@@ -423,17 +427,17 @@ function printDiagnostics(context, diagnostics) {
         var color;
         var category;
         switch (diagnostic.category) {
-            case DiagnosticCategory.Message:
+            case tsModule.DiagnosticCategory.Message:
                 print = context.info;
                 color = white;
                 category = "";
                 break;
-            case DiagnosticCategory.Error:
+            case tsModule.DiagnosticCategory.Error:
                 print = context.error;
                 color = red;
                 category = "error";
                 break;
-            case DiagnosticCategory.Warning:
+            case tsModule.DiagnosticCategory.Warning:
             default:
                 print = context.warn;
                 color = yellow;
@@ -451,20 +455,20 @@ function printDiagnostics(context, diagnostics) {
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
     var declaration = get(tsConfigJson, "compilerOptions.declaration", false);
-    return __assign({ module: ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
+    return __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
 }
 
 function parseTsConfig(tsconfig, context, pluginOptions) {
-    var fileName = findConfigFile(process.cwd(), sys.fileExists, tsconfig);
+    var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, tsconfig);
     if (!fileName)
         throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
-    var text = sys.readFile(fileName);
-    var result = parseConfigFileTextToJson(fileName, text);
+    var text = tsModule.sys.readFile(fileName);
+    var result = tsModule.parseConfigFileTextToJson(fileName, text);
     if (result.error) {
         printDiagnostics(context, convertDiagnostic("config", [result.error]));
         throw new Error("failed to parse " + fileName);
     }
-    return parseJsonConfigFileContent(result.config, sys, dirname(fileName), getOptionsOverrides(pluginOptions, result.config), fileName);
+    return tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), getOptionsOverrides(pluginOptions, result.config), fileName);
 }
 
 // The injected id for helpers.
@@ -480,7 +484,7 @@ catch (e) {
     throw e;
 }
 
-function typescript$1(options) {
+function typescript(options) {
     // tslint:disable-next-line:no-var-requires
     var createFilter = require("rollup-pluginutils").createFilter;
     // tslint:enable-next-line:no-var-requires
@@ -513,17 +517,19 @@ function typescript$1(options) {
         rollupCommonJSResolveHack: false,
         tsconfig: "tsconfig.json",
         useTsconfigDeclarationDir: false,
+        typescript: require("typescript"),
     });
+    setTypescriptModule(pluginOptions.typescript);
     return {
         options: function (config) {
             rollupOptions = config;
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
-            context.info("Typescript version: " + version);
-            context.debug("Plugin Options: " + JSON.stringify(pluginOptions, undefined, 4));
+            context.info("Typescript version: " + tsModule.version);
+            context.debug("Plugin Options: " + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
             filter$$1 = createFilter(pluginOptions.include, pluginOptions.exclude);
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             servicesHost = new LanguageServiceHost(parsedConfig);
-            service = createLanguageService(servicesHost, createDocumentRegistry());
+            service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
             // printing compiler option errors
             if (pluginOptions.check)
                 printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
@@ -538,7 +544,7 @@ function typescript$1(options) {
                 return null;
             importer = importer.split("\\").join("/");
             // TODO: use module resolution cache
-            var result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
+            var result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter$$1(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
@@ -642,10 +648,10 @@ function typescript$1(options) {
                     writeToPath = join(destDirectory, relative(baseDeclarationDir, name));
                 }
                 // Write the declaration file to disk.
-                sys.writeFile(writeToPath, text, writeByteOrderMark);
+                tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
             });
         },
     };
 }
 
-export default typescript$1;
+export default typescript;

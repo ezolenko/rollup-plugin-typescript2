@@ -1,14 +1,16 @@
-import {LanguageServiceHost as TypescriptLanguageServiceHost, IScriptSnapshot, ParsedCommandLine, ScriptSnapshot, sys, CompilerOptions, getDefaultLibFilePath} from "typescript";
-import {existsSync} from "fs";
-import {has} from "lodash";
 
-export class LanguageServiceHost implements TypescriptLanguageServiceHost
+import { tsModule } from "./tsproxy";
+import * as tsTypes from "typescript";
+import { existsSync } from "fs";
+import { has } from "lodash";
+
+export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 {
 	private cwd = process.cwd();
-	private snapshots: { [fileName: string]: IScriptSnapshot } = {};
+	private snapshots: { [fileName: string]: tsTypes.IScriptSnapshot } = {};
 	private versions: { [fileName: string]: number } = {};
 
-	constructor(private parsedConfig: ParsedCommandLine)
+	constructor(private parsedConfig: tsTypes.ParsedCommandLine)
 	{
 	}
 
@@ -18,17 +20,17 @@ export class LanguageServiceHost implements TypescriptLanguageServiceHost
 		this.versions = {};
 	}
 
-	public setSnapshot(fileName: string, data: string): IScriptSnapshot
+	public setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot
 	{
 		fileName = this.normalize(fileName);
 
-		const snapshot = ScriptSnapshot.fromString(data);
+		const snapshot = tsModule.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 		return snapshot;
 	}
 
-	public getScriptSnapshot(fileName: string): IScriptSnapshot | undefined
+	public getScriptSnapshot(fileName: string): tsTypes.IScriptSnapshot | undefined
 	{
 		fileName = this.normalize(fileName);
 
@@ -37,7 +39,7 @@ export class LanguageServiceHost implements TypescriptLanguageServiceHost
 
 		if (existsSync(fileName))
 		{
-			this.snapshots[fileName] = ScriptSnapshot.fromString(sys.readFile(fileName));
+			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
 			this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 			return this.snapshots[fileName];
 		}
@@ -62,34 +64,34 @@ export class LanguageServiceHost implements TypescriptLanguageServiceHost
 		return this.parsedConfig.fileNames;
 	}
 
-	public getCompilationSettings(): CompilerOptions
+	public getCompilationSettings(): tsTypes.CompilerOptions
 	{
 		return this.parsedConfig.options;
 	}
 
-	public getDefaultLibFileName(opts: CompilerOptions)
+	public getDefaultLibFileName(opts: tsTypes.CompilerOptions)
 	{
-		return getDefaultLibFilePath(opts);
+		return tsModule.getDefaultLibFilePath(opts);
 	}
 
 	public useCaseSensitiveFileNames(): boolean
 	{
-		return sys.useCaseSensitiveFileNames;
+		return tsModule.sys.useCaseSensitiveFileNames;
 	}
 
 	public readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[]
 	{
-		return sys.readDirectory(path, extensions, exclude, include);
+		return tsModule.sys.readDirectory(path, extensions, exclude, include);
 	}
 
 	public readFile(path: string, encoding?: string): string
 	{
-		return sys.readFile(path, encoding);
+		return tsModule.sys.readFile(path, encoding);
 	}
 
 	public fileExists(path: string): boolean
 	{
-		return sys.fileExists(path);
+		return tsModule.sys.fileExists(path);
 	}
 
 	public getTypeRootsVersion(): number
@@ -99,12 +101,12 @@ export class LanguageServiceHost implements TypescriptLanguageServiceHost
 
 	public directoryExists(directoryName: string): boolean
 	{
-		return sys.directoryExists(directoryName);
+		return tsModule.sys.directoryExists(directoryName);
 	}
 
 	public getDirectories(directoryName: string): string[]
 	{
-		return sys.getDirectories(directoryName);
+		return tsModule.sys.getDirectories(directoryName);
 	}
 
 	private normalize(fileName: string)

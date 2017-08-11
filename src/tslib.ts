@@ -1,4 +1,4 @@
-import {readFileSync} from "fs";
+import { readFileSync } from "fs";
 
 // The injected id for helpers.
 export const TSLIB = "tslib";

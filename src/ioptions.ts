@@ -1,3 +1,5 @@
+import { tsModule } from "./tsproxy";
+
 export interface IOptions
 {
 	include: string;
@@ -10,4 +12,5 @@ export interface IOptions
 	rollupCommonJSResolveHack: boolean;
 	tsconfig: string;
 	useTsconfigDeclarationDir: boolean;
+	typescript: typeof tsModule;
 }

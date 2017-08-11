@@ -1,18 +1,18 @@
 import { IContext } from "./context";
-import { Diagnostic, DiagnosticCategory, IScriptSnapshot, OutputFile, LanguageServiceHost, CompilerOptions } from "typescript";
+import * as tsTypes from "typescript";
 export interface ICode {
     code: string | undefined;
     map: string | undefined;
-    dts?: OutputFile | undefined;
+    dts?: tsTypes.OutputFile | undefined;
 }
 export interface IDiagnostics {
     flatMessage: string;
     fileLine?: string;
-    category: DiagnosticCategory;
+    category: tsTypes.DiagnosticCategory;
     code: number;
     type: string;
 }
-export declare function convertDiagnostic(type: string, data: Diagnostic[]): IDiagnostics[];
+export declare function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[];
 export declare class TsCache {
     private host;
     private options;
@@ -27,14 +27,14 @@ export declare class TsCache {
     private typesCache;
     private semanticDiagnosticsCache;
     private syntacticDiagnosticsCache;
-    constructor(host: LanguageServiceHost, cache: string, options: CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
+    constructor(host: tsTypes.LanguageServiceHost, cache: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
     clean(): void;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;
     done(): void;
-    getCompiled(id: string, snapshot: IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined;
-    getSyntacticDiagnostics(id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[];
-    getSemanticDiagnostics(id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[];
+    getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined;
+    getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
+    getSemanticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
     private checkAmbientTypes();
     private getDiagnostics(type, cache, id, snapshot, check);
     private init();

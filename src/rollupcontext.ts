@@ -1,5 +1,5 @@
 import { IContext, IRollupContext, VerbosityLevel } from "./context";
-import {isFunction} from "lodash";
+import { isFunction } from "lodash";
 
 export class RollupContext implements IContext
 {

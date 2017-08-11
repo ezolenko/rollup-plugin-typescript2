@@ -1,8 +1,8 @@
-import {DiagnosticCategory} from "typescript";
-import {red, white, yellow} from "colors/safe";
-import {each} from "lodash";
-import {IContext} from "./context";
-import {IDiagnostics} from "./tscache";
+import { tsModule } from "./tsproxy";
+import { red, white, yellow } from "colors/safe";
+import { each } from "lodash";
+import { IContext } from "./context";
+import { IDiagnostics } from "./tscache";
 
 export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[]): void
 {
@@ -13,17 +13,17 @@ export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 		let category;
 		switch (diagnostic.category)
 		{
-			case DiagnosticCategory.Message:
+			case tsModule.DiagnosticCategory.Message:
 				print = context.info;
 				color = white;
 				category = "";
 				break;
-			case DiagnosticCategory.Error:
+			case tsModule.DiagnosticCategory.Error:
 				print = context.error;
 				color = red;
 				category = "error";
 				break;
-			case DiagnosticCategory.Warning:
+			case tsModule.DiagnosticCategory.Warning:
 			default:
 				print = context.warn;
 				color = yellow;

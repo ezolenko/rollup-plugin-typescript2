@@ -1,18 +1,19 @@
 import { IContext } from "./context";
-import {Graph, alg} from "graphlib";
-import {sha1} from "object-hash";
+import { Graph, alg } from "graphlib";
+import { sha1 } from "object-hash";
 import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
-import {map, endsWith, filter, each, some} from "lodash";
-import {Diagnostic, DiagnosticCategory, IScriptSnapshot, OutputFile, LanguageServiceHost, version, getAutomaticTypeDirectiveNames, sys, resolveTypeReferenceDirective, flattenDiagnosticMessageText, CompilerOptions} from "typescript";
-import {blue, yellow, green} from "colors/safe";
-import {emptyDirSync} from "fs-extra";
+import { map, endsWith, filter, each, some } from "lodash";
+import { tsModule } from "./tsproxy";
+import * as tsTypes from "typescript";
+import { blue, yellow, green } from "colors/safe";
+import { emptyDirSync } from "fs-extra";
 
 export interface ICode
 {
 	code: string | undefined;
 	map: string | undefined;
-	dts?: OutputFile | undefined;
+	dts?: tsTypes.OutputFile | undefined;
 }
 
 interface INodeLabel
@@ -24,7 +25,7 @@ export interface IDiagnostics
 {
 	flatMessage: string;
 	fileLine?: string;
-	category: DiagnosticCategory;
+	category: tsTypes.DiagnosticCategory;
 	code: number;
 	type: string;
 }
@@ -32,20 +33,20 @@ export interface IDiagnostics
 interface ITypeSnapshot
 {
 	id: string;
-	snapshot: IScriptSnapshot | undefined;
+	snapshot: tsTypes.IScriptSnapshot | undefined;
 }
 
-export function convertDiagnostic(type: string, data: Diagnostic[]): IDiagnostics[]
+export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[]
 {
 	return map(data, (diagnostic) =>
 	{
 		const entry: IDiagnostics =
-		{
-			flatMessage: flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-			category: diagnostic.category,
-			code: diagnostic.code,
-			type,
-		};
+			{
+				flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+				category: diagnostic.category,
+				code: diagnostic.code,
+				type,
+			};
 
 		if (diagnostic.file && diagnostic.start !== undefined)
 		{
@@ -69,20 +70,20 @@ export class TsCache
 	private semanticDiagnosticsCache: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache: ICache<IDiagnostics[]>;
 
-	constructor(private host: LanguageServiceHost, cache: string, private options: CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
+	constructor(private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
 		this.cacheDir = `${cache}/${sha1({
 			version: this.cacheVersion,
 			rootFilenames,
 			options: this.options,
 			rollupConfig: this.rollupConfig,
-			tsVersion : version,
+			tsVersion: tsModule.version,
 		})}`;
 
 		this.dependencyTree = new Graph({ directed: true });
-		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }) );
+		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
 
-		const automaticTypes = map(getAutomaticTypeDirectiveNames(options, sys), (entry) => resolveTypeReferenceDirective(entry, undefined, options, sys))
+		const automaticTypes = map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
 			.filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
 			.map((entry) => entry.resolvedTypeReferenceDirective!.resolvedFileName!);
 
@@ -135,7 +136,7 @@ export class TsCache
 		this.typesCache.roll();
 	}
 
-	public getCompiled(id: string, snapshot: IScriptSnapshot, transform: () =>  ICode | undefined): ICode | undefined
+	public getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined
 	{
 		const name = this.makeName(id, snapshot);
 
@@ -159,12 +160,12 @@ export class TsCache
 		return data;
 	}
 
-	public getSyntacticDiagnostics(id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[]
+	public getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
 		return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
 	}
 
-	public getSemanticDiagnostics(id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[]
+	public getSemanticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
 		return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
 	}
@@ -187,7 +188,7 @@ export class TsCache
 		each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
-	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: IScriptSnapshot, check: () => Diagnostic[]): IDiagnostics[]
+	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
 		const name = this.makeName(id, snapshot);
 
@@ -254,7 +255,7 @@ export class TsCache
 		});
 	}
 
-	private makeName(id: string, snapshot: IScriptSnapshot)
+	private makeName(id: string, snapshot: tsTypes.IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
 		return sha1({ data, id });

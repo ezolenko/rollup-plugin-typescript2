@@ -2,9 +2,10 @@ import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
 import { TsCache, convertDiagnostic, ICode } from "./tscache";
-import { createLanguageService, version, createDocumentRegistry, OutputFile, ParsedCommandLine, sys, LanguageService, nodeModuleNameResolver } from "typescript";
+import { tsModule, setTypescriptModule } from "./tsproxy";
+import * as tsTypes from "typescript";
 import * as resolve from "resolve";
-import {defaults, endsWith, concat, find, isFunction, get, each} from "lodash";
+import { defaults, endsWith, concat, find, isFunction, get, each } from "lodash";
 import { IRollupOptions } from "./irollup-options";
 import { IOptions } from "./ioptions";
 import { Partial } from "./partial";
@@ -25,11 +26,11 @@ export default function typescript(options?: Partial<IOptions>)
 	let rollupOptions: IRollupOptions;
 	let context: ConsoleContext;
 	let filter: any;
-	let parsedConfig: ParsedCommandLine;
+	let parsedConfig: tsTypes.ParsedCommandLine;
 	let servicesHost: LanguageServiceHost;
-	let service: LanguageService;
+	let service: tsTypes.LanguageService;
 	let noErrors = true;
-	const declarations: { [name: string]: OutputFile } = {};
+	const declarations: { [name: string]: tsTypes.OutputFile } = {};
 
 	let _cache: TsCache;
 	const cache = (): TsCache =>
@@ -38,21 +39,25 @@ export default function typescript(options?: Partial<IOptions>)
 			_cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 		return _cache;
 	};
-	const pluginOptions = { ... options } as IOptions;
+
+	const pluginOptions = { ...options } as IOptions;
 
 	defaults(pluginOptions,
-	{
-		check: true,
-		verbosity: VerbosityLevel.Warning,
-		clean: false,
-		cacheRoot: `${process.cwd()}/.rpt2_cache`,
-		include: [ "*.ts+(|x)", "**/*.ts+(|x)" ],
-		exclude: [ "*.d.ts", "**/*.d.ts" ],
-		abortOnError: true,
-		rollupCommonJSResolveHack: false,
-		tsconfig: "tsconfig.json",
-		useTsconfigDeclarationDir: false,
-	});
+		{
+			check: true,
+			verbosity: VerbosityLevel.Warning,
+			clean: false,
+			cacheRoot: `${process.cwd()}/.rpt2_cache`,
+			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
+			exclude: ["*.d.ts", "**/*.d.ts"],
+			abortOnError: true,
+			rollupCommonJSResolveHack: false,
+			tsconfig: "tsconfig.json",
+			useTsconfigDeclarationDir: false,
+			typescript: require("typescript"),
+		});
+
+	setTypescriptModule(pluginOptions.typescript);
 
 	return {
 
@@ -61,8 +66,8 @@ export default function typescript(options?: Partial<IOptions>)
 			rollupOptions = config;
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
-			context.info(`Typescript version: ${version}`);
-			context.debug(`Plugin Options: ${JSON.stringify(pluginOptions, undefined, 4)}`);
+			context.info(`Typescript version: ${tsModule.version}`);
+			context.debug(`Plugin Options: ${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 
 			filter = createFilter(pluginOptions.include, pluginOptions.exclude);
 
@@ -70,7 +75,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 			servicesHost = new LanguageServiceHost(parsedConfig);
 
-			service = createLanguageService(servicesHost, createDocumentRegistry());
+			service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
 
 			// printing compiler option errors
 			if (pluginOptions.check)
@@ -93,7 +98,7 @@ export default function typescript(options?: Partial<IOptions>)
 			importer = importer.split("\\").join("/");
 
 			// TODO: use module resolution cache
-			const result = nodeModuleNameResolver(importee, importer, parsedConfig.options, sys);
+			const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
 
 			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
 			{
@@ -234,7 +239,7 @@ export default function typescript(options?: Partial<IOptions>)
 			round++;
 		},
 
-		onwrite({dest}: IRollupOptions)
+		onwrite({ dest }: IRollupOptions)
 		{
 			const baseDeclarationDir = parsedConfig.options.outDir;
 			each(declarations, ({ name, text, writeByteOrderMark }) =>
@@ -253,7 +258,7 @@ export default function typescript(options?: Partial<IOptions>)
 				}
 
 				// Write the declaration file to disk.
-				sys.writeFile(writeToPath, text, writeByteOrderMark);
+				tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
 			});
 		},
 	};

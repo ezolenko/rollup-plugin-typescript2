@@ -95,6 +95,10 @@ Plugin takes following options:
 
 	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
 
+* `typescript`: typescript module installed with the plugin
+	
+	When typescript version installed by the plugin (latest 2.x) is unacceptable, you can import your own typescript module and pass it in as `typescript: require("typescript")`. Must be 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
+
 ### Declarations
 
 This plugin respects `declaration: true` in your `tsconfig.json` file. When set, it will emit `*.d.ts` files for your bundle. The resulting file(s) can then be used with the `types` property in your `package.json` file as described [here](https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html).

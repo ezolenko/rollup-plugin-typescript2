@@ -1,13 +1,13 @@
 import { ICache } from "./icache";
-import {emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync} from "fs-extra";
-import {existsSync, readdirSync, renameSync} from "fs";
-import {isEqual} from "lodash";
+import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from "fs-extra";
+import { existsSync, readdirSync, renameSync } from "fs";
+import { isEqual } from "lodash";
 
 /**
  * Saves data in new cache folder or reads it from old one.
  * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
  */
-export class RollingCache <DataType> implements ICache<DataType>
+export class RollingCache<DataType> implements ICache<DataType>
 {
 	private oldCacheRoot: string;
 	private newCacheRoot: string;
