@@ -1,12 +1,12 @@
 import { tsModule } from "./tsproxy";
 import { red, white, yellow } from "colors/safe";
-import { each } from "lodash";
 import { IContext } from "./context";
 import { IDiagnostics } from "./tscache";
+import * as _ from "lodash";
 
 export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[]): void
 {
-	each(diagnostics, (diagnostic) =>
+	_.each(diagnostics, (diagnostic) =>
 	{
 		let print;
 		let color;

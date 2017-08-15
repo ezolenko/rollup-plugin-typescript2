@@ -20,5 +20,4 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     getTypeRootsVersion(): number;
     directoryExists(directoryName: string): boolean;
     getDirectories(directoryName: string): string[];
-    private normalize(fileName);
 }

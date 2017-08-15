@@ -5,7 +5,7 @@ import { TsCache, convertDiagnostic, ICode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";
-import { defaults, endsWith, concat, find, isFunction, get, each } from "lodash";
+import * as _ from "lodash";
 import { IRollupOptions } from "./irollup-options";
 import { IOptions } from "./ioptions";
 import { Partial } from "./partial";
@@ -14,6 +14,7 @@ import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource } from "./tslib";
 import { blue, red, yellow } from "colors/safe";
 import { join, relative, dirname, isAbsolute } from "path";
+import { normalize } from "./normalize";
 
 export default function typescript(options?: Partial<IOptions>)
 {
@@ -42,7 +43,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 	const pluginOptions = { ...options } as IOptions;
 
-	defaults(pluginOptions,
+	_.defaults(pluginOptions,
 		{
 			check: true,
 			verbosity: VerbosityLevel.Warning,
@@ -105,7 +106,7 @@ export default function typescript(options?: Partial<IOptions>)
 				if (filter(result.resolvedModule.resolvedFileName))
 					cache().setDependency(result.resolvedModule.resolvedFileName, importer);
 
-				if (endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
 					return null;
 
 				const resolved = pluginOptions.rollupCommonJSResolveHack
@@ -148,7 +149,7 @@ export default function typescript(options?: Partial<IOptions>)
 					noErrors = false;
 
 					// always checking on fatal errors, even if options.check is set to false
-					const diagnostics = concat(
+					const diagnostics = _.concat(
 						cache().getSyntacticDiagnostics(id, snapshot, () =>
 						{
 							return service.getSyntacticDiagnostics(id);
@@ -162,13 +163,13 @@ export default function typescript(options?: Partial<IOptions>)
 
 					// since no output was generated, aborting compilation
 					cache().done();
-					if (isFunction(this.error))
+					if (_.isFunction(this.error))
 						this.error(red(`failed to transpile '${id}'`));
 				}
 
-				const transpiled = find(output.outputFiles, (entry) => endsWith(entry.name, ".js") || endsWith(entry.name, ".jsx"));
-				const map = find(output.outputFiles, (entry) => endsWith(entry.name, ".map"));
-				const dts = find(output.outputFiles, (entry) => endsWith(entry.name, ".d.ts"));
+				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"));
+				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map"));
+				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 
 				return {
 					code: transpiled ? transpiled.text : undefined,
@@ -179,7 +180,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 			if (pluginOptions.check)
 			{
-				const diagnostics = concat(
+				const diagnostics = _.concat(
 					cache().getSyntacticDiagnostics(id, snapshot, () =>
 					{
 						return service.getSyntacticDiagnostics(id);
@@ -198,7 +199,9 @@ export default function typescript(options?: Partial<IOptions>)
 
 			if (result && result.dts)
 			{
-				declarations[result.dts.name] = result.dts;
+				const key = normalize(id);
+				declarations[key] = result.dts;
+				context.debug(`${blue("generated declarations")} for '${key}'`);
 				result.dts = undefined;
 			}
 
@@ -207,7 +210,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 		ongenerate(bundleOptions: any): void
 		{
-			targetCount = get(bundleOptions, "targets.length", 1);
+			targetCount = _.get(bundleOptions, "targets.length", 1);
 
 			if (round >= targetCount) // ongenerate() is called for each target
 			{
@@ -222,7 +225,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 				cache().walkTree((id) =>
 				{
-					const diagnostics = concat(
+					const diagnostics = _.concat(
 						convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)),
 						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
 					);
@@ -241,25 +244,42 @@ export default function typescript(options?: Partial<IOptions>)
 
 		onwrite({ dest }: IRollupOptions)
 		{
-			const baseDeclarationDir = parsedConfig.options.outDir;
-			each(declarations, ({ name, text, writeByteOrderMark }) =>
+			if (parsedConfig.options.declaration)
 			{
-				let writeToPath: string;
-				// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-				// use the path provided by Typescript's LanguageService.
-				if (!dest || pluginOptions.useTsconfigDeclarationDir)
-					writeToPath = name;
-				else
+				_.each(parsedConfig.fileNames, (name) =>
 				{
-					// Otherwise, take the directory name from the path and make sure it is absolute.
-					const destDirname = dirname(dest);
-					const destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
-					writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
-				}
+					const key = normalize(name);
+					if (_.has(declarations, key) || !filter(key))
+						return;
+					context.debug(`generating missed declarations for '${key}'`);
+					const output = service.getEmitOutput(key, true);
+					const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
+					if (dts)
+						declarations[key] = dts;
+				});
 
-				// Write the declaration file to disk.
-				tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
-			});
+				const baseDeclarationDir = parsedConfig.options.outDir;
+				_.each(declarations, ({ name, text, writeByteOrderMark }, key) =>
+				{
+					let writeToPath: string;
+					// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+					// use the path provided by Typescript's LanguageService.
+					if (!dest || pluginOptions.useTsconfigDeclarationDir)
+						writeToPath = name;
+					else
+					{
+						// Otherwise, take the directory name from the path and make sure it is absolute.
+						const destDirname = dirname(dest);
+						const destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+						writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
+					}
+
+					context.debug(`${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+
+					// Write the declaration file to disk.
+					tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
+				});
+			}
 		},
 	};
 }

@@ -1,5 +1,6 @@
 /* eslint-disable */
 import { concat, defaults, each, endsWith, filter, find, get, has, isEqual, isFunction, map, some } from 'lodash';
+import * as _ from 'lodash';
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
 import { Graph, alg } from 'graphlib';
 import { sha1 } from 'object-hash';
@@ -119,6 +120,10 @@ function setTypescriptModule(override) {
     tsModule = override;
 }
 
+function normalize(fileName) {
+    return fileName.split("\\").join("/");
+}
+
 var LanguageServiceHost = (function () {
     function LanguageServiceHost(parsedConfig) {
         this.parsedConfig = parsedConfig;
@@ -131,14 +136,14 @@ var LanguageServiceHost = (function () {
         this.versions = {};
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
-        fileName = this.normalize(fileName);
+        fileName = normalize(fileName);
         var snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
-        fileName = this.normalize(fileName);
+        fileName = normalize(fileName);
         if (has(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (existsSync(fileName)) {
@@ -152,7 +157,7 @@ var LanguageServiceHost = (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
-        fileName = this.normalize(fileName);
+        fileName = normalize(fileName);
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
@@ -184,9 +189,6 @@ var LanguageServiceHost = (function () {
     };
     LanguageServiceHost.prototype.getDirectories = function (directoryName) {
         return tsModule.sys.getDirectories(directoryName);
-    };
-    LanguageServiceHost.prototype.normalize = function (fileName) {
-        return fileName.split("\\").join("/");
     };
     return LanguageServiceHost;
 }());
@@ -607,7 +609,9 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics);
             }
             if (result && result.dts) {
-                declarations[result.dts.name] = result.dts;
+                var key = normalize(id);
+                declarations[key] = result.dts;
+                context.debug(blue("generated declarations") + " for '" + key + "'");
                 result.dts = undefined;
             }
             return result;
@@ -633,23 +637,36 @@ function typescript(options) {
         },
         onwrite: function (_a) {
             var dest = _a.dest;
-            var baseDeclarationDir = parsedConfig.options.outDir;
-            each(declarations, function (_a) {
-                var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                var writeToPath;
-                // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-                // use the path provided by Typescript's LanguageService.
-                if (!dest || pluginOptions.useTsconfigDeclarationDir)
-                    writeToPath = name;
-                else {
-                    // Otherwise, take the directory name from the path and make sure it is absolute.
-                    var destDirname = dirname(dest);
-                    var destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
-                    writeToPath = join(destDirectory, relative(baseDeclarationDir, name));
-                }
-                // Write the declaration file to disk.
-                tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
-            });
+            if (parsedConfig.options.declaration) {
+                each(parsedConfig.fileNames, function (name) {
+                    var key = normalize(name);
+                    if (has(declarations, key) || !filter$$1(key))
+                        return;
+                    context.debug("generating missed declarations for '" + key + "'");
+                    var output = service.getEmitOutput(key, true);
+                    var dts = find(output.outputFiles, function (entry) { return endsWith(entry.name, ".d.ts"); });
+                    if (dts)
+                        declarations[key] = dts;
+                });
+                var baseDeclarationDir_1 = parsedConfig.options.outDir;
+                each(declarations, function (_a, key) {
+                    var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
+                    var writeToPath;
+                    // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+                    // use the path provided by Typescript's LanguageService.
+                    if (!dest || pluginOptions.useTsconfigDeclarationDir)
+                        writeToPath = name;
+                    else {
+                        // Otherwise, take the directory name from the path and make sure it is absolute.
+                        var destDirname = dirname(dest);
+                        var destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+                        writeToPath = join(destDirectory, relative(baseDeclarationDir_1, name));
+                    }
+                    context.debug(blue("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
+                    // Write the declaration file to disk.
+                    tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
+                });
+            }
         },
     };
 }

@@ -1,8 +1,8 @@
-
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { existsSync } from "fs";
-import { has } from "lodash";
+import * as _ from "lodash";
+import { normalize } from "./normalize";
 
 export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 {
@@ -22,7 +22,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot
 	{
-		fileName = this.normalize(fileName);
+		fileName = normalize(fileName);
 
 		const snapshot = tsModule.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
@@ -32,9 +32,9 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public getScriptSnapshot(fileName: string): tsTypes.IScriptSnapshot | undefined
 	{
-		fileName = this.normalize(fileName);
+		fileName = normalize(fileName);
 
-		if (has(this.snapshots, fileName))
+		if (_.has(this.snapshots, fileName))
 			return this.snapshots[fileName];
 
 		if (existsSync(fileName))
@@ -54,7 +54,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public getScriptVersion(fileName: string)
 	{
-		fileName = this.normalize(fileName);
+		fileName = normalize(fileName);
 
 		return (this.versions[fileName] || 0).toString();
 	}
@@ -107,10 +107,5 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	public getDirectories(directoryName: string): string[]
 	{
 		return tsModule.sys.getDirectories(directoryName);
-	}
-
-	private normalize(fileName: string)
-	{
-		return fileName.split("\\").join("/");
 	}
 }

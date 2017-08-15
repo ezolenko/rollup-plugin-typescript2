@@ -3,7 +3,7 @@ import { Graph, alg } from "graphlib";
 import { sha1 } from "object-hash";
 import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
-import { map, endsWith, filter, each, some } from "lodash";
+import * as _ from "lodash";
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { blue, yellow, green } from "colors/safe";
@@ -38,7 +38,7 @@ interface ITypeSnapshot
 
 export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[]
 {
-	return map(data, (diagnostic) =>
+	return _.map(data, (diagnostic) =>
 	{
 		const entry: IDiagnostics =
 			{
@@ -83,11 +83,11 @@ export class TsCache
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
 
-		const automaticTypes = map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+		const automaticTypes = _.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
 			.filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
 			.map((entry) => entry.resolvedTypeReferenceDirective!.resolvedFileName!);
 
-		this.ambientTypes = filter(rootFilenames, (file) => endsWith(file, ".d.ts"))
+		this.ambientTypes = _.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
 			.concat(automaticTypes)
 			.map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
 
@@ -118,13 +118,13 @@ export class TsCache
 
 		if (acyclic)
 		{
-			each(alg.topsort(this.dependencyTree), (id: string) => cb(id));
+			_.each(alg.topsort(this.dependencyTree), (id: string) => cb(id));
 			return;
 		}
 
 		this.context.info(yellow("import tree has cycles"));
 
-		each(this.dependencyTree.nodes(), (id: string) => cb(id));
+		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
 	}
 
 	public done()
@@ -173,7 +173,7 @@ export class TsCache
 	private checkAmbientTypes(): void
 	{
 		this.context.debug(blue("Ambient types:"));
-		const typeNames = filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+		const typeNames = _.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
 			{
 				this.context.debug(`    ${snapshot.id}`);
@@ -185,7 +185,7 @@ export class TsCache
 		if (this.ambientTypesDirty)
 			this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
 
-		each(typeNames, (name) => this.typesCache.touch(name));
+		_.each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -240,7 +240,7 @@ export class TsCache
 
 		const dependencies = alg.dijkstra(this.dependencyTree, id);
 
-		return some(dependencies, (dependency, node) =>
+		return _.some(dependencies, (dependency, node) =>
 		{
 			if (!node || dependency.distance === Infinity)
 				return false;

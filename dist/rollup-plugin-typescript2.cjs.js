@@ -1,7 +1,7 @@
 /* eslint-disable */
 'use strict';
 
-var lodash = require('lodash');
+var _ = require('lodash');
 var fs = require('fs');
 var graphlib = require('graphlib');
 var objectHash = require('object-hash');
@@ -80,7 +80,7 @@ var RollupContext = (function () {
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
-        this.hasContext = lodash.isFunction(this.context.warn) && lodash.isFunction(this.context.error);
+        this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
     }
     RollupContext.prototype.warn = function (message) {
         if (this.verbosity < VerbosityLevel.Warning)
@@ -120,6 +120,10 @@ function setTypescriptModule(override) {
     tsModule = override;
 }
 
+function normalize(fileName) {
+    return fileName.split("\\").join("/");
+}
+
 var LanguageServiceHost = (function () {
     function LanguageServiceHost(parsedConfig) {
         this.parsedConfig = parsedConfig;
@@ -132,15 +136,15 @@ var LanguageServiceHost = (function () {
         this.versions = {};
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
-        fileName = this.normalize(fileName);
+        fileName = normalize(fileName);
         var snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
-        fileName = this.normalize(fileName);
-        if (lodash.has(this.snapshots, fileName))
+        fileName = normalize(fileName);
+        if (_.has(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (fs.existsSync(fileName)) {
             this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
@@ -153,7 +157,7 @@ var LanguageServiceHost = (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
-        fileName = this.normalize(fileName);
+        fileName = normalize(fileName);
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
@@ -185,9 +189,6 @@ var LanguageServiceHost = (function () {
     };
     LanguageServiceHost.prototype.getDirectories = function (directoryName) {
         return tsModule.sys.getDirectories(directoryName);
-    };
-    LanguageServiceHost.prototype.normalize = function (fileName) {
-        return fileName.split("\\").join("/");
     };
     return LanguageServiceHost;
 }());
@@ -230,7 +231,7 @@ var RollingCache = (function () {
             return false;
         if (!fs.existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return lodash.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return _.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
     };
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
@@ -266,7 +267,7 @@ var RollingCache = (function () {
 }());
 
 function convertDiagnostic(type, data) {
-    return lodash.map(data, function (diagnostic) {
+    return _.map(data, function (diagnostic) {
         var entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             category: diagnostic.category,
@@ -298,10 +299,10 @@ var TsCache = (function () {
         });
         this.dependencyTree = new graphlib.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
-        var automaticTypes = lodash.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
+        var automaticTypes = _.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
             .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
-        this.ambientTypes = lodash.filter(rootFilenames, function (file) { return lodash.endsWith(file, ".d.ts"); })
+        this.ambientTypes = _.filter(rootFilenames, function (file) { return _.endsWith(file, ".d.ts"); })
             .concat(automaticTypes)
             .map(function (id) { return ({ id: id, snapshot: _this.host.getScriptSnapshot(id) }); });
         this.init();
@@ -321,11 +322,11 @@ var TsCache = (function () {
     TsCache.prototype.walkTree = function (cb) {
         var acyclic = graphlib.alg.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash.each(graphlib.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
+            _.each(graphlib.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
         this.context.info(colors_safe.yellow("import tree has cycles"));
-        lodash.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
+        _.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     TsCache.prototype.done = function () {
         this.context.info(colors_safe.blue("rolling caches"));
@@ -359,7 +360,7 @@ var TsCache = (function () {
     TsCache.prototype.checkAmbientTypes = function () {
         var _this = this;
         this.context.debug(colors_safe.blue("Ambient types:"));
-        var typeNames = lodash.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
+        var typeNames = _.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
             .map(function (snapshot) {
             _this.context.debug("    " + snapshot.id);
             return _this.makeName(snapshot.id, snapshot.snapshot);
@@ -368,7 +369,7 @@ var TsCache = (function () {
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
             this.context.info(colors_safe.yellow("ambient types changed, redoing all semantic diagnostics"));
-        lodash.each(typeNames, function (name) { return _this.typesCache.touch(name); });
+        _.each(typeNames, function (name) { return _this.typesCache.touch(name); });
     };
     TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
@@ -405,7 +406,7 @@ var TsCache = (function () {
         if (this.ambientTypesDirty)
             return true;
         var dependencies = graphlib.alg.dijkstra(this.dependencyTree, id);
-        return lodash.some(dependencies, function (dependency, node) {
+        return _.some(dependencies, function (dependency, node) {
             if (!node || dependency.distance === Infinity)
                 return false;
             var l = _this.dependencyTree.node(node);
@@ -423,7 +424,7 @@ var TsCache = (function () {
 }());
 
 function printDiagnostics(context, diagnostics) {
-    lodash.each(diagnostics, function (diagnostic) {
+    _.each(diagnostics, function (diagnostic) {
         var print;
         var color;
         var category;
@@ -455,7 +456,7 @@ function printDiagnostics(context, diagnostics) {
 
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
-    var declaration = lodash.get(tsConfigJson, "compilerOptions.declaration", false);
+    var declaration = _.get(tsConfigJson, "compilerOptions.declaration", false);
     return __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
 }
 
@@ -507,7 +508,7 @@ function typescript(options) {
         return _cache;
     };
     var pluginOptions = __assign({}, options);
-    lodash.defaults(pluginOptions, {
+    _.defaults(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -549,7 +550,7 @@ function typescript(options) {
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter$$1(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (lodash.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
                 var resolved = pluginOptions.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
@@ -577,7 +578,7 @@ function typescript(options) {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    var diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
+                    var diagnostics = _.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, function () {
                         return service.getSemanticDiagnostics(id);
@@ -585,12 +586,12 @@ function typescript(options) {
                     printDiagnostics(contextWrapper, diagnostics);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (lodash.isFunction(_this.error))
+                    if (_.isFunction(_this.error))
                         _this.error(colors_safe.red("failed to transpile '" + id + "'"));
                 }
-                var transpiled = lodash.find(output.outputFiles, function (entry) { return lodash.endsWith(entry.name, ".js") || lodash.endsWith(entry.name, ".jsx"); });
-                var map$$1 = lodash.find(output.outputFiles, function (entry) { return lodash.endsWith(entry.name, ".map"); });
-                var dts = lodash.find(output.outputFiles, function (entry) { return lodash.endsWith(entry.name, ".d.ts"); });
+                var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"); });
+                var map$$1 = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
+                var dts = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".d.ts"); });
                 return {
                     code: transpiled ? transpiled.text : undefined,
                     map: map$$1 ? JSON.parse(map$$1.text) : { mappings: "" },
@@ -598,7 +599,7 @@ function typescript(options) {
                 };
             });
             if (pluginOptions.check) {
-                var diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
+                var diagnostics = _.concat(cache().getSyntacticDiagnostics(id, snapshot, function () {
                     return service.getSyntacticDiagnostics(id);
                 }), cache().getSemanticDiagnostics(id, snapshot, function () {
                     return service.getSemanticDiagnostics(id);
@@ -608,13 +609,15 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics);
             }
             if (result && result.dts) {
-                declarations[result.dts.name] = result.dts;
+                var key = normalize(id);
+                declarations[key] = result.dts;
+                context.debug(colors_safe.blue("generated declarations") + " for '" + key + "'");
                 result.dts = undefined;
             }
             return result;
         },
         ongenerate: function (bundleOptions) {
-            targetCount = lodash.get(bundleOptions, "targets.length", 1);
+            targetCount = _.get(bundleOptions, "targets.length", 1);
             if (round >= targetCount) {
                 watchMode = true;
                 round = 0;
@@ -623,7 +626,7 @@ function typescript(options) {
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
                 cache().walkTree(function (id) {
-                    var diagnostics = lodash.concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
+                    var diagnostics = _.concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     printDiagnostics(context, diagnostics);
                 });
             }
@@ -634,23 +637,36 @@ function typescript(options) {
         },
         onwrite: function (_a) {
             var dest = _a.dest;
-            var baseDeclarationDir = parsedConfig.options.outDir;
-            lodash.each(declarations, function (_a) {
-                var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                var writeToPath;
-                // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-                // use the path provided by Typescript's LanguageService.
-                if (!dest || pluginOptions.useTsconfigDeclarationDir)
-                    writeToPath = name;
-                else {
-                    // Otherwise, take the directory name from the path and make sure it is absolute.
-                    var destDirname = path.dirname(dest);
-                    var destDirectory = path.isAbsolute(dest) ? destDirname : path.join(process.cwd(), destDirname);
-                    writeToPath = path.join(destDirectory, path.relative(baseDeclarationDir, name));
-                }
-                // Write the declaration file to disk.
-                tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
-            });
+            if (parsedConfig.options.declaration) {
+                _.each(parsedConfig.fileNames, function (name) {
+                    var key = normalize(name);
+                    if (_.has(declarations, key) || !filter$$1(key))
+                        return;
+                    context.debug("generating missed declarations for '" + key + "'");
+                    var output = service.getEmitOutput(key, true);
+                    var dts = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".d.ts"); });
+                    if (dts)
+                        declarations[key] = dts;
+                });
+                var baseDeclarationDir_1 = parsedConfig.options.outDir;
+                _.each(declarations, function (_a, key) {
+                    var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
+                    var writeToPath;
+                    // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+                    // use the path provided by Typescript's LanguageService.
+                    if (!dest || pluginOptions.useTsconfigDeclarationDir)
+                        writeToPath = name;
+                    else {
+                        // Otherwise, take the directory name from the path and make sure it is absolute.
+                        var destDirname = path.dirname(dest);
+                        var destDirectory = path.isAbsolute(dest) ? destDirname : path.join(process.cwd(), destDirname);
+                        writeToPath = path.join(destDirectory, path.relative(baseDeclarationDir_1, name));
+                    }
+                    context.debug(colors_safe.blue("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
+                    // Write the declaration file to disk.
+                    tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
+                });
+            }
         },
     };
 }

@@ -1,5 +1,5 @@
 import { IContext, IRollupContext, VerbosityLevel } from "./context";
-import { isFunction } from "lodash";
+import * as _ from "lodash";
 
 export class RollupContext implements IContext
 {
@@ -7,7 +7,7 @@ export class RollupContext implements IContext
 
 	constructor(private verbosity: VerbosityLevel, private bail: boolean, private context: IRollupContext, private prefix: string = "")
 	{
-		this.hasContext = isFunction(this.context.warn) && isFunction(this.context.error);
+		this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
 	}
 
 	public warn(message: string): void
