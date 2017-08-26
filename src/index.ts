@@ -242,7 +242,7 @@ export default function typescript(options?: Partial<IOptions>)
 			round++;
 		},
 
-		onwrite({ dest }: IRollupOptions)
+		onwrite({ dest, file }: IRollupOptions)
 		{
 			if (parsedConfig.options.declaration)
 			{
@@ -258,19 +258,21 @@ export default function typescript(options?: Partial<IOptions>)
 						declarations[key] = dts;
 				});
 
+				const bundleFile = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
+
 				const baseDeclarationDir = parsedConfig.options.outDir;
 				_.each(declarations, ({ name, text, writeByteOrderMark }, key) =>
 				{
 					let writeToPath: string;
 					// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
 					// use the path provided by Typescript's LanguageService.
-					if (!dest || pluginOptions.useTsconfigDeclarationDir)
+					if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
 						writeToPath = name;
 					else
 					{
 						// Otherwise, take the directory name from the path and make sure it is absolute.
-						const destDirname = dirname(dest);
-						const destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+						const destDirname = dirname(bundleFile);
+						const destDirectory = isAbsolute(bundleFile) ? destDirname : join(process.cwd(), destDirname);
 						writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
 					}
 

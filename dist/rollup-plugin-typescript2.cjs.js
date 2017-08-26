@@ -6,7 +6,7 @@ var fs = require('fs');
 var graphlib = require('graphlib');
 var objectHash = require('object-hash');
 var fsExtra = require('fs-extra');
-var colors_safe = require('colors/safe');
+var safe = require('colors/safe');
 var resolve = require('resolve');
 var path = require('path');
 
@@ -309,13 +309,13 @@ var TsCache = (function () {
         this.checkAmbientTypes();
     }
     TsCache.prototype.clean = function () {
-        this.context.info(colors_safe.blue("cleaning cache: " + this.cacheDir));
+        this.context.info(safe.blue("cleaning cache: " + this.cacheDir));
         fsExtra.emptyDirSync(this.cacheDir);
         this.init();
     };
     TsCache.prototype.setDependency = function (importee, importer) {
         // importee -> importer
-        this.context.debug(colors_safe.blue("dependency") + " '" + importee + "'");
+        this.context.debug(safe.blue("dependency") + " '" + importee + "'");
         this.context.debug("    imported by '" + importer + "'");
         this.dependencyTree.setEdge(importer, importee);
     };
@@ -325,11 +325,11 @@ var TsCache = (function () {
             _.each(graphlib.alg.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
-        this.context.info(colors_safe.yellow("import tree has cycles"));
+        this.context.info(safe.yellow("import tree has cycles"));
         _.each(this.dependencyTree.nodes(), function (id) { return cb(id); });
     };
     TsCache.prototype.done = function () {
-        this.context.info(colors_safe.blue("rolling caches"));
+        this.context.info(safe.blue("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
@@ -337,16 +337,16 @@ var TsCache = (function () {
     };
     TsCache.prototype.getCompiled = function (id, snapshot, transform) {
         var name = this.makeName(id, snapshot);
-        this.context.info(colors_safe.blue("transpiling") + " '" + id + "'");
+        this.context.info(safe.blue("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
         if (!this.codeCache.exists(name) || this.isDirty(id, false)) {
-            this.context.debug(colors_safe.yellow("    cache miss"));
+            this.context.debug(safe.yellow("    cache miss"));
             var transformedData = transform();
             this.codeCache.write(name, transformedData);
             this.markAsDirty(id);
             return transformedData;
         }
-        this.context.debug(colors_safe.green("    cache hit"));
+        this.context.debug(safe.green("    cache hit"));
         var data = this.codeCache.read(name);
         this.codeCache.write(name, data);
         return data;
@@ -359,7 +359,7 @@ var TsCache = (function () {
     };
     TsCache.prototype.checkAmbientTypes = function () {
         var _this = this;
-        this.context.debug(colors_safe.blue("Ambient types:"));
+        this.context.debug(safe.blue("Ambient types:"));
         var typeNames = _.filter(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
             .map(function (snapshot) {
             _this.context.debug("    " + snapshot.id);
@@ -368,20 +368,20 @@ var TsCache = (function () {
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
-            this.context.info(colors_safe.yellow("ambient types changed, redoing all semantic diagnostics"));
+            this.context.info(safe.yellow("ambient types changed, redoing all semantic diagnostics"));
         _.each(typeNames, function (name) { return _this.typesCache.touch(name); });
     };
     TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
         this.context.debug("    cache: '" + cache.path(name) + "'");
         if (!cache.exists(name) || this.isDirty(id, true)) {
-            this.context.debug(colors_safe.yellow("    cache miss"));
+            this.context.debug(safe.yellow("    cache miss"));
             var convertedData = convertDiagnostic(type, check());
             cache.write(name, convertedData);
             this.markAsDirty(id);
             return convertedData;
         }
-        this.context.debug(colors_safe.green("    cache hit"));
+        this.context.debug(safe.green("    cache hit"));
         var data = cache.read(name);
         cache.write(name, data);
         return data;
@@ -431,18 +431,18 @@ function printDiagnostics(context, diagnostics) {
         switch (diagnostic.category) {
             case tsModule.DiagnosticCategory.Message:
                 print = context.info;
-                color = colors_safe.white;
+                color = safe.white;
                 category = "";
                 break;
             case tsModule.DiagnosticCategory.Error:
                 print = context.error;
-                color = colors_safe.red;
+                color = safe.red;
                 category = "error";
                 break;
             case tsModule.DiagnosticCategory.Warning:
             default:
                 print = context.warn;
-                color = colors_safe.yellow;
+                color = safe.yellow;
                 category = "warning";
                 break;
         }
@@ -555,7 +555,7 @@ function typescript(options) {
                 var resolved = pluginOptions.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(colors_safe.blue("resolving") + " '" + importee + "'");
+                context.debug(safe.blue("resolving") + " '" + importee + "'");
                 context.debug("    to '" + resolved + "'");
                 return resolved;
             }
@@ -587,7 +587,7 @@ function typescript(options) {
                     // since no output was generated, aborting compilation
                     cache().done();
                     if (_.isFunction(_this.error))
-                        _this.error(colors_safe.red("failed to transpile '" + id + "'"));
+                        _this.error(safe.red("failed to transpile '" + id + "'"));
                 }
                 var transpiled = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"); });
                 var map$$1 = _.find(output.outputFiles, function (entry) { return _.endsWith(entry.name, ".map"); });
@@ -611,7 +611,7 @@ function typescript(options) {
             if (result && result.dts) {
                 var key = normalize(id);
                 declarations[key] = result.dts;
-                context.debug(colors_safe.blue("generated declarations") + " for '" + key + "'");
+                context.debug(safe.blue("generated declarations") + " for '" + key + "'");
                 result.dts = undefined;
             }
             return result;
@@ -631,12 +631,12 @@ function typescript(options) {
                 });
             }
             if (!watchMode && !noErrors)
-                context.info(colors_safe.yellow("there were errors or warnings above."));
+                context.info(safe.yellow("there were errors or warnings above."));
             cache().done();
             round++;
         },
         onwrite: function (_a) {
-            var dest = _a.dest;
+            var dest = _a.dest, file = _a.file;
             if (parsedConfig.options.declaration) {
                 _.each(parsedConfig.fileNames, function (name) {
                     var key = normalize(name);
@@ -648,21 +648,22 @@ function typescript(options) {
                     if (dts)
                         declarations[key] = dts;
                 });
+                var bundleFile_1 = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
                 var baseDeclarationDir_1 = parsedConfig.options.outDir;
                 _.each(declarations, function (_a, key) {
                     var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
                     var writeToPath;
                     // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
                     // use the path provided by Typescript's LanguageService.
-                    if (!dest || pluginOptions.useTsconfigDeclarationDir)
+                    if (!bundleFile_1 || pluginOptions.useTsconfigDeclarationDir)
                         writeToPath = name;
                     else {
                         // Otherwise, take the directory name from the path and make sure it is absolute.
-                        var destDirname = path.dirname(dest);
-                        var destDirectory = path.isAbsolute(dest) ? destDirname : path.join(process.cwd(), destDirname);
+                        var destDirname = path.dirname(bundleFile_1);
+                        var destDirectory = path.isAbsolute(bundleFile_1) ? destDirname : path.join(process.cwd(), destDirname);
                         writeToPath = path.join(destDirectory, path.relative(baseDeclarationDir_1, name));
                     }
-                    context.debug(colors_safe.blue("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
+                    context.debug(safe.blue("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
                     // Write the declaration file to disk.
                     tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
                 });

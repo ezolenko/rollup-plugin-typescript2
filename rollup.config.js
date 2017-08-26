@@ -28,11 +28,11 @@ export default {
 	targets: [
 		{
 			format: 'cjs',
-			dest: pkg.main
+			file: pkg.main
 		},
 		{
 			format: 'es',
-			dest: pkg.module
+			file: pkg.module
 		}
 	]
 };

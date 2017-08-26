@@ -1,13 +1,11 @@
 /* eslint-disable */
 import { concat, defaults, each, endsWith, filter, find, get, has, isEqual, isFunction, map, some } from 'lodash';
-import * as _ from 'lodash';
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
 import { Graph, alg } from 'graphlib';
 import { sha1 } from 'object-hash';
 import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from 'fs-extra';
 import { blue, green, red, white, yellow } from 'colors/safe';
 import { sync } from 'resolve';
-import * as resolve from 'resolve';
 import { dirname, isAbsolute, join, relative } from 'path';
 
 /*! *****************************************************************************
@@ -636,7 +634,7 @@ function typescript(options) {
             round++;
         },
         onwrite: function (_a) {
-            var dest = _a.dest;
+            var dest = _a.dest, file = _a.file;
             if (parsedConfig.options.declaration) {
                 each(parsedConfig.fileNames, function (name) {
                     var key = normalize(name);
@@ -648,18 +646,19 @@ function typescript(options) {
                     if (dts)
                         declarations[key] = dts;
                 });
+                var bundleFile_1 = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
                 var baseDeclarationDir_1 = parsedConfig.options.outDir;
                 each(declarations, function (_a, key) {
                     var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
                     var writeToPath;
                     // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
                     // use the path provided by Typescript's LanguageService.
-                    if (!dest || pluginOptions.useTsconfigDeclarationDir)
+                    if (!bundleFile_1 || pluginOptions.useTsconfigDeclarationDir)
                         writeToPath = name;
                     else {
                         // Otherwise, take the directory name from the path and make sure it is absolute.
-                        var destDirname = dirname(dest);
-                        var destDirectory = isAbsolute(dest) ? destDirname : join(process.cwd(), destDirname);
+                        var destDirname = dirname(bundleFile_1);
+                        var destDirectory = isAbsolute(bundleFile_1) ? destDirname : join(process.cwd(), destDirname);
                         writeToPath = join(destDirectory, relative(baseDeclarationDir_1, name));
                     }
                     context.debug(blue("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
