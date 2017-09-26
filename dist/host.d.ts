@@ -15,7 +15,7 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     getDefaultLibFileName(opts: tsTypes.CompilerOptions): string;
     useCaseSensitiveFileNames(): boolean;
     readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[];
-    readFile(path: string, encoding?: string): string;
+    readFile(path: string, encoding?: string): string | undefined;
     fileExists(path: string): boolean;
     getTypeRootsVersion(): number;
     directoryExists(directoryName: string): boolean;
