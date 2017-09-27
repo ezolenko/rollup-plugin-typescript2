@@ -56,6 +56,7 @@ export default function typescript(options?: Partial<IOptions>)
 			tsconfig: "tsconfig.json",
 			useTsconfigDeclarationDir: false,
 			typescript: require("typescript"),
+			tsconfigOverride: {},
 		});
 
 	setTypescriptModule(pluginOptions.typescript);
@@ -67,10 +68,12 @@ export default function typescript(options?: Partial<IOptions>)
 			rollupOptions = config;
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
-			context.info(`Typescript version: ${tsModule.version}`);
-			context.debug(`Plugin Options: ${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
+			context.info(`typescript version: ${tsModule.version}`);
+			context.debug(`plugin options: ${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 
 			filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+
+			context.debug(`rollup config: ${JSON.stringify(rollupOptions, undefined, 4)}`);
 
 			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
@@ -81,8 +84,6 @@ export default function typescript(options?: Partial<IOptions>)
 			// printing compiler option errors
 			if (pluginOptions.check)
 				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
-
-			context.debug(`rollupConfig: ${JSON.stringify(rollupOptions, undefined, 4)}`);
 
 			if (pluginOptions.clean)
 				cache().clean();

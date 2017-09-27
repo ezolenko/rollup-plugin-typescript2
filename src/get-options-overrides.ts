@@ -6,12 +6,14 @@ import * as _ from "lodash";
 export function getOptionsOverrides({ useTsconfigDeclarationDir }: IOptions, tsConfigJson?: any): tsTypes.CompilerOptions
 {
 	const declaration = _.get(tsConfigJson, "compilerOptions.declaration", false);
-	return {
+	const overrides = {
 		module: tsModule.ModuleKind.ES2015,
 		noEmitHelpers: true,
 		importHelpers: true,
 		noResolve: false,
 		outDir: process.cwd(),
+		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
 		...(!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }),
 	};
+	return overrides;
 }

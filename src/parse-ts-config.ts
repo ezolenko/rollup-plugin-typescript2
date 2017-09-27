@@ -6,6 +6,7 @@ import { printDiagnostics } from "./print-diagnostics";
 import { convertDiagnostic } from "./tscache";
 import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
+import * as _ from "lodash";
 
 export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions: IOptions): tsTypes.ParsedCommandLine
 {
@@ -23,5 +24,13 @@ export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions
 		throw new Error(`failed to parse ${fileName}`);
 	}
 
-	return tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), getOptionsOverrides(pluginOptions, result.config), fileName);
+	_.merge(result.config, pluginOptions.tsconfigOverride);
+
+	const compilerOptionsOverride = getOptionsOverrides(pluginOptions, result.config);
+	const parsedTsConfig = tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), compilerOptionsOverride, fileName);
+
+	context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
+	context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
+
+	return parsedTsConfig;
 }

@@ -29,12 +29,12 @@ export default {
 				{
 					"graphlib": [ "alg", "Graph" ],
 					"colors/safe": [ "green", "white", "red", "yellow", "blue" ],
-					"lodash": [ "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults" ],
+					"lodash": [ "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults", "assign", "merge" ],
 				//	"fs-extra": [ "renameSync", "removeSync", "ensureFileSync", "writeJsonSync", "readJsonSync", "existsSync", "readdirSync", "emptyDirSync" ],
 				},
 			}
 		),
-		ts({ verbosity: 3, abortOnError: false }),
+		ts({ verbosity: 2, abortOnError: false }),
 	],
 
 	banner: '/* eslint-disable */',

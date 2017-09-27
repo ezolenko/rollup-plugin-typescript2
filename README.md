@@ -21,40 +21,43 @@ export default {
 	entry: './main.ts',
 
 	plugins: [
-		typescript()
+		typescript(/*{ plugin options }*/)
 	]
 }
 ```
 
-The plugin inherits all compiler options and file lists from your `tsconfig.json` file.
-If your tsconfig has another name or another relative path from the root directory, you can pass in a custom path:
-
-```js
-// ...
-plugins: [
-	typescript({
-		tsconfig: "other_dir/tsconfig.json"
-	})
-]
-```
-
-This also allows for passing in different tsconfig files depending on your build target.
+The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
 
 The following compiler options are forced though:
-* `module`: es2015
+
+* `module`: `es2015`
 * `noEmitHelpers`: true
 * `importHelpers`: true
 * `noResolve`: false
-* `outDir`: `process.cwd()`,
-* (`declarationDir`: `process.cwd()`) (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
+* `outDir`: `process.cwd()`
+* `declarationDir`: `process.cwd()` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
+* `moduleResolution`: `node` (*`classic` is [depreciated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
 
-You will need to set `"moduleResolution": "node"` in `tsconfig.json` if typescript complains about missing `tslib`. See [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14).
-
-Plugin takes following options:
+### Plugin options
 
 * `tsconfig`: "tsconfig.json"
 
     Override this if your tsconfig has another name or relative location from the project directory.
+
+* `tsconfigOverride`: `{}`
+
+	The object passed as `tsconfigOverride` will be merged with loaded tsconfig before parsing. Hard overrides (see above) will be applied on top of that. Theoretically you can put everything you would put in tsconfig proper.
+
+	```js
+	let override = { compilerOptions: { declaration: true } };
+
+	// ...
+	plugins: [
+		typescript({ tsconfigOverride: override })
+	]
+	```
+
+	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are concatenated, primitives are replaced, etc), increase verbosity to 3 and look for `parsed tsconfig` if you get something unexpected.
 
 * `check`: true
 
@@ -68,16 +71,16 @@ Plugin takes following options:
 	- 3 -- Debug
 
 * `clean`: false
-	
+
 	Set to true for clean build (wipes out cache on every build).
 
 * `cacheRoot`: ".rts2_cache"
-	
+
 	Path to cache.
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
-	By default passes all .ts files through typescript compiler. 
+	By default passes all .ts files through typescript compiler.
 
 * `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
 
@@ -90,13 +93,13 @@ Plugin takes following options:
 * `rollupCommonJSResolveHack`: false
 
 	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in `namedExports` being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with `rollup-plugin-commonjs`.
-	
+
 * `useTsconfigDeclarationDir`: false
 
 	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
 
 * `typescript`: typescript module installed with the plugin
-	
+
 	When typescript version installed by the plugin (latest 2.x) is unacceptable, you can import your own typescript module and pass it in as `typescript: require("typescript")`. Must be 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
 
 ### Declarations
@@ -108,7 +111,7 @@ By default, the declaration files will be located in the same directory as the g
 
 The way typescript handles type-only imports and ambient types effectively hides them from rollup watch, because import statements are not generated and changing them doesn't trigger a rebuild.
 
-Otherwise the plugin should work in watch mode. Make sure to run a normal build after watch session to catch any type errors. 
+Otherwise the plugin should work in watch mode. Make sure to run a normal build after watch session to catch any type errors.
 
 ### Version
 

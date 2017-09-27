@@ -17148,7 +17148,9 @@ var lodash = createCommonjsModule(function (module, exports) {
 
     // Define as an anonymous module so, through path mapping, it can be
     // referenced as the "underscore" module.
-    
+    undefined(function() {
+      return _;
+    });
   }
   // Check for `exports` after `define` in case a build optimizer adds it.
   else if (freeModule) {
@@ -17176,6 +17178,7 @@ var lodash_9 = lodash.isFunction;
 var lodash_10 = lodash.concat;
 var lodash_11 = lodash.find;
 var lodash_12 = lodash.defaults;
+var lodash_14 = lodash.merge;
 
 var RollupContext = /** @class */ (function () {
     function RollupContext(verbosity, bail, context, prefix) {
@@ -17313,10 +17316,6 @@ if (!lodash$2) {
 }
 
 var lodash_1$1 = lodash$2;
-
-"use strict";
-
-
 
 var graph = Graph;
 
@@ -19192,7 +19191,8 @@ module['exports'] = function zalgo(text, options) {
       '̷', '͡', ' ҉'
     ]
   },
-  all = [].concat(soul.up, soul.down, soul.mid);
+  all = [].concat(soul.up, soul.down, soul.mid),
+  zalgo = {};
 
   function randomNumber(range) {
     var r = Math.floor(Math.random() * range);
@@ -19461,7 +19461,7 @@ function init() {
 }
 
 var sequencer = function sequencer (map, str) {
-  var exploded = str.split("");
+  var exploded = str.split(""), i = 0;
   exploded = exploded.map(map);
   return exploded.join("");
 };
@@ -19697,7 +19697,8 @@ function printDiagnostics(context, diagnostics) {
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
     var declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
-    return __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd() }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
+    var overrides = __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd(), moduleResolution: tsModule.ModuleResolutionKind.NodeJs }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
+    return overrides;
 }
 
 function parseTsConfig(tsconfig, context, pluginOptions) {
@@ -19710,7 +19711,12 @@ function parseTsConfig(tsconfig, context, pluginOptions) {
         printDiagnostics(context, convertDiagnostic("config", [result.error]));
         throw new Error("failed to parse " + fileName);
     }
-    return tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), getOptionsOverrides(pluginOptions, result.config), fileName);
+    lodash_14(result.config, pluginOptions.tsconfigOverride);
+    var compilerOptionsOverride = getOptionsOverrides(pluginOptions, result.config);
+    var parsedTsConfig = tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), compilerOptionsOverride, fileName);
+    context.debug("built-in options overrides: " + JSON.stringify(compilerOptionsOverride, undefined, 4));
+    context.debug("parsed tsconfig: " + JSON.stringify(parsedTsConfig, undefined, 4));
+    return parsedTsConfig;
 }
 
 // The injected id for helpers.
@@ -19760,22 +19766,23 @@ function typescript(options) {
         tsconfig: "tsconfig.json",
         useTsconfigDeclarationDir: false,
         typescript: require("typescript"),
+        tsconfigOverride: {},
     });
     setTypescriptModule(pluginOptions.typescript);
     return {
         options: function (config) {
             rollupOptions = config;
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
-            context.info("Typescript version: " + tsModule.version);
-            context.debug("Plugin Options: " + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
+            context.info("typescript version: " + tsModule.version);
+            context.debug("plugin options: " + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
             filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+            context.debug("rollup config: " + JSON.stringify(rollupOptions, undefined, 4));
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             servicesHost = new LanguageServiceHost(parsedConfig);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
             // printing compiler option errors
             if (pluginOptions.check)
                 printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
-            context.debug("rollupConfig: " + JSON.stringify(rollupOptions, undefined, 4));
             if (pluginOptions.clean)
                 cache().clean();
         },

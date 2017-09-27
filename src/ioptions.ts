@@ -13,4 +13,5 @@ export interface IOptions
 	tsconfig: string;
 	useTsconfigDeclarationDir: boolean;
 	typescript: typeof tsModule;
+	tsconfigOverride: any;
 }
