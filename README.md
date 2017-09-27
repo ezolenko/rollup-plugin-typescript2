@@ -116,7 +116,7 @@ This plugin currently requires TypeScript `2.0+`.
 
 ### Rollup version
 
-Tested on rollup `0.41.4`.
+Tested on rollup `0.50.0`.
 
 ### Reporting bugs
 
