@@ -225,6 +225,9 @@ export default function typescript(options?: Partial<IOptions>)
 
 				cache().walkTree((id) =>
 				{
+					if (!filter(id))
+						return;
+
 					const diagnostics = _.concat(
 						convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)),
 						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),

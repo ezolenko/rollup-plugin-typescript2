@@ -19866,6 +19866,8 @@ function typescript(options) {
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
                 cache().walkTree(function (id) {
+                    if (!filter(id))
+                        return;
                     var diagnostics = lodash_10(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     printDiagnostics(context, diagnostics);
                 });
