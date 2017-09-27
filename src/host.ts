@@ -39,7 +39,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 		if (existsSync(fileName))
 		{
-			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
+			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName)!);
 			this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 			return this.snapshots[fileName];
 		}
@@ -84,7 +84,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		return tsModule.sys.readDirectory(path, extensions, exclude, include);
 	}
 
-	public readFile(path: string, encoding?: string): string
+	public readFile(path: string, encoding?: string): string | undefined
 	{
 		return tsModule.sys.readFile(path, encoding);
 	}

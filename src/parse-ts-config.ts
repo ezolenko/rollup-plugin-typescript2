@@ -15,7 +15,7 @@ export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions
 		throw new Error(`couldn't find '${tsconfig}' in ${process.cwd()}`);
 
 	const text = tsModule.sys.readFile(fileName);
-	const result = tsModule.parseConfigFileTextToJson(fileName, text);
+	const result = tsModule.parseConfigFileTextToJson(fileName, text!);
 
 	if (result.error)
 	{

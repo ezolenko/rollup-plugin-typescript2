@@ -41,7 +41,7 @@ var VerbosityLevel;
     VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
     VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
 })(VerbosityLevel || (VerbosityLevel = {}));
-var ConsoleContext = (function () {
+var ConsoleContext = /** @class */ (function () {
     function ConsoleContext(verbosity, prefix) {
         if (prefix === void 0) { prefix = ""; }
         this.verbosity = verbosity;
@@ -70,7 +70,7 @@ var ConsoleContext = (function () {
     return ConsoleContext;
 }());
 
-var RollupContext = (function () {
+var RollupContext = /** @class */ (function () {
     function RollupContext(verbosity, bail, context, prefix) {
         if (prefix === void 0) { prefix = ""; }
         this.verbosity = verbosity;
@@ -122,7 +122,7 @@ function normalize(fileName) {
     return fileName.split("\\").join("/");
 }
 
-var LanguageServiceHost = (function () {
+var LanguageServiceHost = /** @class */ (function () {
     function LanguageServiceHost(parsedConfig) {
         this.parsedConfig = parsedConfig;
         this.cwd = process.cwd();
@@ -195,7 +195,7 @@ var LanguageServiceHost = (function () {
  * Saves data in new cache folder or reads it from old one.
  * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
  */
-var RollingCache = (function () {
+var RollingCache = /** @class */ (function () {
     /**
      * @param cacheRoot: root folder for the cache
      * @param checkNewCache: whether to also look in new cache when reading from cache
@@ -279,7 +279,7 @@ function convertDiagnostic(type, data) {
         return entry;
     });
 }
-var TsCache = (function () {
+var TsCache = /** @class */ (function () {
     function TsCache(host, cache, options, rollupConfig, rootFilenames, context) {
         var _this = this;
         this.host = host;
@@ -624,6 +624,8 @@ function typescript(options) {
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
                 cache().walkTree(function (id) {
+                    if (!filter$$1(id))
+                        return;
                     var diagnostics = concat(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     printDiagnostics(context, diagnostics);
                 });
