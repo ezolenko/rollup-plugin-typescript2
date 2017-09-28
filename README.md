@@ -49,11 +49,11 @@ The following compiler options are forced though:
 	The object passed as `tsconfigOverride` will be merged with loaded tsconfig before parsing. Hard overrides (see above) will be applied on top of that. Theoretically you can put everything you would put in tsconfig proper.
 
 	```js
-	let override = { compilerOptions: { declaration: true } };
+	const tsconfigOverride = { compilerOptions: { declaration: true } };
 
 	// ...
 	plugins: [
-		typescript({ tsconfigOverride: override })
+		typescript({ tsconfigOverride })
 	]
 	```
 
@@ -101,6 +101,28 @@ The following compiler options are forced though:
 * `typescript`: typescript module installed with the plugin
 
 	When typescript version installed by the plugin (latest 2.x) is unacceptable, you can import your own typescript module and pass it in as `typescript: require("typescript")`. Must be 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
+
+* `transformers`: `undefined`
+
+	**experimental**, typescript 2.4.1+
+
+	Transformers will likely be available in tsconfig eventually, so this is not a stable interface, see [Microsoft/TypeScript/issues/14419](https://github.com/Microsoft/TypeScript/issues/14419).
+
+	For example, integrating [kimamula/ts-transformer-keys](https://github.com/kimamula/ts-transformer-keys):
+
+	```js
+	const keysTransformer = require('ts-transformer-keys/transformer').default;
+	const transformers = (service) =>
+	{
+  		before: [ keysTransformer(service.getProgram()) ],
+  		after: []
+	};
+
+	// ...
+	plugins: [
+		typescript({ transformers })
+	]
+	```
 
 ### Declarations
 

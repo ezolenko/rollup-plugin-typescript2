@@ -17237,8 +17237,9 @@ function normalize(fileName) {
 }
 
 var LanguageServiceHost = /** @class */ (function () {
-    function LanguageServiceHost(parsedConfig) {
+    function LanguageServiceHost(parsedConfig, transformers) {
         this.parsedConfig = parsedConfig;
+        this.transformers = transformers;
         this.cwd = process.cwd();
         this.snapshots = {};
         this.versions = {};
@@ -17246,6 +17247,9 @@ var LanguageServiceHost = /** @class */ (function () {
     LanguageServiceHost.prototype.reset = function () {
         this.snapshots = {};
         this.versions = {};
+    };
+    LanguageServiceHost.prototype.setLanguageService = function (service) {
+        this.service = service;
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         fileName = normalize(fileName);
@@ -17301,6 +17305,11 @@ var LanguageServiceHost = /** @class */ (function () {
     };
     LanguageServiceHost.prototype.getDirectories = function (directoryName) {
         return tsModule.sys.getDirectories(directoryName);
+    };
+    LanguageServiceHost.prototype.getCustomTransformers = function () {
+        if (this.service === undefined || this.transformers === undefined)
+            return undefined;
+        return this.transformers(this.service);
     };
     return LanguageServiceHost;
 }());
@@ -19771,6 +19780,7 @@ function typescript(options) {
         useTsconfigDeclarationDir: false,
         typescript: require("typescript"),
         tsconfigOverride: {},
+        transformers: undefined,
     });
     setTypescriptModule(pluginOptions.typescript);
     return {
@@ -19782,8 +19792,9 @@ function typescript(options) {
             filter = createFilter(pluginOptions.include, pluginOptions.exclude);
             context.debug("rollup config: " + JSON.stringify(rollupOptions, undefined, 4));
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
-            servicesHost = new LanguageServiceHost(parsedConfig);
+            servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
+            servicesHost.setLanguageService(service);
             // printing compiler option errors
             if (pluginOptions.check)
                 printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));

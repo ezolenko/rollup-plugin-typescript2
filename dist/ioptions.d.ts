@@ -1,4 +1,5 @@
 import { tsModule } from "./tsproxy";
+import * as tsTypes from "typescript";
 export interface IOptions {
     include: string;
     exclude: string;
@@ -12,4 +13,5 @@ export interface IOptions {
     useTsconfigDeclarationDir: boolean;
     typescript: typeof tsModule;
     tsconfigOverride: any;
+    transformers: (service: tsTypes.LanguageService) => tsTypes.CustomTransformers;
 }

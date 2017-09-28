@@ -57,6 +57,7 @@ export default function typescript(options?: Partial<IOptions>)
 			useTsconfigDeclarationDir: false,
 			typescript: require("typescript"),
 			tsconfigOverride: {},
+			transformers: undefined,
 		});
 
 	setTypescriptModule(pluginOptions.typescript);
@@ -77,9 +78,10 @@ export default function typescript(options?: Partial<IOptions>)
 
 			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
-			servicesHost = new LanguageServiceHost(parsedConfig);
+			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
 
 			service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
+			servicesHost.setLanguageService(service);
 
 			// printing compiler option errors
 			if (pluginOptions.check)
