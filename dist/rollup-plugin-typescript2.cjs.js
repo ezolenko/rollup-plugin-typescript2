@@ -17152,9 +17152,7 @@ var lodash = createCommonjsModule(function (module, exports) {
 
     // Define as an anonymous module so, through path mapping, it can be
     // referenced as the "underscore" module.
-    undefined(function() {
-      return _;
-    });
+    
   }
   // Check for `exports` after `define` in case a build optimizer adds it.
   else if (freeModule) {
@@ -17320,6 +17318,10 @@ if (!lodash$2) {
 }
 
 var lodash_1$1 = lodash$2;
+
+"use strict";
+
+
 
 var graph = Graph;
 
@@ -19195,8 +19197,7 @@ module['exports'] = function zalgo(text, options) {
       '̷', '͡', ' ҉'
     ]
   },
-  all = [].concat(soul.up, soul.down, soul.mid),
-  zalgo = {};
+  all = [].concat(soul.up, soul.down, soul.mid);
 
   function randomNumber(range) {
     var r = Math.floor(Math.random() * range);
@@ -19465,7 +19466,7 @@ function init() {
 }
 
 var sequencer = function sequencer (map, str) {
-  var exploded = str.split(""), i = 0;
+  var exploded = str.split("");
   exploded = exploded.map(map);
   return exploded.join("");
 };
