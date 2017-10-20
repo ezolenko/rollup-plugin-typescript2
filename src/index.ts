@@ -77,6 +77,19 @@ export default function typescript(options?: Partial<IOptions>)
 
 			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
+			if (parsedConfig.options.rootDirs) {
+				const includedOptions = _.flatMap(parsedConfig.options.rootDirs, (res) => {
+					if (pluginOptions.include instanceof Array) {
+						return pluginOptions.include.map((inc) => {
+							return `${res}/${inc}`;
+						});
+					} else {
+						return `${res}/${pluginOptions.include}`;
+					}
+				});
+				filter = createFilter(includedOptions, pluginOptions.exclude);
+			}
+
 			servicesHost = new LanguageServiceHost(parsedConfig);
 
 			service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());

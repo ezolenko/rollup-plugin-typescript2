@@ -11,8 +11,8 @@
     "src"
   ],
   "keywords": [
-	"rollup-plugin-typescript2",
-	"rollup-plugin-typescript",
+    "rollup-plugin-typescript2",
+    "rollup-plugin-typescript",
     "rollup-plugin",
     "typescript",
     "es2015",

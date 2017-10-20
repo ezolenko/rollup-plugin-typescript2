@@ -1,7 +1,7 @@
 import { tsModule } from "./tsproxy";
 export interface IOptions {
-    include: string;
-    exclude: string;
+    include: string | string[];
+    exclude: string | string[];
     check: boolean;
     verbosity: number;
     clean: boolean;
