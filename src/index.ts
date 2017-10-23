@@ -13,7 +13,7 @@ import { parseTsConfig } from "./parse-ts-config";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource } from "./tslib";
 import { blue, red, yellow } from "colors/safe";
-import { join, relative, dirname, isAbsolute } from "path";
+import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 
 export default function typescript(options?: Partial<IOptions>)
@@ -70,24 +70,36 @@ export default function typescript(options?: Partial<IOptions>)
 
 			context.info(`typescript version: ${tsModule.version}`);
 			context.debug(`plugin options: ${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
-
-			filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-
 			context.debug(`rollup config: ${JSON.stringify(rollupOptions, undefined, 4)}`);
 
 			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
-			if (parsedConfig.options.rootDirs) {
-				const includedOptions = _.flatMap(parsedConfig.options.rootDirs, (res) => {
-					if (pluginOptions.include instanceof Array) {
-						return pluginOptions.include.map((inc) => {
-							return `${res}/${inc}`;
-						});
-					} else {
-						return `${res}/${pluginOptions.include}`;
-					}
+			if (parsedConfig.options.rootDirs)
+			{
+				const included = _.flatMap(parsedConfig.options.rootDirs, (root) =>
+				{
+					if (pluginOptions.include instanceof Array)
+						return pluginOptions.include.map((include) => join(root, include));
+					else
+						return join(root, pluginOptions.include);
 				});
-				filter = createFilter(includedOptions, pluginOptions.exclude);
+				const excluded = _.flatMap(parsedConfig.options.rootDirs, (root) =>
+				{
+					if (pluginOptions.exclude instanceof Array)
+						return pluginOptions.exclude.map((exclude) => join(root, exclude));
+					else
+						return join(root, pluginOptions.exclude);
+				});
+
+				filter = createFilter(included, excluded);
+				console.debug(`included: '${included}'`);
+				console.debug(`excluded: '${excluded}'`);
+			}
+			else
+			{
+				filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+				console.debug(`included: '${pluginOptions.include}'`);
+				console.debug(`excluded: '${pluginOptions.exclude}'`);
 			}
 
 			servicesHost = new LanguageServiceHost(parsedConfig);
