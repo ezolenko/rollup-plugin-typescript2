@@ -69,6 +69,7 @@ export default function typescript(options?: Partial<IOptions>)
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
 			context.info(`typescript version: ${tsModule.version}`);
+			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
 			context.debug(`plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 			context.debug(`rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 
