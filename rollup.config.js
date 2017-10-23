@@ -29,7 +29,7 @@ export default {
 				{
 					"graphlib": [ "alg", "Graph" ],
 					"colors/safe": [ "green", "white", "red", "yellow", "blue" ],
-					"lodash": [ "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults", "assign", "merge", "flatMap" ],
+					"lodash": [ "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults", "assign", "merge", "flatMap", "chain" ],
 				//	"fs-extra": [ "renameSync", "removeSync", "ensureFileSync", "writeJsonSync", "readJsonSync", "existsSync", "readdirSync", "emptyDirSync" ],
 				},
 			}

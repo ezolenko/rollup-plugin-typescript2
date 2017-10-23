@@ -17181,7 +17181,7 @@ var lodash_10 = lodash.concat;
 var lodash_11 = lodash.find;
 var lodash_12 = lodash.defaults;
 var lodash_14 = lodash.merge;
-var lodash_15 = lodash.flatMap;
+var lodash_16 = lodash.chain;
 
 var RollupContext = /** @class */ (function () {
     function RollupContext(verbosity, bail, context, prefix) {
@@ -19780,30 +19780,36 @@ function typescript(options) {
             rollupOptions = config;
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.debug("plugin options: " + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
-            context.debug("rollup config: " + JSON.stringify(rollupOptions, undefined, 4));
+            context.debug("plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
+            context.debug("rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4));
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             if (parsedConfig.options.rootDirs) {
-                var included = lodash_15(parsedConfig.options.rootDirs, function (root) {
+                var included = lodash_16(parsedConfig.options.rootDirs)
+                    .flatMap(function (root) {
                     if (pluginOptions.include instanceof Array)
                         return pluginOptions.include.map(function (include) { return path.join(root, include); });
                     else
                         return path.join(root, pluginOptions.include);
-                });
-                var excluded = lodash_15(parsedConfig.options.rootDirs, function (root) {
+                })
+                    .uniq()
+                    .value();
+                var excluded = lodash_16(parsedConfig.options.rootDirs)
+                    .flatMap(function (root) {
                     if (pluginOptions.exclude instanceof Array)
                         return pluginOptions.exclude.map(function (exclude) { return path.join(root, exclude); });
                     else
                         return path.join(root, pluginOptions.exclude);
-                });
+                })
+                    .uniq()
+                    .value();
                 filter = createFilter(included, excluded);
-                console.debug("included: '" + included + "'");
-                console.debug("excluded: '" + excluded + "'");
+                context.debug("included:\n" + JSON.stringify(included, undefined, 4));
+                context.debug("excluded:\n" + JSON.stringify(excluded, undefined, 4));
             }
             else {
                 filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-                console.debug("included: '" + pluginOptions.include + "'");
-                console.debug("excluded: '" + pluginOptions.exclude + "'");
+                context.debug("included:\n'" + JSON.stringify(pluginOptions.include, undefined, 4) + "'");
+                context.debug("excluded:\n'" + JSON.stringify(pluginOptions.exclude, undefined, 4) + "'");
             }
             servicesHost = new LanguageServiceHost(parsedConfig);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
