@@ -1,4 +1,12 @@
 {
+  "jsRules": {
+    "object-literal-sort-keys": false,
+    "one-line": [false],
+    "curly": false,
+    "no-console": [false],
+    "max-line-length": [false],
+    "indent": [true, "tabs"]
+  },
   "extends" : [
     "tslint:recommended"
   ],

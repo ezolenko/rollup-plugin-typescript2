@@ -1,11 +1,11 @@
-import resolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
-import replace from 'rollup-plugin-re';
+import resolve from "rollup-plugin-node-resolve";
+import commonjs from "rollup-plugin-commonjs";
+import replace from "rollup-plugin-re";
 
-const pkg = require('./package.json');
+const pkg = require("./package.json");
 
 export default {
-	input: 'src/index.ts',
+	input: "src/index.ts",
 
 	external: [
 		"fs",
@@ -39,20 +39,20 @@ export default {
 		}),
 	],
 
-	banner: '/* eslint-disable */',
+	banner: "/* eslint-disable */",
 
 	output: [
 		{
-			format: 'cjs',
-			file: pkg.main
+			format: "cjs",
+			file: pkg.main,
 		},
 		{
-			format: 'es',
-			file: pkg.module
+			format: "es",
+			file: pkg.module,
 		},
 		{
-			format: 'es',
-			file: 'build-self/' + pkg.module
-		}
-	]
+			format: "es",
+			file: "build-self/" + pkg.module,
+		},
+	],
 };

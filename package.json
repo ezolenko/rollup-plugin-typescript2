@@ -26,7 +26,7 @@
     "prebuild": "rimraf dist/*",
     "build": "rollup -c",
     "build-self": "rollup -c rollup.config.self.js",
-    "lint": "tslint -c ./tslint.json src/*.ts"
+    "lint": "tslint -c ./tslint.json src/*.ts ./*.js"
   },
   "dependencies": {
     "fs-extra": "^4.0.2",
