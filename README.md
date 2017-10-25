@@ -75,9 +75,9 @@ The following compiler options are forced though:
 
 	Set to true for clean build (wipes out cache on every build).
 
-* `cacheRoot`: ".rts2_cache"
+* `cacheRoot`: `./.rts2_cache`
 
-	Path to cache.
+	Path to cache. Defaults to a folder in the current directory. Can be safely moved out with something like `${require('temp-dir')}/.rpt2_cache`, but watch out for multiple concurrent builds of the same repo.
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
