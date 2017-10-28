@@ -19781,7 +19781,7 @@ function typescript(options) {
             rollupOptions = config;
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.8.0");
+            context.info("rollup-plugin-typescript2 version: 0.8.1");
             context.debug("plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
             context.debug("rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4));
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
