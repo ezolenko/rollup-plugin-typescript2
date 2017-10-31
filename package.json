@@ -25,6 +25,7 @@
   "scripts": {
     "prebuild": "rimraf dist/*",
     "build": "rollup -c",
+    "watch": "rollup -c -w rollup.config.self.js",
     "build-self": "rollup -c rollup.config.self.js",
     "lint": "tslint -c ./tslint.json src/*.ts ./*.js"
   },

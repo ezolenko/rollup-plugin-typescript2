@@ -20,6 +20,8 @@ export default {
 		"os",
 	],
 
+	sourcemap: true,
+
 	plugins: [
 		replace
 		({
