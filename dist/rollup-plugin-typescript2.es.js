@@ -67,8 +67,6 @@ var ConsoleContext = /** @class */ (function () {
     return ConsoleContext;
 }());
 
-//# sourceMappingURL=context.js.map
-
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function commonjsRequire () {
@@ -17224,18 +17222,14 @@ var RollupContext = /** @class */ (function () {
     return RollupContext;
 }());
 
-//# sourceMappingURL=rollupcontext.js.map
-
 var tsModule;
 function setTypescriptModule(override) {
     tsModule = override;
 }
-//# sourceMappingURL=tsproxy.js.map
 
 function normalize(fileName) {
     return fileName.split("\\").join("/");
 }
-//# sourceMappingURL=normalize.js.map
 
 var LanguageServiceHost = /** @class */ (function () {
     function LanguageServiceHost(parsedConfig) {
@@ -17306,7 +17300,7 @@ var LanguageServiceHost = /** @class */ (function () {
     return LanguageServiceHost;
 }());
 
-//# sourceMappingURL=host.js.map
+/* global window */
 
 var lodash$2;
 
@@ -17844,6 +17838,7 @@ function edgeObjToId(isDirected, edgeObj) {
 
 var version = '2.1.1';
 
+// Includes only the "core" of graphlib
 var lib = {
   Graph: graph,
   version: version
@@ -18416,6 +18411,38 @@ var alg = {
   topsort: topsort_1
 };
 
+/**
+ * Copyright (c) 2014, Chris Pettitt
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+
 var graphlib = {
   Graph: lib.Graph,
   json: json,
@@ -18868,6 +18895,10 @@ function PassThrough() {
 
 var objectHash_2 = objectHash_1.sha1;
 
+/**
+ * Saves data in new cache folder or reads it from old one.
+ * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
+ */
 var RollingCache = /** @class */ (function () {
     /**
      * @param cacheRoot: root folder for the cache
@@ -18936,8 +18967,6 @@ var RollingCache = /** @class */ (function () {
     };
     return RollingCache;
 }());
-
-//# sourceMappingURL=rollingcache.js.map
 
 var styles_1 = createCommonjsModule(function (module) {
 /*
@@ -19641,8 +19670,6 @@ var TsCache = /** @class */ (function () {
     return TsCache;
 }());
 
-//# sourceMappingURL=tscache.js.map
-
 function printDiagnostics(context, diagnostics) {
     lodash_2(diagnostics, function (diagnostic) {
         var print;
@@ -19673,7 +19700,6 @@ function printDiagnostics(context, diagnostics) {
             print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
     });
 }
-//# sourceMappingURL=print-diagnostics.js.map
 
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
@@ -19681,7 +19707,6 @@ function getOptionsOverrides(_a, tsConfigJson) {
     var overrides = __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd(), moduleResolution: tsModule.ModuleResolutionKind.NodeJs }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
     return overrides;
 }
-//# sourceMappingURL=get-options-overrides.js.map
 
 function parseTsConfig(tsconfig, context, pluginOptions) {
     var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, tsconfig);
@@ -19700,8 +19725,8 @@ function parseTsConfig(tsconfig, context, pluginOptions) {
     context.debug("parsed tsconfig: " + JSON.stringify(parsedTsConfig, undefined, 4));
     return parsedTsConfig;
 }
-//# sourceMappingURL=parse-ts-config.js.map
 
+// The injected id for helpers.
 var TSLIB = "tslib";
 var tslibSource;
 try {
@@ -19713,7 +19738,6 @@ catch (e) {
     console.warn("Error loading `tslib` helper library.");
     throw e;
 }
-//# sourceMappingURL=tslib.js.map
 
 function typescript(options) {
     // tslint:disable-next-line:no-var-requires
@@ -19931,7 +19955,6 @@ function typescript(options) {
         },
     };
 }
-//# sourceMappingURL=index.js.map
 
 export default typescript;
 //# sourceMappingURL=rollup-plugin-typescript2.es.js.map
