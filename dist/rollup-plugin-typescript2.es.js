@@ -17193,7 +17193,7 @@ var RollupContext = /** @class */ (function () {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
         if (this.hasContext)
-            this.context.warn("" + this.prefix + message);
+            this.context.warn("" + message);
         else
             console.log("" + this.prefix + message);
     };
@@ -17202,9 +17202,9 @@ var RollupContext = /** @class */ (function () {
             return;
         if (this.hasContext) {
             if (this.bail)
-                this.context.error("" + this.prefix + message);
+                this.context.error("" + message);
             else
-                this.context.warn("" + this.prefix + message);
+                this.context.warn("" + message);
         }
         else
             console.log("" + this.prefix + message);
@@ -19777,6 +19777,7 @@ function typescript(options) {
     });
     setTypescriptModule(pluginOptions.typescript);
     return {
+        name: "rpt2",
         options: function (config) {
             rollupOptions = config;
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");

@@ -16,7 +16,7 @@ export class RollupContext implements IContext
 			return;
 
 		if (this.hasContext)
-			this.context.warn(`${this.prefix}${message}`);
+			this.context.warn(`${message}`);
 		else
 			console.log(`${this.prefix}${message}`);
 	}
@@ -29,9 +29,9 @@ export class RollupContext implements IContext
 		if (this.hasContext)
 		{
 			if (this.bail)
-				this.context.error(`${this.prefix}${message}`);
+				this.context.error(`${message}`);
 			else
-				this.context.warn(`${this.prefix}${message}`);
+				this.context.warn(`${message}`);
 		}
 		else
 			console.log(`${this.prefix}${message}`);

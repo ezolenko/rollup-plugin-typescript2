@@ -63,6 +63,8 @@ export default function typescript(options?: Partial<IOptions>)
 
 	return {
 
+		name: "rpt2",
+
 		options(config: IRollupOptions)
 		{
 			rollupOptions = config;
