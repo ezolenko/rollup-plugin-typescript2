@@ -67,13 +67,13 @@ export default function typescript(options?: Partial<IOptions>)
 
 		options(config: IRollupOptions)
 		{
-			rollupOptions = config;
+			rollupOptions = {... config};
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
 			context.info(`typescript version: ${tsModule.version}`);
 			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
-			context.debug(`plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
-			context.debug(`rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
+			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
+			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 
 			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
@@ -104,14 +104,14 @@ export default function typescript(options?: Partial<IOptions>)
 					.value();
 
 				filter = createFilter(included, excluded);
-				context.debug(`included:\n${JSON.stringify(included, undefined, 4)}`);
-				context.debug(`excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
+				context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+				context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
 			}
 			else
 			{
 				filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-				context.debug(`included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
-				context.debug(`excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
+				context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
+				context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
 			}
 
 			servicesHost = new LanguageServiceHost(parsedConfig);
@@ -151,8 +151,8 @@ export default function typescript(options?: Partial<IOptions>)
 					? resolve.sync(result.resolvedModule.resolvedFileName)
 					: result.resolvedModule.resolvedFileName;
 
-				context.debug(`${blue("resolving")} '${importee}'`);
-				context.debug(`    to '${resolved}'`);
+				context.debug(() => `${blue("resolving")} '${importee}'`);
+				context.debug(() => `    to '${resolved}'`);
 
 				return resolved;
 			}
@@ -239,7 +239,7 @@ export default function typescript(options?: Partial<IOptions>)
 			{
 				const key = normalize(id);
 				declarations[key] = result.dts;
-				context.debug(`${blue("generated declarations")} for '${key}'`);
+				context.debug(() => `${blue("generated declarations")} for '${key}'`);
 				result.dts = undefined;
 			}
 
@@ -255,7 +255,7 @@ export default function typescript(options?: Partial<IOptions>)
 				watchMode = true;
 				round = 0;
 			}
-			context.debug(`generating target ${round + 1} of ${targetCount}`);
+			context.debug(() => `generating target ${round + 1} of ${targetCount}`);
 
 			if (watchMode && round === 0)
 			{
@@ -292,7 +292,7 @@ export default function typescript(options?: Partial<IOptions>)
 					const key = normalize(name);
 					if (_.has(declarations, key) || !filter(key))
 						return;
-					context.debug(`generating missed declarations for '${key}'`);
+					context.debug(() => `generating missed declarations for '${key}'`);
 					const output = service.getEmitOutput(key, true);
 					const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 					if (dts)
@@ -317,7 +317,7 @@ export default function typescript(options?: Partial<IOptions>)
 						writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
 					}
 
-					context.debug(`${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+					context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
 
 					// Write the declaration file to disk.
 					tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);

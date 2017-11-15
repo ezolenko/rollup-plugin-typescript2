@@ -1,4 +1,6 @@
 
+import * as _ from "lodash";
+
 export interface IRollupContext
 {
 	warn(message: string): void;
@@ -7,10 +9,10 @@ export interface IRollupContext
 
 export interface IContext
 {
-	warn(message: string): void;
-	error(message: string): void;
-	info(message: string): void;
-	debug(message: string): void;
+	warn(message: string | (() => string)): void;
+	error(message: string | (() => string)): void;
+	info(message: string | (() => string)): void;
+	debug(message: string | (() => string)): void;
 }
 
 export enum VerbosityLevel
@@ -27,31 +29,31 @@ export class ConsoleContext implements IContext
 	{
 	}
 
-	public warn(message: string): void
+	public warn(message: string | (() => string)): void
 	{
 		if (this.verbosity < VerbosityLevel.Warning)
 			return;
-		console.log(`${this.prefix}${message}`);
+		console.log(`${this.prefix}${_.isFunction(message) ? message() : message}`);
 	}
 
-	public error(message: string): void
+	public error(message: string | (() => string)): void
 	{
 		if (this.verbosity < VerbosityLevel.Error)
 			return;
-		console.log(`${this.prefix}${message}`);
+		console.log(`${this.prefix}${_.isFunction(message) ? message() : message}`);
 	}
 
-	public info(message: string): void
+	public info(message: string | (() => string)): void
 	{
 		if (this.verbosity < VerbosityLevel.Info)
 			return;
-		console.log(`${this.prefix}${message}`);
+		console.log(`${this.prefix}${_.isFunction(message) ? message() : message}`);
 	}
 
-	public debug(message: string): void
+	public debug(message: string | (() => string)): void
 	{
 		if (this.verbosity < VerbosityLevel.Debug)
 			return;
-		console.log(`${this.prefix}${message}`);
+		console.log(`${this.prefix}${_.isFunction(message) ? message() : message}`);
 	}
 }

@@ -31,42 +31,6 @@ var __assign = Object.assign || function __assign(t) {
     return t;
 };
 
-var VerbosityLevel;
-(function (VerbosityLevel) {
-    VerbosityLevel[VerbosityLevel["Error"] = 0] = "Error";
-    VerbosityLevel[VerbosityLevel["Warning"] = 1] = "Warning";
-    VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
-    VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
-})(VerbosityLevel || (VerbosityLevel = {}));
-var ConsoleContext = /** @class */ (function () {
-    function ConsoleContext(verbosity, prefix) {
-        if (prefix === void 0) { prefix = ""; }
-        this.verbosity = verbosity;
-        this.prefix = prefix;
-    }
-    ConsoleContext.prototype.warn = function (message) {
-        if (this.verbosity < VerbosityLevel.Warning)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    ConsoleContext.prototype.error = function (message) {
-        if (this.verbosity < VerbosityLevel.Error)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    ConsoleContext.prototype.info = function (message) {
-        if (this.verbosity < VerbosityLevel.Info)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    ConsoleContext.prototype.debug = function (message) {
-        if (this.verbosity < VerbosityLevel.Debug)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    return ConsoleContext;
-}());
-
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function commonjsRequire () {
@@ -17148,7 +17112,9 @@ var lodash = createCommonjsModule(function (module, exports) {
 
     // Define as an anonymous module so, through path mapping, it can be
     // referenced as the "underscore" module.
-    
+    undefined(function() {
+      return _;
+    });
   }
   // Check for `exports` after `define` in case a build optimizer adds it.
   else if (freeModule) {
@@ -17176,8 +17142,46 @@ var lodash_9 = lodash.isFunction;
 var lodash_10 = lodash.concat;
 var lodash_11 = lodash.find;
 var lodash_12 = lodash.defaults;
+var lodash_13 = lodash.assign;
 var lodash_14 = lodash.merge;
+var lodash_15 = lodash.flatMap;
 var lodash_16 = lodash.chain;
+
+var VerbosityLevel;
+(function (VerbosityLevel) {
+    VerbosityLevel[VerbosityLevel["Error"] = 0] = "Error";
+    VerbosityLevel[VerbosityLevel["Warning"] = 1] = "Warning";
+    VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
+    VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
+})(VerbosityLevel || (VerbosityLevel = {}));
+var ConsoleContext = /** @class */ (function () {
+    function ConsoleContext(verbosity, prefix) {
+        if (prefix === void 0) { prefix = ""; }
+        this.verbosity = verbosity;
+        this.prefix = prefix;
+    }
+    ConsoleContext.prototype.warn = function (message) {
+        if (this.verbosity < VerbosityLevel.Warning)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    ConsoleContext.prototype.error = function (message) {
+        if (this.verbosity < VerbosityLevel.Error)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    ConsoleContext.prototype.info = function (message) {
+        if (this.verbosity < VerbosityLevel.Info)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    ConsoleContext.prototype.debug = function (message) {
+        if (this.verbosity < VerbosityLevel.Debug)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    return ConsoleContext;
+}());
 
 var RollupContext = /** @class */ (function () {
     function RollupContext(verbosity, bail, context, prefix) {
@@ -17192,32 +17196,36 @@ var RollupContext = /** @class */ (function () {
     RollupContext.prototype.warn = function (message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
+        var text = lodash_9(message) ? message() : message;
         if (this.hasContext)
-            this.context.warn("" + message);
+            this.context.warn("" + text);
         else
-            console.log("" + this.prefix + message);
+            console.log("" + this.prefix + text);
     };
     RollupContext.prototype.error = function (message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
+        var text = lodash_9(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
-                this.context.error("" + message);
+                this.context.error("" + text);
             else
-                this.context.warn("" + message);
+                this.context.warn("" + text);
         }
         else
-            console.log("" + this.prefix + message);
+            console.log("" + this.prefix + text);
     };
     RollupContext.prototype.info = function (message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log("" + this.prefix + message);
+        var text = lodash_9(message) ? message() : message;
+        console.log("" + this.prefix + text);
     };
     RollupContext.prototype.debug = function (message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log("" + this.prefix + message);
+        var text = lodash_9(message) ? message() : message;
+        console.log("" + this.prefix + text);
     };
     return RollupContext;
 }());
@@ -17315,10 +17323,6 @@ if (!lodash$2) {
 }
 
 var lodash_1$1 = lodash$2;
-
-"use strict";
-
-
 
 var graph = Graph;
 
@@ -18454,33 +18458,6 @@ var graphlib_1 = graphlib.alg;
 var graphlib_2 = graphlib.Graph;
 
 var objectHash_1 = createCommonjsModule(function (module, exports) {
-'use strict';
-
-
-
-/**
- * Exported function
- *
- * Options:
- *
- *  - `algorithm` hash algo to be used by this instance: *'sha1', 'md5'
- *  - `excludeValues` {true|*false} hash object keys, values ignored
- *  - `encoding` hash encoding, supports 'buffer', '*hex', 'binary', 'base64'
- *  - `ignoreUnknown` {true|*false} ignore unknown object types
- *  - `replacer` optional function that replaces values before hashing
- *  - `respectFunctionProperties` {*true|false} consider function properties when hashing
- *  - `respectFunctionNames` {*true|false} consider 'name' property of functions for hashing
- *  - `respectType` {*true|false} Respect special properties (prototype, constructor)
- *    when hashing to distinguish between types
- *  - `unorderedArrays` {true|*false} Sort all arrays before hashing
- *  - `unorderedSets` {*true|false} Sort `Set` and `Map` instances before hashing
- *  * = default
- *
- * @param {object} object value to hash
- * @param {object} options hashing options
- * @return {string} hash value
- * @api public
- */
 exports = module.exports = objectHash;
 
 function objectHash(object, options){
@@ -18894,6 +18871,10 @@ function PassThrough() {
 });
 
 var objectHash_2 = objectHash_1.sha1;
+var objectHash_3 = objectHash_1.keys;
+var objectHash_4 = objectHash_1.MD5;
+var objectHash_5 = objectHash_1.keysMD5;
+var objectHash_6 = objectHash_1.writeToStream;
 
 /**
  * Saves data in new cache folder or reads it from old one.
@@ -19779,15 +19760,15 @@ function typescript(options) {
     return {
         name: "rpt2",
         options: function (config) {
-            rollupOptions = config;
+            rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
             context.info("rollup-plugin-typescript2 version: 0.8.1");
-            context.debug("plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
-            context.debug("rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4));
+            context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
+            context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             if (parsedConfig.options.rootDirs) {
-                var included = lodash_16(parsedConfig.options.rootDirs)
+                var included_1 = lodash_16(parsedConfig.options.rootDirs)
                     .flatMap(function (root) {
                     if (pluginOptions.include instanceof Array)
                         return pluginOptions.include.map(function (include) { return join(root, include); });
@@ -19796,7 +19777,7 @@ function typescript(options) {
                 })
                     .uniq()
                     .value();
-                var excluded = lodash_16(parsedConfig.options.rootDirs)
+                var excluded_1 = lodash_16(parsedConfig.options.rootDirs)
                     .flatMap(function (root) {
                     if (pluginOptions.exclude instanceof Array)
                         return pluginOptions.exclude.map(function (exclude) { return join(root, exclude); });
@@ -19805,14 +19786,14 @@ function typescript(options) {
                 })
                     .uniq()
                     .value();
-                filter = createFilter(included, excluded);
-                context.debug("included:\n" + JSON.stringify(included, undefined, 4));
-                context.debug("excluded:\n" + JSON.stringify(excluded, undefined, 4));
+                filter = createFilter(included_1, excluded_1);
+                context.debug(function () { return "included:\n" + JSON.stringify(included_1, undefined, 4); });
+                context.debug(function () { return "excluded:\n" + JSON.stringify(excluded_1, undefined, 4); });
             }
             else {
                 filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-                context.debug("included:\n'" + JSON.stringify(pluginOptions.include, undefined, 4) + "'");
-                context.debug("excluded:\n'" + JSON.stringify(pluginOptions.exclude, undefined, 4) + "'");
+                context.debug(function () { return "included:\n'" + JSON.stringify(pluginOptions.include, undefined, 4) + "'"; });
+                context.debug(function () { return "excluded:\n'" + JSON.stringify(pluginOptions.exclude, undefined, 4) + "'"; });
             }
             servicesHost = new LanguageServiceHost(parsedConfig);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
@@ -19835,12 +19816,12 @@ function typescript(options) {
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (lodash_6(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                var resolved = pluginOptions.rollupCommonJSResolveHack
+                var resolved_1 = pluginOptions.rollupCommonJSResolveHack
                     ? sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(safe_5("resolving") + " '" + importee + "'");
-                context.debug("    to '" + resolved + "'");
-                return resolved;
+                context.debug(function () { return safe_5("resolving") + " '" + importee + "'"; });
+                context.debug(function () { return "    to '" + resolved_1 + "'"; });
+                return resolved_1;
             }
             return null;
         },
@@ -19892,9 +19873,9 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics);
             }
             if (result && result.dts) {
-                var key = normalize(id);
-                declarations[key] = result.dts;
-                context.debug(safe_5("generated declarations") + " for '" + key + "'");
+                var key_1 = normalize(id);
+                declarations[key_1] = result.dts;
+                context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
                 result.dts = undefined;
             }
             return result;
@@ -19905,7 +19886,7 @@ function typescript(options) {
                 watchMode = true;
                 round = 0;
             }
-            context.debug("generating target " + (round + 1) + " of " + targetCount);
+            context.debug(function () { return "generating target " + (round + 1) + " of " + targetCount; });
             if (watchMode && round === 0) {
                 context.debug("running in watch mode");
                 cache().walkTree(function (id) {
@@ -19927,7 +19908,7 @@ function typescript(options) {
                     var key = normalize(name);
                     if (lodash_8(declarations, key) || !filter(key))
                         return;
-                    context.debug("generating missed declarations for '" + key + "'");
+                    context.debug(function () { return "generating missed declarations for '" + key + "'"; });
                     var output = service.getEmitOutput(key, true);
                     var dts = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".d.ts"); });
                     if (dts)
@@ -19948,7 +19929,7 @@ function typescript(options) {
                         var destDirectory = isAbsolute(bundleFile_1) ? destDirname : join(process.cwd(), destDirname);
                         writeToPath = join(destDirectory, relative(baseDeclarationDir_1, name));
                     }
-                    context.debug(safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
+                    context.debug(function () { return safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'"; });
                     // Write the declaration file to disk.
                     tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
                 });
