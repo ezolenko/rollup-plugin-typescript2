@@ -53,7 +53,7 @@
     "@types/object-hash": "^1.1.0",
     "@types/resolve": "^0.0.4",
     "rimraf": "^2.6.2",
-    "rollup": "^0.51.5",
+    "rollup": "^0.51.7",
     "rollup-plugin-typescript2": "github:ezolenko/rollup-plugin-typescript2#master",
     "rollup-plugin-node-resolve": "^3.0.0",
     "rollup-plugin-commonjs": "^8.2.6",
