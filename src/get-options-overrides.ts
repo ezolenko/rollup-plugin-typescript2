@@ -11,6 +11,7 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir }: IOptions, tsC
 		noEmitHelpers: true,
 		importHelpers: true,
 		noResolve: false,
+		noEmit: false,
 		outDir: process.cwd(),
 		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
 		...(!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }),
