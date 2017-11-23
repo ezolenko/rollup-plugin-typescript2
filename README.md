@@ -35,6 +35,7 @@ The following compiler options are forced though:
 * `noEmitHelpers`: true
 * `importHelpers`: true
 * `noResolve`: false
+* `noEmit`: false
 * `outDir`: `process.cwd()`
 * `declarationDir`: `process.cwd()` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
 * `moduleResolution`: `node` (*`classic` is [depreciated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
