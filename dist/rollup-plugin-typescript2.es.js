@@ -2,8 +2,8 @@
 import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
 import crypto from 'crypto';
 import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from 'fs-extra';
+import { dirname, isAbsolute, join, normalize, relative } from 'path';
 import { sync } from 'resolve';
-import { dirname, isAbsolute, join, relative } from 'path';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -17235,7 +17235,7 @@ function setTypescriptModule(override) {
     tsModule = override;
 }
 
-function normalize(fileName) {
+function normalize$1(fileName) {
     return fileName.split("\\").join("/");
 }
 
@@ -17251,14 +17251,14 @@ var LanguageServiceHost = /** @class */ (function () {
         this.versions = {};
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
-        fileName = normalize(fileName);
+        fileName = normalize$1(fileName);
         var snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
-        fileName = normalize(fileName);
+        fileName = normalize$1(fileName);
         if (lodash_8(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (existsSync(fileName)) {
@@ -17272,7 +17272,7 @@ var LanguageServiceHost = /** @class */ (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
-        fileName = normalize(fileName);
+        fileName = normalize$1(fileName);
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
@@ -19494,17 +19494,34 @@ var safe_3 = safe.red;
 var safe_4 = safe.yellow;
 var safe_5 = safe.blue;
 
+var FormatHost = /** @class */ (function () {
+    function FormatHost() {
+    }
+    FormatHost.prototype.getCurrentDirectory = function () {
+        return tsModule.sys.getCurrentDirectory();
+    };
+    FormatHost.prototype.getCanonicalFileName = function (fileName) {
+        return normalize(fileName);
+    };
+    FormatHost.prototype.getNewLine = function () {
+        return tsModule.sys.newLine;
+    };
+    return FormatHost;
+}());
+var formatHost = new FormatHost();
+
 function convertDiagnostic(type, data) {
     return lodash_7(data, function (diagnostic) {
         var entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
             category: diagnostic.category,
             code: diagnostic.code,
             type: type,
         };
         if (diagnostic.file && diagnostic.start !== undefined) {
             var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-            entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
+            entry.fileLine = diagnostic.file.fileName + "(" + (line + 1) + "," + (character + 1) + ")";
         }
         return entry;
     });
@@ -19516,7 +19533,7 @@ var TsCache = /** @class */ (function () {
         this.options = options;
         this.rollupConfig = rollupConfig;
         this.context = context;
-        this.cacheVersion = "6";
+        this.cacheVersion = "7";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + objectHash_2({
             version: this.cacheVersion,
@@ -19651,7 +19668,7 @@ var TsCache = /** @class */ (function () {
     return TsCache;
 }());
 
-function printDiagnostics(context, diagnostics) {
+function printDiagnostics(context, diagnostics, pretty) {
     lodash_2(diagnostics, function (diagnostic) {
         var print;
         var color;
@@ -19675,10 +19692,14 @@ function printDiagnostics(context, diagnostics) {
                 break;
         }
         var type = diagnostic.type + " ";
-        if (diagnostic.fileLine)
-            print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
-        else
-            print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+        if (pretty)
+            print.call(context, ["" + diagnostic.formatted]);
+        else {
+            if (diagnostic.fileLine !== undefined)
+                print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+            else
+                print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+        }
     });
 }
 
@@ -19696,7 +19717,7 @@ function parseTsConfig(tsconfig, context, pluginOptions) {
     var text = tsModule.sys.readFile(fileName);
     var result = tsModule.parseConfigFileTextToJson(fileName, text);
     if (result.error) {
-        printDiagnostics(context, convertDiagnostic("config", [result.error]));
+        printDiagnostics(context, convertDiagnostic("config", [result.error]), lodash_1(result.config, "pretty", false));
         throw new Error("failed to parse " + fileName);
     }
     lodash_14(result.config, pluginOptions.tsconfigOverride);
@@ -19725,8 +19746,7 @@ function typescript(options) {
     var createFilter = require("rollup-pluginutils").createFilter;
     // tslint:enable-next-line:no-var-requires
     var watchMode = false;
-    var round = 0;
-    var targetCount = 0;
+    var generateRound = 0;
     var rollupOptions;
     var context;
     var filter;
@@ -19763,9 +19783,12 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.8.4");
+            context.info("rollup-plugin-typescript2 version: 0.9.0");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
+            watchMode = process.env.ROLLUP_WATCH === "true";
+            if (watchMode)
+                context.info("running in watch mode");
             parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
             if (parsedConfig.options.rootDirs) {
                 var included_1 = lodash_16(parsedConfig.options.rootDirs)
@@ -19799,7 +19822,7 @@ function typescript(options) {
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
             // printing compiler option errors
             if (pluginOptions.check)
-                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
+                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
             if (pluginOptions.clean)
                 cache().clean();
         },
@@ -19832,6 +19855,7 @@ function typescript(options) {
         },
         transform: function (code, id) {
             var _this = this;
+            generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
             if (!filter(id))
                 return undefined;
             var contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
@@ -19847,7 +19871,7 @@ function typescript(options) {
                     }), cache().getSemanticDiagnostics(id, snapshot, function () {
                         return service.getSemanticDiagnostics(id);
                     }));
-                    printDiagnostics(contextWrapper, diagnostics);
+                    printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
                     if (lodash_9(_this.error))
@@ -19870,42 +19894,36 @@ function typescript(options) {
                 }));
                 if (diagnostics.length > 0)
                     noErrors = false;
-                printDiagnostics(contextWrapper, diagnostics);
+                printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
             }
             if (result && result.dts) {
-                var key_1 = normalize(id);
+                var key_1 = normalize$1(id);
                 declarations[key_1] = result.dts;
                 context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
                 result.dts = undefined;
             }
             return result;
         },
-        ongenerate: function (bundleOptions) {
-            targetCount = lodash_1(bundleOptions, "targets.length", 1);
-            if (round >= targetCount) {
-                watchMode = true;
-                round = 0;
-            }
-            context.debug(function () { return "generating target " + (round + 1) + " of " + targetCount; });
-            if (watchMode && round === 0) {
-                context.debug("running in watch mode");
+        ongenerate: function () {
+            context.debug(function () { return "generating target " + (generateRound + 1); });
+            if (watchMode && generateRound === 0) {
                 cache().walkTree(function (id) {
                     if (!filter(id))
                         return;
                     var diagnostics = lodash_10(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
-                    printDiagnostics(context, diagnostics);
+                    printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
                 });
             }
             if (!watchMode && !noErrors)
-                context.info(safe_4("there were errors or warnings above."));
+                context.info(safe_4("there were errors or warnings."));
             cache().done();
-            round++;
+            generateRound++;
         },
         onwrite: function (_a) {
             var dest = _a.dest, file = _a.file;
             if (parsedConfig.options.declaration) {
                 lodash_2(parsedConfig.fileNames, function (name) {
-                    var key = normalize(name);
+                    var key = normalize$1(name);
                     if (lodash_8(declarations, key) || !filter(key))
                         return;
                     context.debug(function () { return "generating missed declarations for '" + key + "'"; });

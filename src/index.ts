@@ -22,8 +22,7 @@ export default function typescript(options?: Partial<IOptions>)
 	const createFilter = require("rollup-pluginutils").createFilter;
 	// tslint:enable-next-line:no-var-requires
 	let watchMode = false;
-	let round = 0;
-	let targetCount = 0;
+	let generateRound = 0;
 	let rollupOptions: IRollupOptions;
 	let context: ConsoleContext;
 	let filter: any;
@@ -75,6 +74,11 @@ export default function typescript(options?: Partial<IOptions>)
 			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 
+			watchMode = process.env.ROLLUP_WATCH === "true";
+
+			if (watchMode)
+				context.info(`running in watch mode`);
+
 			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
 
 			if (parsedConfig.options.rootDirs)
@@ -120,7 +124,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 			// printing compiler option errors
 			if (pluginOptions.check)
-				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
+				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
 
 			if (pluginOptions.clean)
 				cache().clean();
@@ -170,6 +174,8 @@ export default function typescript(options?: Partial<IOptions>)
 
 		transform(this: IRollupContext, code: string, id: string): ICode | undefined
 		{
+			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
+
 			if (!filter(id))
 				return undefined;
 
@@ -197,7 +203,7 @@ export default function typescript(options?: Partial<IOptions>)
 							return service.getSemanticDiagnostics(id);
 						}),
 					);
-					printDiagnostics(contextWrapper, diagnostics);
+					printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 
 					// since no output was generated, aborting compilation
 					cache().done();
@@ -232,7 +238,7 @@ export default function typescript(options?: Partial<IOptions>)
 				if (diagnostics.length > 0)
 					noErrors = false;
 
-				printDiagnostics(contextWrapper, diagnostics);
+				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 			}
 
 			if (result && result.dts)
@@ -246,21 +252,12 @@ export default function typescript(options?: Partial<IOptions>)
 			return result;
 		},
 
-		ongenerate(bundleOptions: any): void
+		ongenerate(): void
 		{
-			targetCount = _.get(bundleOptions, "targets.length", 1);
+			context.debug(() => `generating target ${generateRound + 1}`);
 
-			if (round >= targetCount) // ongenerate() is called for each target
+			if (watchMode && generateRound === 0)
 			{
-				watchMode = true;
-				round = 0;
-			}
-			context.debug(() => `generating target ${round + 1} of ${targetCount}`);
-
-			if (watchMode && round === 0)
-			{
-				context.debug("running in watch mode");
-
 				cache().walkTree((id) =>
 				{
 					if (!filter(id))
@@ -271,16 +268,16 @@ export default function typescript(options?: Partial<IOptions>)
 						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
 					);
 
-					printDiagnostics(context, diagnostics);
+					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
 				});
 			}
 
 			if (!watchMode && !noErrors)
-				context.info(yellow("there were errors or warnings above."));
+				context.info(yellow("there were errors or warnings."));
 
 			cache().done();
 
-			round++;
+			generateRound++;
 		},
 
 		onwrite({ dest, file }: IRollupOptions)

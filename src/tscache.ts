@@ -8,6 +8,7 @@ import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { blue, yellow, green } from "colors/safe";
 import { emptyDirSync } from "fs-extra";
+import { formatHost } from "./diagnostics-format-host";
 
 export interface ICode
 {
@@ -24,6 +25,7 @@ interface INodeLabel
 export interface IDiagnostics
 {
 	flatMessage: string;
+	formatted: string;
 	fileLine?: string;
 	category: tsTypes.DiagnosticCategory;
 	code: number;
@@ -43,6 +45,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 		const entry: IDiagnostics =
 			{
 				flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+				formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
 				category: diagnostic.category,
 				code: diagnostic.code,
 				type,
@@ -51,7 +54,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 		if (diagnostic.file && diagnostic.start !== undefined)
 		{
 			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-			entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
+			entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
 		}
 
 		return entry;
@@ -60,7 +63,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 
 export class TsCache
 {
-	private cacheVersion = "6";
+	private cacheVersion = "7";
 	private dependencyTree: Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;

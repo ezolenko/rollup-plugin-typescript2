@@ -9,6 +9,6 @@ export default function typescript(options?: Partial<IOptions>): {
     resolveId(importee: string, importer: string): string | null;
     load(id: string): string | undefined;
     transform(this: IRollupContext, code: string, id: string): ICode | undefined;
-    ongenerate(bundleOptions: any): void;
+    ongenerate(): void;
     onwrite({dest, file}: IRollupOptions): void;
 };

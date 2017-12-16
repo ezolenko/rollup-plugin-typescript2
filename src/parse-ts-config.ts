@@ -20,7 +20,7 @@ export function parseTsConfig(tsconfig: string, context: IContext, pluginOptions
 
 	if (result.error)
 	{
-		printDiagnostics(context, convertDiagnostic("config", [result.error]));
+		printDiagnostics(context, convertDiagnostic("config", [result.error]), _.get(result.config, "pretty", false));
 		throw new Error(`failed to parse ${fileName}`);
 	}
 
