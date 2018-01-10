@@ -19705,8 +19705,18 @@ function printDiagnostics(context, diagnostics, pretty) {
 
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
+    var overrides = {
+        module: tsModule.ModuleKind.ES2015,
+        noEmitHelpers: false,
+        importHelpers: true,
+        noResolve: false,
+        noEmit: false,
+        outDir: process.cwd(),
+        moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
+    };
     var declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
-    var overrides = __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, noEmit: false, outDir: process.cwd(), moduleResolution: tsModule.ModuleResolutionKind.NodeJs }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
+    if (declaration && !useTsconfigDeclarationDir)
+        overrides.declarationDir = process.cwd();
     return overrides;
 }
 
@@ -19783,7 +19793,7 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.9.1");
+            context.info("rollup-plugin-typescript2 version: 0.10.0");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             watchMode = process.env.ROLLUP_WATCH === "true";

@@ -32,7 +32,7 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 The following compiler options are forced though:
 
 * `module`: `es2015`
-* `noEmitHelpers`: true
+* `noEmitHelpers`: false
 * `importHelpers`: true
 * `noResolve`: false
 * `noEmit`: false
