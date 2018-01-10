@@ -117,11 +117,11 @@ Otherwise the plugin should work in watch mode. Make sure to run a normal build 
 
 ### Version
 
-This plugin currently requires TypeScript `2.0+`.
+This plugin currently requires TypeScript `2.4+`.
 
 ### Rollup version
 
-Tested on rollup `0.50.0`.
+This plugin currently requires rollup `0.50+`.
 
 ### Reporting bugs
 
