@@ -17,6 +17,8 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir }: IOptions, tsC
 
 	const declaration = _.get(tsConfigJson, "compilerOptions.declaration", false);
 
+	if (!declaration)
+		(overrides as any).declarationDir = null;
 	if (declaration && !useTsconfigDeclarationDir)
 		(overrides as any).declarationDir = process.cwd();
 

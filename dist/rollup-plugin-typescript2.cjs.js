@@ -19719,6 +19719,8 @@ function getOptionsOverrides(_a, tsConfigJson) {
         moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
     };
     var declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
+    if (!declaration)
+        overrides.declarationDir = null;
     if (declaration && !useTsconfigDeclarationDir)
         overrides.declarationDir = process.cwd();
     return overrides;
@@ -19797,7 +19799,7 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.10.0");
+            context.info("rollup-plugin-typescript2 version: 0.10.1");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             watchMode = process.env.ROLLUP_WATCH === "true";
