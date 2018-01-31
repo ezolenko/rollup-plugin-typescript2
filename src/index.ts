@@ -52,10 +52,11 @@ export default function typescript(options?: Partial<IOptions>)
 			exclude: ["*.d.ts", "**/*.d.ts"],
 			abortOnError: true,
 			rollupCommonJSResolveHack: false,
-			tsconfig: "tsconfig.json",
-			useTsconfigDeclarationDir: false,
 			typescript: require("typescript"),
+			tsconfig: undefined,
+			useTsconfigDeclarationDir: false,
 			tsconfigOverride: {},
+			tsconfigDefaults: {},
 		});
 
 	setTypescriptModule(pluginOptions.typescript);
@@ -79,7 +80,7 @@ export default function typescript(options?: Partial<IOptions>)
 			if (watchMode)
 				context.info(`running in watch mode`);
 
-			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
+			parsedConfig = parseTsConfig(context, pluginOptions);
 
 			if (parsedConfig.options.rootDirs)
 			{

@@ -19722,19 +19722,31 @@ function getOptionsOverrides(_a, tsConfigJson) {
     return overrides;
 }
 
-function parseTsConfig(tsconfig, context, pluginOptions) {
-    var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, tsconfig);
-    if (!fileName)
-        throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
-    var text = tsModule.sys.readFile(fileName);
-    var result = tsModule.parseConfigFileTextToJson(fileName, text);
-    if (result.error) {
-        printDiagnostics(context, convertDiagnostic("config", [result.error]), lodash_1(result.config, "pretty", false));
-        throw new Error("failed to parse " + fileName);
+function parseTsConfig(context, pluginOptions) {
+    var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
+    // if the value was provided, but no file, fail hard
+    if (pluginOptions.tsconfig !== undefined && !fileName)
+        throw new Error("failed to open '" + fileName + "'");
+    var loadedConfig = {};
+    var baseDir = process.cwd();
+    var configFileName;
+    if (fileName) {
+        var text = tsModule.sys.readFile(fileName);
+        if (text === undefined)
+            throw new Error("failed to read '" + fileName + "'");
+        var result = tsModule.parseConfigFileTextToJson(fileName, text);
+        if (result.error !== undefined) {
+            printDiagnostics(context, convertDiagnostic("config", [result.error]), lodash_1(result.config, "pretty", false));
+            throw new Error("failed to parse '" + fileName + "'");
+        }
+        loadedConfig = result.config;
+        baseDir = dirname(fileName);
+        configFileName = fileName;
     }
-    lodash_14(result.config, pluginOptions.tsconfigOverride);
-    var compilerOptionsOverride = getOptionsOverrides(pluginOptions, result.config);
-    var parsedTsConfig = tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), compilerOptionsOverride, fileName);
+    var mergedConfig = {};
+    lodash_14(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    var compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
+    var parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     context.debug("built-in options overrides: " + JSON.stringify(compilerOptionsOverride, undefined, 4));
     context.debug("parsed tsconfig: " + JSON.stringify(parsedTsConfig, undefined, 4));
     return parsedTsConfig;
@@ -19783,10 +19795,11 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
-        tsconfig: "tsconfig.json",
-        useTsconfigDeclarationDir: false,
         typescript: require("typescript"),
+        tsconfig: undefined,
+        useTsconfigDeclarationDir: false,
         tsconfigOverride: {},
+        tsconfigDefaults: {},
     });
     setTypescriptModule(pluginOptions.typescript);
     return {
@@ -19795,13 +19808,13 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.10.1");
+            context.info("rollup-plugin-typescript2 version: 0.11.0");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             watchMode = process.env.ROLLUP_WATCH === "true";
             if (watchMode)
                 context.info("running in watch mode");
-            parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
+            parsedConfig = parseTsConfig(context, pluginOptions);
             if (parsedConfig.options.rootDirs) {
                 var included_1 = lodash_16(parsedConfig.options.rootDirs)
                     .flatMap(function (root) {
