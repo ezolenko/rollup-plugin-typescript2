@@ -1,8 +1,8 @@
 /* eslint-disable */
-import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
+import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import crypto from 'crypto';
 import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from 'fs-extra';
-import { dirname, isAbsolute, join, normalize, relative } from 'path';
+import { dirname, isAbsolute, join, relative, normalize } from 'path';
 import { sync } from 'resolve';
 
 /*! *****************************************************************************
@@ -17435,26 +17435,29 @@ Graph.prototype.nodes = function() {
 };
 
 Graph.prototype.sources = function() {
-  return lodash_1$1.filter(this.nodes(), lodash_1$1.bind(function(v) {
-    return lodash_1$1.isEmpty(this._in[v]);
-  }, this));
+  var self = this;
+  return lodash_1$1.filter(this.nodes(), function(v) {
+    return lodash_1$1.isEmpty(self._in[v]);
+  });
 };
 
 Graph.prototype.sinks = function() {
-  return lodash_1$1.filter(this.nodes(), lodash_1$1.bind(function(v) {
-    return lodash_1$1.isEmpty(this._out[v]);
-  }, this));
+  var self = this;
+  return lodash_1$1.filter(this.nodes(), function(v) {
+    return lodash_1$1.isEmpty(self._out[v]);
+  });
 };
 
 Graph.prototype.setNodes = function(vs, value) {
   var args = arguments;
-  lodash_1$1.each(vs, lodash_1$1.bind(function(v) {
+  var self = this;
+  lodash_1$1.each(vs, function(v) {
     if (args.length > 1) {
-      this.setNode(v, value);
+      self.setNode(v, value);
     } else {
-      this.setNode(v);
+      self.setNode(v);
     }
-  }, this));
+  });
   return this;
 };
 
@@ -17496,9 +17499,9 @@ Graph.prototype.removeNode =  function(v) {
     if (this._isCompound) {
       this._removeFromParentsChildList(v);
       delete this._parent[v];
-      lodash_1$1.each(this.children(v), lodash_1$1.bind(function(child) {
-        this.setParent(child);
-      }, this));
+      lodash_1$1.each(this.children(v), function(child) {
+        self.setParent(child);
+      });
       delete this._children[v];
     }
     lodash_1$1.each(lodash_1$1.keys(this._in[v]), removeEdge);
@@ -17527,7 +17530,7 @@ Graph.prototype.setParent = function(v, parent) {
          ancestor = this.parent(ancestor)) {
       if (ancestor === v) {
         throw new Error("Setting " + parent+ " as parent of " + v +
-                        " would create create a cycle");
+                        " would create a cycle");
       }
     }
 
@@ -17592,6 +17595,16 @@ Graph.prototype.neighbors = function(v) {
   }
 };
 
+Graph.prototype.isLeaf = function (v) {
+  var neighbors;
+  if (this.isDirected()) {
+    neighbors = this.successors(v);
+  } else {
+    neighbors = this.neighbors(v);
+  }
+  return neighbors.length === 0;
+};
+
 Graph.prototype.filterNodes = function(filter) {
   var copy = new this.constructor({
     directed: this._isDirected,
@@ -17601,19 +17614,19 @@ Graph.prototype.filterNodes = function(filter) {
 
   copy.setGraph(this.graph());
 
-  lodash_1$1.each(this._nodes, lodash_1$1.bind(function(value, v) {
+  var self = this;
+  lodash_1$1.each(this._nodes, function(value, v) {
     if (filter(v)) {
       copy.setNode(v, value);
     }
-  }, this));
+  });
 
-  lodash_1$1.each(this._edgeObjs, lodash_1$1.bind(function(e) {
+  lodash_1$1.each(this._edgeObjs, function(e) {
     if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
-      copy.setEdge(e, this.edge(e));
+      copy.setEdge(e, self.edge(e));
     }
-  }, this));
+  });
 
-  var self = this;
   var parents = {};
   function findParent(v) {
     var parent = self.parent(v);
@@ -17840,7 +17853,7 @@ function edgeObjToId(isDirected, edgeObj) {
   return edgeArgsToId(isDirected, edgeObj.v, edgeObj.w, edgeObj.name);
 }
 
-var version = '2.1.1';
+var version = '2.1.5';
 
 // Includes only the "core" of graphlib
 var lib = {
@@ -18454,8 +18467,8 @@ var graphlib = {
   version: lib.version
 };
 
-var graphlib_1 = graphlib.alg;
-var graphlib_2 = graphlib.Graph;
+var graphlib_1 = graphlib.Graph;
+var graphlib_3 = graphlib.alg;
 
 var objectHash_1 = createCommonjsModule(function (module, exports) {
 exports = module.exports = objectHash;
@@ -19542,7 +19555,7 @@ var TsCache = /** @class */ (function () {
             rollupConfig: this.rollupConfig,
             tsVersion: tsModule.version,
         });
-        this.dependencyTree = new graphlib_2({ directed: true });
+        this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
         var automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
@@ -19565,9 +19578,9 @@ var TsCache = /** @class */ (function () {
         this.dependencyTree.setEdge(importer, importee);
     };
     TsCache.prototype.walkTree = function (cb) {
-        var acyclic = graphlib_1.isAcyclic(this.dependencyTree);
+        var acyclic = graphlib_3.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_2(graphlib_1.topsort(this.dependencyTree), function (id) { return cb(id); });
+            lodash_2(graphlib_3.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
         this.context.info(safe_4("import tree has cycles"));
@@ -19650,7 +19663,7 @@ var TsCache = /** @class */ (function () {
             return label.dirty;
         if (this.ambientTypesDirty)
             return true;
-        var dependencies = graphlib_1.dijkstra(this.dependencyTree, id);
+        var dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
         return lodash_4(dependencies, function (dependency, node) {
             if (!node || dependency.distance === Infinity)
                 return false;

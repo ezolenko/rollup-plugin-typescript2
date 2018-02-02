@@ -68,10 +68,10 @@ export class TsCache
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
 	private cacheDir: string;
-	private codeCache: ICache<ICode | undefined>;
-	private typesCache: ICache<string>;
-	private semanticDiagnosticsCache: ICache<IDiagnostics[]>;
-	private syntacticDiagnosticsCache: ICache<IDiagnostics[]>;
+	private codeCache!: ICache<ICode | undefined>;
+	private typesCache!: ICache<string>;
+	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
+	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 
 	constructor(private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{

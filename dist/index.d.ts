@@ -10,5 +10,5 @@ export default function typescript(options?: Partial<IOptions>): {
     load(id: string): string | undefined;
     transform(this: IRollupContext, code: string, id: string): ICode | undefined;
     ongenerate(): void;
-    onwrite({dest, file}: IRollupOptions): void;
+    onwrite({ dest, file }: IRollupOptions): void;
 };

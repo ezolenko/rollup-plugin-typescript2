@@ -16,6 +16,7 @@
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitReturns": true,
 		"declaration": true,
+		"strict": true,
 		"outDir": "./build"
 	},
 	"include": [

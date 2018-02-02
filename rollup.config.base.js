@@ -20,8 +20,6 @@ export default {
 		"os",
 	],
 
-	sourcemap: true,
-
 	plugins: [
 		replace
 		({
@@ -33,7 +31,6 @@ export default {
 			include: "node_modules/**",
 			namedExports:
 			{
-				"graphlib": [ "alg", "Graph" ],
 				"colors/safe": [ "green", "white", "red", "yellow", "blue" ],
 				"lodash": [ "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults", "assign", "merge", "flatMap", "chain" ],
 			//	"fs-extra": [ "renameSync", "removeSync", "ensureFileSync", "writeJsonSync", "readJsonSync", "existsSync", "readdirSync", "emptyDirSync" ],
@@ -41,20 +38,24 @@ export default {
 		}),
 	],
 
-	banner: "/* eslint-disable */",
-
 	output: [
 		{
 			format: "cjs",
 			file: pkg.main,
+			sourcemap: true,
+			banner: "/* eslint-disable */",
 		},
 		{
 			format: "es",
 			file: pkg.module,
+			sourcemap: true,
+			banner: "/* eslint-disable */",
 		},
 		{
 			format: "es",
 			file: "build-self/" + pkg.module,
+			sourcemap: true,
+			banner: "/* eslint-disable */",
 		},
 	],
 };

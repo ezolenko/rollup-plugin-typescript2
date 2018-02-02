@@ -7655,7 +7655,7 @@ var lodash = createCommonjsModule(function (module, exports) {
      * _.join(['a', 'b', 'c'], '~');
      * // => 'a~b~c'
      */
-    function join$$1(array, separator) {
+    function join(array, separator) {
       return array == null ? '' : nativeJoin.call(array, separator);
     }
 
@@ -16787,7 +16787,7 @@ var lodash = createCommonjsModule(function (module, exports) {
     lodash.isUndefined = isUndefined;
     lodash.isWeakMap = isWeakMap;
     lodash.isWeakSet = isWeakSet;
-    lodash.join = join$$1;
+    lodash.join = join;
     lodash.kebabCase = kebabCase;
     lodash.last = last;
     lodash.lastIndexOf = lastIndexOf;
@@ -17239,7 +17239,7 @@ function setTypescriptModule(override) {
     tsModule = override;
 }
 
-function normalize$1(fileName) {
+function normalize(fileName) {
     return fileName.split("\\").join("/");
 }
 
@@ -17255,14 +17255,14 @@ var LanguageServiceHost = /** @class */ (function () {
         this.versions = {};
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
-        fileName = normalize$1(fileName);
+        fileName = normalize(fileName);
         var snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
-        fileName = normalize$1(fileName);
+        fileName = normalize(fileName);
         if (lodash_8(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (fs.existsSync(fileName)) {
@@ -17276,7 +17276,7 @@ var LanguageServiceHost = /** @class */ (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
-        fileName = normalize$1(fileName);
+        fileName = normalize(fileName);
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
@@ -17439,26 +17439,29 @@ Graph.prototype.nodes = function() {
 };
 
 Graph.prototype.sources = function() {
-  return lodash_1$1.filter(this.nodes(), lodash_1$1.bind(function(v) {
-    return lodash_1$1.isEmpty(this._in[v]);
-  }, this));
+  var self = this;
+  return lodash_1$1.filter(this.nodes(), function(v) {
+    return lodash_1$1.isEmpty(self._in[v]);
+  });
 };
 
 Graph.prototype.sinks = function() {
-  return lodash_1$1.filter(this.nodes(), lodash_1$1.bind(function(v) {
-    return lodash_1$1.isEmpty(this._out[v]);
-  }, this));
+  var self = this;
+  return lodash_1$1.filter(this.nodes(), function(v) {
+    return lodash_1$1.isEmpty(self._out[v]);
+  });
 };
 
 Graph.prototype.setNodes = function(vs, value) {
   var args = arguments;
-  lodash_1$1.each(vs, lodash_1$1.bind(function(v) {
+  var self = this;
+  lodash_1$1.each(vs, function(v) {
     if (args.length > 1) {
-      this.setNode(v, value);
+      self.setNode(v, value);
     } else {
-      this.setNode(v);
+      self.setNode(v);
     }
-  }, this));
+  });
   return this;
 };
 
@@ -17500,9 +17503,9 @@ Graph.prototype.removeNode =  function(v) {
     if (this._isCompound) {
       this._removeFromParentsChildList(v);
       delete this._parent[v];
-      lodash_1$1.each(this.children(v), lodash_1$1.bind(function(child) {
-        this.setParent(child);
-      }, this));
+      lodash_1$1.each(this.children(v), function(child) {
+        self.setParent(child);
+      });
       delete this._children[v];
     }
     lodash_1$1.each(lodash_1$1.keys(this._in[v]), removeEdge);
@@ -17531,7 +17534,7 @@ Graph.prototype.setParent = function(v, parent) {
          ancestor = this.parent(ancestor)) {
       if (ancestor === v) {
         throw new Error("Setting " + parent+ " as parent of " + v +
-                        " would create create a cycle");
+                        " would create a cycle");
       }
     }
 
@@ -17596,6 +17599,16 @@ Graph.prototype.neighbors = function(v) {
   }
 };
 
+Graph.prototype.isLeaf = function (v) {
+  var neighbors;
+  if (this.isDirected()) {
+    neighbors = this.successors(v);
+  } else {
+    neighbors = this.neighbors(v);
+  }
+  return neighbors.length === 0;
+};
+
 Graph.prototype.filterNodes = function(filter) {
   var copy = new this.constructor({
     directed: this._isDirected,
@@ -17605,19 +17618,19 @@ Graph.prototype.filterNodes = function(filter) {
 
   copy.setGraph(this.graph());
 
-  lodash_1$1.each(this._nodes, lodash_1$1.bind(function(value, v) {
+  var self = this;
+  lodash_1$1.each(this._nodes, function(value, v) {
     if (filter(v)) {
       copy.setNode(v, value);
     }
-  }, this));
+  });
 
-  lodash_1$1.each(this._edgeObjs, lodash_1$1.bind(function(e) {
+  lodash_1$1.each(this._edgeObjs, function(e) {
     if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
-      copy.setEdge(e, this.edge(e));
+      copy.setEdge(e, self.edge(e));
     }
-  }, this));
+  });
 
-  var self = this;
   var parents = {};
   function findParent(v) {
     var parent = self.parent(v);
@@ -17844,7 +17857,7 @@ function edgeObjToId(isDirected, edgeObj) {
   return edgeArgsToId(isDirected, edgeObj.v, edgeObj.w, edgeObj.name);
 }
 
-var version = '2.1.1';
+var version = '2.1.5';
 
 // Includes only the "core" of graphlib
 var lib = {
@@ -18458,8 +18471,8 @@ var graphlib = {
   version: lib.version
 };
 
-var graphlib_1 = graphlib.alg;
-var graphlib_2 = graphlib.Graph;
+var graphlib_1 = graphlib.Graph;
+var graphlib_3 = graphlib.alg;
 
 var objectHash_1 = createCommonjsModule(function (module, exports) {
 exports = module.exports = objectHash;
@@ -19546,7 +19559,7 @@ var TsCache = /** @class */ (function () {
             rollupConfig: this.rollupConfig,
             tsVersion: tsModule.version,
         });
-        this.dependencyTree = new graphlib_2({ directed: true });
+        this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
         var automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
@@ -19569,9 +19582,9 @@ var TsCache = /** @class */ (function () {
         this.dependencyTree.setEdge(importer, importee);
     };
     TsCache.prototype.walkTree = function (cb) {
-        var acyclic = graphlib_1.isAcyclic(this.dependencyTree);
+        var acyclic = graphlib_3.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_2(graphlib_1.topsort(this.dependencyTree), function (id) { return cb(id); });
+            lodash_2(graphlib_3.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
         this.context.info(safe_4("import tree has cycles"));
@@ -19654,7 +19667,7 @@ var TsCache = /** @class */ (function () {
             return label.dirty;
         if (this.ambientTypesDirty)
             return true;
-        var dependencies = graphlib_1.dijkstra(this.dependencyTree, id);
+        var dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
         return lodash_4(dependencies, function (dependency, node) {
             if (!node || dependency.distance === Infinity)
                 return false;
@@ -19926,7 +19939,7 @@ function typescript(options) {
                 printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
             }
             if (result && result.dts) {
-                var key_1 = normalize$1(id);
+                var key_1 = normalize(id);
                 declarations[key_1] = result.dts;
                 context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
                 result.dts = undefined;
@@ -19952,7 +19965,7 @@ function typescript(options) {
             var dest = _a.dest, file = _a.file;
             if (parsedConfig.options.declaration) {
                 lodash_2(parsedConfig.fileNames, function (name) {
-                    var key = normalize$1(name);
+                    var key = normalize(name);
                     if (lodash_8(declarations, key) || !filter(key))
                         return;
                     context.debug(function () { return "generating missed declarations for '" + key + "'"; });
