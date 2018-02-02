@@ -27,7 +27,7 @@ export default {
 }
 ```
 
-The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
+The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfigDefaults`, `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
 
 The following compiler options are forced though:
 
@@ -42,24 +42,35 @@ The following compiler options are forced though:
 
 ### Plugin options
 
-* `tsconfig`: "tsconfig.json"
+* `tsconfigDefaults`: `{}`
 
-    Override this if your tsconfig has another name or relative location from the project directory.
+	The object passed as `tsconfigDefaults` will be merged with loaded `tsconfig.json`. Final config passed to typescript will be the result of values in `tsconfigDefaults` replaced by values in loaded `tsconfig.json`, replaced by values in `tsconfigOverride` and then replaced by hard `compilerOptions` overrides on top of that (see above).
 
-* `tsconfigOverride`: `{}`
-
-	The object passed as `tsconfigOverride` will be merged with loaded tsconfig before parsing. Hard overrides (see above) will be applied on top of that. Theoretically you can put everything you would put in tsconfig proper.
+	For simplicity and other tools' sake, try to minimize usage of defaults and overrides and keep everything in `tsconfig.json` file (tsconfigs can themselves be chained, so save some turtles).
 
 	```js
-	let override = { compilerOptions: { declaration: true } };
+	let defaults = { compilerOptions: { declaration: true } };
+	let override = { compilerOptions: { declaration: false } };
 
 	// ...
 	plugins: [
-		typescript({ tsconfigOverride: override })
+		typescript({
+			tsconfigDefaults: defaults,
+			tsconfig: "tsconfig.json",
+			tsconfigOverride: override
+		})
 	]
 	```
 
-	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are concatenated, primitives are replaced, etc), increase verbosity to 3 and look for `parsed tsconfig` if you get something unexpected.
+	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are concatenated, primitives are replaced, etc), increase `verbosity` to 3 and look for `parsed tsconfig` if you get something unexpected.
+
+* `tsconfig`: `undefined`
+
+    Path to `tsconfig.json`. Set this if your tsconfig has another name or relative location from the project directory. By default will try to load `./tsconfig.json`, but will not fail if file is missing unless the value is set explicitly.
+
+* `tsconfigOverride`: `{}`
+
+	See `tsconfigDefaults`.
 
 * `check`: true
 

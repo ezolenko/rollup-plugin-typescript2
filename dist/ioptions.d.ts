@@ -8,8 +8,9 @@ export interface IOptions {
     cacheRoot: string;
     abortOnError: boolean;
     rollupCommonJSResolveHack: boolean;
-    tsconfig: string;
+    tsconfig?: string;
     useTsconfigDeclarationDir: boolean;
     typescript: typeof tsModule;
     tsconfigOverride: any;
+    tsconfigDefaults: any;
 }
