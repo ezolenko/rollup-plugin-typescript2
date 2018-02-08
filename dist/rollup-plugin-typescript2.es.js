@@ -18934,8 +18934,8 @@ var RollingCache = /** @class */ (function () {
      */
     RollingCache.prototype.read = function (name) {
         if (this.checkNewCache && existsSync(this.newCacheRoot + "/" + name))
-            return readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8" });
-        return readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8" });
+            return readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8", throws: false });
+        return readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8", throws: false });
     };
     RollingCache.prototype.write = function (name, data) {
         if (this.rolled)
@@ -19597,17 +19597,21 @@ var TsCache = /** @class */ (function () {
         var name = this.makeName(id, snapshot);
         this.context.info(safe_5("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
-        if (!this.codeCache.exists(name) || this.isDirty(id, false)) {
-            this.context.debug(safe_4("    cache miss"));
-            var transformedData = transform();
-            this.codeCache.write(name, transformedData);
-            this.markAsDirty(id);
-            return transformedData;
+        if (this.codeCache.exists(name) && !this.isDirty(id, false)) {
+            this.context.debug(safe_1("    cache hit"));
+            var data = this.codeCache.read(name);
+            if (data) {
+                this.codeCache.write(name, data);
+                return data;
+            }
+            else
+                this.context.warn(safe_4("    cache broken, discarding"));
         }
-        this.context.debug(safe_1("    cache hit"));
-        var data = this.codeCache.read(name);
-        this.codeCache.write(name, data);
-        return data;
+        this.context.debug(safe_4("    cache miss"));
+        var transformedData = transform();
+        this.codeCache.write(name, transformedData);
+        this.markAsDirty(id);
+        return transformedData;
     };
     TsCache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
         return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
@@ -19632,17 +19636,21 @@ var TsCache = /** @class */ (function () {
     TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
         this.context.debug("    cache: '" + cache.path(name) + "'");
-        if (!cache.exists(name) || this.isDirty(id, true)) {
-            this.context.debug(safe_4("    cache miss"));
-            var convertedData = convertDiagnostic(type, check());
-            cache.write(name, convertedData);
-            this.markAsDirty(id);
-            return convertedData;
+        if (cache.exists(name) && !this.isDirty(id, true)) {
+            this.context.debug(safe_1("    cache hit"));
+            var data = cache.read(name);
+            if (data) {
+                cache.write(name, data);
+                return data;
+            }
+            else
+                this.context.warn(safe_4("    cache broken, discarding"));
         }
-        this.context.debug(safe_1("    cache hit"));
-        var data = cache.read(name);
-        cache.write(name, data);
-        return data;
+        this.context.debug(safe_4("    cache miss"));
+        var convertedData = convertDiagnostic(type, check());
+        cache.write(name, convertedData);
+        this.markAsDirty(id);
+        return convertedData;
     };
     TsCache.prototype.init = function () {
         this.codeCache = new RollingCache(this.cacheDir + "/code", true);
@@ -19821,7 +19829,7 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.11.0");
+            context.info("rollup-plugin-typescript2 version: 0.11.1");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             watchMode = process.env.ROLLUP_WATCH === "true";

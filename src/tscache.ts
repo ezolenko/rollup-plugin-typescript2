@@ -146,21 +146,25 @@ export class TsCache
 		this.context.info(`${blue("transpiling")} '${id}'`);
 		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
 
-		if (!this.codeCache.exists(name) || this.isDirty(id, false))
+		if (this.codeCache.exists(name) && !this.isDirty(id, false))
 		{
-			this.context.debug(yellow("    cache miss"));
-
-			const transformedData = transform();
-			this.codeCache.write(name, transformedData);
-			this.markAsDirty(id);
-			return transformedData;
+			this.context.debug(green("    cache hit"));
+			const data = this.codeCache.read(name);
+			if (data)
+			{
+				this.codeCache.write(name, data);
+				return data;
+			}
+			else
+				this.context.warn(yellow("    cache broken, discarding"));
 		}
 
-		this.context.debug(green("    cache hit"));
+		this.context.debug(yellow("    cache miss"));
 
-		const data = this.codeCache.read(name);
-		this.codeCache.write(name, data);
-		return data;
+		const transformedData = transform();
+		this.codeCache.write(name, transformedData);
+		this.markAsDirty(id);
+		return transformedData;
 	}
 
 	public getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -197,21 +201,26 @@ export class TsCache
 
 		this.context.debug(`    cache: '${cache.path(name)}'`);
 
-		if (!cache.exists(name) || this.isDirty(id, true))
+		if (cache.exists(name) && !this.isDirty(id, true))
 		{
-			this.context.debug(yellow("    cache miss"));
+			this.context.debug(green("    cache hit"));
 
-			const convertedData = convertDiagnostic(type, check());
-			cache.write(name, convertedData);
-			this.markAsDirty(id);
-			return convertedData;
+			const data = cache.read(name);
+			if (data)
+			{
+				cache.write(name, data);
+				return data;
+			}
+			else
+				this.context.warn(yellow("    cache broken, discarding"));
 		}
 
-		this.context.debug(green("    cache hit"));
+		this.context.debug(yellow("    cache miss"));
 
-		const data = cache.read(name);
-		cache.write(name, data);
-		return data;
+		const convertedData = convertDiagnostic(type, check());
+		cache.write(name, convertedData);
+		this.markAsDirty(id);
+		return convertedData;
 	}
 
 	private init()
