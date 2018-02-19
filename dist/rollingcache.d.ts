@@ -26,7 +26,7 @@ export declare class RollingCache<DataType> implements ICache<DataType> {
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
      */
-    read(name: string): DataType;
+    read(name: string): DataType | null | undefined;
     write(name: string, data: DataType): void;
     touch(name: string): void;
     /**

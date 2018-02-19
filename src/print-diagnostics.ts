@@ -4,7 +4,7 @@ import { IContext } from "./context";
 import { IDiagnostics } from "./tscache";
 import * as _ from "lodash";
 
-export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[]): void
+export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[], pretty: boolean): void
 {
 	_.each(diagnostics, (diagnostic) =>
 	{
@@ -33,9 +33,14 @@ export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[])
 
 		const type = diagnostic.type + " ";
 
-		if (diagnostic.fileLine)
-			print.call(context, [`${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
+		if (pretty)
+			print.call(context, [`${diagnostic.formatted}`]);
 		else
-			print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
+		{
+			if (diagnostic.fileLine !== undefined)
+				print.call(context, [`${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
+			else
+				print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
+		}
 	});
 }

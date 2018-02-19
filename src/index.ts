@@ -13,7 +13,7 @@ import { parseTsConfig } from "./parse-ts-config";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource } from "./tslib";
 import { blue, red, yellow } from "colors/safe";
-import { join, relative, dirname, isAbsolute } from "path";
+import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 
 export default function typescript(options?: Partial<IOptions>)
@@ -22,8 +22,7 @@ export default function typescript(options?: Partial<IOptions>)
 	const createFilter = require("rollup-pluginutils").createFilter;
 	// tslint:enable-next-line:no-var-requires
 	let watchMode = false;
-	let round = 0;
-	let targetCount = 0;
+	let generateRound = 0;
 	let rollupOptions: IRollupOptions;
 	let context: ConsoleContext;
 	let filter: any;
@@ -53,30 +52,73 @@ export default function typescript(options?: Partial<IOptions>)
 			exclude: ["*.d.ts", "**/*.d.ts"],
 			abortOnError: true,
 			rollupCommonJSResolveHack: false,
-			tsconfig: "tsconfig.json",
-			useTsconfigDeclarationDir: false,
 			typescript: require("typescript"),
+			tsconfig: undefined,
+			useTsconfigDeclarationDir: false,
 			tsconfigOverride: {},
 			transformers: undefined,
+			tsconfigDefaults: {},
 		});
 
 	setTypescriptModule(pluginOptions.typescript);
 
 	return {
 
+		name: "rpt2",
+
 		options(config: IRollupOptions)
 		{
-			rollupOptions = config;
+			rollupOptions = {... config};
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
 			context.info(`typescript version: ${tsModule.version}`);
-			context.debug(`plugin options: ${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
+			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
+			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
+			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 
-			filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+			watchMode = process.env.ROLLUP_WATCH === "true";
 
-			context.debug(`rollup config: ${JSON.stringify(rollupOptions, undefined, 4)}`);
+			if (watchMode)
+				context.info(`running in watch mode`);
 
-			parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
+			parsedConfig = parseTsConfig(context, pluginOptions);
+
+			if (parsedConfig.options.rootDirs)
+			{
+				const included = _
+					.chain(parsedConfig.options.rootDirs)
+					.flatMap((root) =>
+					{
+						if (pluginOptions.include instanceof Array)
+							return pluginOptions.include.map((include) => join(root, include));
+						else
+							return join(root, pluginOptions.include);
+					})
+					.uniq()
+					.value();
+
+				const excluded = _
+					.chain(parsedConfig.options.rootDirs)
+					.flatMap((root) =>
+					{
+						if (pluginOptions.exclude instanceof Array)
+							return pluginOptions.exclude.map((exclude) => join(root, exclude));
+						else
+							return join(root, pluginOptions.exclude);
+					})
+					.uniq()
+					.value();
+
+				filter = createFilter(included, excluded);
+				context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+				context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
+			}
+			else
+			{
+				filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+				context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
+				context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
+			}
 
 			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
 
@@ -85,7 +127,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 			// printing compiler option errors
 			if (pluginOptions.check)
-				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
+				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
 
 			if (pluginOptions.clean)
 				cache().clean();
@@ -116,8 +158,8 @@ export default function typescript(options?: Partial<IOptions>)
 					? resolve.sync(result.resolvedModule.resolvedFileName)
 					: result.resolvedModule.resolvedFileName;
 
-				context.debug(`${blue("resolving")} '${importee}'`);
-				context.debug(`    to '${resolved}'`);
+				context.debug(() => `${blue("resolving")} '${importee}'`);
+				context.debug(() => `    to '${resolved}'`);
 
 				return resolved;
 			}
@@ -135,6 +177,8 @@ export default function typescript(options?: Partial<IOptions>)
 
 		transform(this: IRollupContext, code: string, id: string): ICode | undefined
 		{
+			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
+
 			if (!filter(id))
 				return undefined;
 
@@ -162,7 +206,7 @@ export default function typescript(options?: Partial<IOptions>)
 							return service.getSemanticDiagnostics(id);
 						}),
 					);
-					printDiagnostics(contextWrapper, diagnostics);
+					printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 
 					// since no output was generated, aborting compilation
 					cache().done();
@@ -197,35 +241,26 @@ export default function typescript(options?: Partial<IOptions>)
 				if (diagnostics.length > 0)
 					noErrors = false;
 
-				printDiagnostics(contextWrapper, diagnostics);
+				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 			}
 
 			if (result && result.dts)
 			{
 				const key = normalize(id);
 				declarations[key] = result.dts;
-				context.debug(`${blue("generated declarations")} for '${key}'`);
+				context.debug(() => `${blue("generated declarations")} for '${key}'`);
 				result.dts = undefined;
 			}
 
 			return result;
 		},
 
-		ongenerate(bundleOptions: any): void
+		ongenerate(): void
 		{
-			targetCount = _.get(bundleOptions, "targets.length", 1);
+			context.debug(() => `generating target ${generateRound + 1}`);
 
-			if (round >= targetCount) // ongenerate() is called for each target
+			if (watchMode && generateRound === 0)
 			{
-				watchMode = true;
-				round = 0;
-			}
-			context.debug(`generating target ${round + 1} of ${targetCount}`);
-
-			if (watchMode && round === 0)
-			{
-				context.debug("running in watch mode");
-
 				cache().walkTree((id) =>
 				{
 					if (!filter(id))
@@ -236,16 +271,16 @@ export default function typescript(options?: Partial<IOptions>)
 						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
 					);
 
-					printDiagnostics(context, diagnostics);
+					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
 				});
 			}
 
 			if (!watchMode && !noErrors)
-				context.info(yellow("there were errors or warnings above."));
+				context.info(yellow("there were errors or warnings."));
 
 			cache().done();
 
-			round++;
+			generateRound++;
 		},
 
 		onwrite({ dest, file }: IRollupOptions)
@@ -257,7 +292,7 @@ export default function typescript(options?: Partial<IOptions>)
 					const key = normalize(name);
 					if (_.has(declarations, key) || !filter(key))
 						return;
-					context.debug(`generating missed declarations for '${key}'`);
+					context.debug(() => `generating missed declarations for '${key}'`);
 					const output = service.getEmitOutput(key, true);
 					const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 					if (dts)
@@ -282,7 +317,7 @@ export default function typescript(options?: Partial<IOptions>)
 						writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
 					}
 
-					context.debug(`${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+					context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
 
 					// Write the declaration file to disk.
 					tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);

@@ -6,7 +6,7 @@ export interface ICache <DataType>
 
 	match(names: string[]): boolean;
 
-	read(name: string): DataType;
+	read(name: string): DataType | null | undefined;
 
 	write(name: string, data: DataType): void;
 

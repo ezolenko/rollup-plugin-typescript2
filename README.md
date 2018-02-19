@@ -4,6 +4,7 @@
 ![npm-dependencies](https://img.shields.io/david/ezolenko/rollup-plugin-typescript2.svg?maxAge=2592000)
 ![npm-monthly-downloads](https://img.shields.io/npm/dm/rollup-plugin-typescript2.svg?maxAge=2592000)
 [![Codeship Status](https://app.codeship.com/projects/fe9cf8f0-e8d4-0134-ec88-4e3d33dcd7ed/status?branch=master)](https://app.codeship.com/projects/207445)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/e19b72ab9658405bbfb32dd6d65d1856)](https://www.codacy.com/app/zolenkoe/rollup-plugin-typescript2?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ezolenko/rollup-plugin-typescript2&amp;utm_campaign=Badge_Grade)
 
 Rollup plugin for typescript with compiler errors.
 
@@ -26,38 +27,50 @@ export default {
 }
 ```
 
-The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
+The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfigDefaults`, `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
 
 The following compiler options are forced though:
 
 * `module`: `es2015`
-* `noEmitHelpers`: true
+* `noEmitHelpers`: false
 * `importHelpers`: true
 * `noResolve`: false
+* `noEmit`: false
 * `outDir`: `process.cwd()`
 * `declarationDir`: `process.cwd()` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
 * `moduleResolution`: `node` (*`classic` is [depreciated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
 
 ### Plugin options
 
-* `tsconfig`: "tsconfig.json"
+* `tsconfigDefaults`: `{}`
 
-    Override this if your tsconfig has another name or relative location from the project directory.
+	The object passed as `tsconfigDefaults` will be merged with loaded `tsconfig.json`. Final config passed to typescript will be the result of values in `tsconfigDefaults` replaced by values in loaded `tsconfig.json`, replaced by values in `tsconfigOverride` and then replaced by hard `compilerOptions` overrides on top of that (see above).
 
-* `tsconfigOverride`: `{}`
-
-	The object passed as `tsconfigOverride` will be merged with loaded tsconfig before parsing. Hard overrides (see above) will be applied on top of that. Theoretically you can put everything you would put in tsconfig proper.
+	For simplicity and other tools' sake, try to minimize usage of defaults and overrides and keep everything in `tsconfig.json` file (tsconfigs can themselves be chained, so save some turtles).
 
 	```js
-	const tsconfigOverride = { compilerOptions: { declaration: true } };
+	let defaults = { compilerOptions: { declaration: true } };
+	let override = { compilerOptions: { declaration: false } };
 
 	// ...
 	plugins: [
-		typescript({ tsconfigOverride })
+		typescript({
+			tsconfigDefaults: defaults,
+			tsconfig: "tsconfig.json",
+			tsconfigOverride: override
+		})
 	]
 	```
 
-	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are concatenated, primitives are replaced, etc), increase verbosity to 3 and look for `parsed tsconfig` if you get something unexpected.
+	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are concatenated, primitives are replaced, etc), increase `verbosity` to 3 and look for `parsed tsconfig` if you get something unexpected.
+
+* `tsconfig`: `undefined`
+
+    Path to `tsconfig.json`. Set this if your tsconfig has another name or relative location from the project directory. By default will try to load `./tsconfig.json`, but will not fail if file is missing unless the value is set explicitly.
+
+* `tsconfigOverride`: `{}`
+
+	See `tsconfigDefaults`.
 
 * `check`: true
 
@@ -74,9 +87,9 @@ The following compiler options are forced though:
 
 	Set to true for clean build (wipes out cache on every build).
 
-* `cacheRoot`: ".rts2_cache"
+* `cacheRoot`: `./.rts2_cache`
 
-	Path to cache.
+	Path to cache. Defaults to a folder in the current directory. Can be safely moved out with something like `${require('temp-dir')}/.rpt2_cache`, but watch out for multiple concurrent builds of the same repo.
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
@@ -137,11 +150,11 @@ Otherwise the plugin should work in watch mode. Make sure to run a normal build 
 
 ### Version
 
-This plugin currently requires TypeScript `2.0+`.
+This plugin currently requires TypeScript `2.4+`.
 
 ### Rollup version
 
-Tested on rollup `0.50.0`.
+This plugin currently requires rollup `0.50+`.
 
 ### Reporting bugs
 

@@ -6,8 +6,8 @@ export declare class RollupContext implements IContext {
     private prefix;
     private hasContext;
     constructor(verbosity: VerbosityLevel, bail: boolean, context: IRollupContext, prefix?: string);
-    warn(message: string): void;
-    error(message: string): void;
-    info(message: string): void;
-    debug(message: string): void;
+    warn(message: string | (() => string)): void;
+    error(message: string | (() => string)): void;
+    info(message: string | (() => string)): void;
+    debug(message: string | (() => string)): void;
 }

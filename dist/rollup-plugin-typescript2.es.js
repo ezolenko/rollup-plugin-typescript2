@@ -1,9 +1,9 @@
 /* eslint-disable */
-import { existsSync, readFileSync, readdirSync, renameSync } from 'fs';
+import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import crypto from 'crypto';
 import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from 'fs-extra';
+import { dirname, isAbsolute, join, relative, normalize } from 'path';
 import { sync } from 'resolve';
-import { dirname, isAbsolute, join, relative } from 'path';
 
 /*! *****************************************************************************
 Copyright (c) Microsoft Corporation. All rights reserved.
@@ -30,42 +30,6 @@ var __assign = Object.assign || function __assign(t) {
     }
     return t;
 };
-
-var VerbosityLevel;
-(function (VerbosityLevel) {
-    VerbosityLevel[VerbosityLevel["Error"] = 0] = "Error";
-    VerbosityLevel[VerbosityLevel["Warning"] = 1] = "Warning";
-    VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
-    VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
-})(VerbosityLevel || (VerbosityLevel = {}));
-var ConsoleContext = /** @class */ (function () {
-    function ConsoleContext(verbosity, prefix) {
-        if (prefix === void 0) { prefix = ""; }
-        this.verbosity = verbosity;
-        this.prefix = prefix;
-    }
-    ConsoleContext.prototype.warn = function (message) {
-        if (this.verbosity < VerbosityLevel.Warning)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    ConsoleContext.prototype.error = function (message) {
-        if (this.verbosity < VerbosityLevel.Error)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    ConsoleContext.prototype.info = function (message) {
-        if (this.verbosity < VerbosityLevel.Info)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    ConsoleContext.prototype.debug = function (message) {
-        if (this.verbosity < VerbosityLevel.Debug)
-            return;
-        console.log("" + this.prefix + message);
-    };
-    return ConsoleContext;
-}());
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -17178,7 +17142,46 @@ var lodash_9 = lodash.isFunction;
 var lodash_10 = lodash.concat;
 var lodash_11 = lodash.find;
 var lodash_12 = lodash.defaults;
+var lodash_13 = lodash.assign;
 var lodash_14 = lodash.merge;
+var lodash_15 = lodash.flatMap;
+var lodash_16 = lodash.chain;
+
+var VerbosityLevel;
+(function (VerbosityLevel) {
+    VerbosityLevel[VerbosityLevel["Error"] = 0] = "Error";
+    VerbosityLevel[VerbosityLevel["Warning"] = 1] = "Warning";
+    VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
+    VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
+})(VerbosityLevel || (VerbosityLevel = {}));
+var ConsoleContext = /** @class */ (function () {
+    function ConsoleContext(verbosity, prefix) {
+        if (prefix === void 0) { prefix = ""; }
+        this.verbosity = verbosity;
+        this.prefix = prefix;
+    }
+    ConsoleContext.prototype.warn = function (message) {
+        if (this.verbosity < VerbosityLevel.Warning)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    ConsoleContext.prototype.error = function (message) {
+        if (this.verbosity < VerbosityLevel.Error)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    ConsoleContext.prototype.info = function (message) {
+        if (this.verbosity < VerbosityLevel.Info)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    ConsoleContext.prototype.debug = function (message) {
+        if (this.verbosity < VerbosityLevel.Debug)
+            return;
+        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
+    };
+    return ConsoleContext;
+}());
 
 var RollupContext = /** @class */ (function () {
     function RollupContext(verbosity, bail, context, prefix) {
@@ -17193,32 +17196,36 @@ var RollupContext = /** @class */ (function () {
     RollupContext.prototype.warn = function (message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
+        var text = lodash_9(message) ? message() : message;
         if (this.hasContext)
-            this.context.warn("" + this.prefix + message);
+            this.context.warn("" + text);
         else
-            console.log("" + this.prefix + message);
+            console.log("" + this.prefix + text);
     };
     RollupContext.prototype.error = function (message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
+        var text = lodash_9(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
-                this.context.error("" + this.prefix + message);
+                this.context.error("" + text);
             else
-                this.context.warn("" + this.prefix + message);
+                this.context.warn("" + text);
         }
         else
-            console.log("" + this.prefix + message);
+            console.log("" + this.prefix + text);
     };
     RollupContext.prototype.info = function (message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log("" + this.prefix + message);
+        var text = lodash_9(message) ? message() : message;
+        console.log("" + this.prefix + text);
     };
     RollupContext.prototype.debug = function (message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log("" + this.prefix + message);
+        var text = lodash_9(message) ? message() : message;
+        console.log("" + this.prefix + text);
     };
     return RollupContext;
 }());
@@ -17228,7 +17235,7 @@ function setTypescriptModule(override) {
     tsModule = override;
 }
 
-function normalize(fileName) {
+function normalize$1(fileName) {
     return fileName.split("\\").join("/");
 }
 
@@ -17248,14 +17255,14 @@ var LanguageServiceHost = /** @class */ (function () {
         this.service = service;
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
-        fileName = normalize(fileName);
+        fileName = normalize$1(fileName);
         var snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
         return snapshot;
     };
     LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
-        fileName = normalize(fileName);
+        fileName = normalize$1(fileName);
         if (lodash_8(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (existsSync(fileName)) {
@@ -17269,7 +17276,7 @@ var LanguageServiceHost = /** @class */ (function () {
         return this.cwd;
     };
     LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
-        fileName = normalize(fileName);
+        fileName = normalize$1(fileName);
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
@@ -17437,26 +17444,29 @@ Graph.prototype.nodes = function() {
 };
 
 Graph.prototype.sources = function() {
-  return lodash_1$1.filter(this.nodes(), lodash_1$1.bind(function(v) {
-    return lodash_1$1.isEmpty(this._in[v]);
-  }, this));
+  var self = this;
+  return lodash_1$1.filter(this.nodes(), function(v) {
+    return lodash_1$1.isEmpty(self._in[v]);
+  });
 };
 
 Graph.prototype.sinks = function() {
-  return lodash_1$1.filter(this.nodes(), lodash_1$1.bind(function(v) {
-    return lodash_1$1.isEmpty(this._out[v]);
-  }, this));
+  var self = this;
+  return lodash_1$1.filter(this.nodes(), function(v) {
+    return lodash_1$1.isEmpty(self._out[v]);
+  });
 };
 
 Graph.prototype.setNodes = function(vs, value) {
   var args = arguments;
-  lodash_1$1.each(vs, lodash_1$1.bind(function(v) {
+  var self = this;
+  lodash_1$1.each(vs, function(v) {
     if (args.length > 1) {
-      this.setNode(v, value);
+      self.setNode(v, value);
     } else {
-      this.setNode(v);
+      self.setNode(v);
     }
-  }, this));
+  });
   return this;
 };
 
@@ -17498,9 +17508,9 @@ Graph.prototype.removeNode =  function(v) {
     if (this._isCompound) {
       this._removeFromParentsChildList(v);
       delete this._parent[v];
-      lodash_1$1.each(this.children(v), lodash_1$1.bind(function(child) {
-        this.setParent(child);
-      }, this));
+      lodash_1$1.each(this.children(v), function(child) {
+        self.setParent(child);
+      });
       delete this._children[v];
     }
     lodash_1$1.each(lodash_1$1.keys(this._in[v]), removeEdge);
@@ -17529,7 +17539,7 @@ Graph.prototype.setParent = function(v, parent) {
          ancestor = this.parent(ancestor)) {
       if (ancestor === v) {
         throw new Error("Setting " + parent+ " as parent of " + v +
-                        " would create create a cycle");
+                        " would create a cycle");
       }
     }
 
@@ -17594,6 +17604,16 @@ Graph.prototype.neighbors = function(v) {
   }
 };
 
+Graph.prototype.isLeaf = function (v) {
+  var neighbors;
+  if (this.isDirected()) {
+    neighbors = this.successors(v);
+  } else {
+    neighbors = this.neighbors(v);
+  }
+  return neighbors.length === 0;
+};
+
 Graph.prototype.filterNodes = function(filter) {
   var copy = new this.constructor({
     directed: this._isDirected,
@@ -17603,19 +17623,19 @@ Graph.prototype.filterNodes = function(filter) {
 
   copy.setGraph(this.graph());
 
-  lodash_1$1.each(this._nodes, lodash_1$1.bind(function(value, v) {
+  var self = this;
+  lodash_1$1.each(this._nodes, function(value, v) {
     if (filter(v)) {
       copy.setNode(v, value);
     }
-  }, this));
+  });
 
-  lodash_1$1.each(this._edgeObjs, lodash_1$1.bind(function(e) {
+  lodash_1$1.each(this._edgeObjs, function(e) {
     if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
-      copy.setEdge(e, this.edge(e));
+      copy.setEdge(e, self.edge(e));
     }
-  }, this));
+  });
 
-  var self = this;
   var parents = {};
   function findParent(v) {
     var parent = self.parent(v);
@@ -17842,7 +17862,7 @@ function edgeObjToId(isDirected, edgeObj) {
   return edgeArgsToId(isDirected, edgeObj.v, edgeObj.w, edgeObj.name);
 }
 
-var version = '2.1.1';
+var version = '2.1.5';
 
 // Includes only the "core" of graphlib
 var lib = {
@@ -18456,37 +18476,10 @@ var graphlib = {
   version: lib.version
 };
 
-var graphlib_1 = graphlib.alg;
-var graphlib_2 = graphlib.Graph;
+var graphlib_1 = graphlib.Graph;
+var graphlib_3 = graphlib.alg;
 
 var objectHash_1 = createCommonjsModule(function (module, exports) {
-'use strict';
-
-
-
-/**
- * Exported function
- *
- * Options:
- *
- *  - `algorithm` hash algo to be used by this instance: *'sha1', 'md5' 
- *  - `excludeValues` {true|*false} hash object keys, values ignored 
- *  - `encoding` hash encoding, supports 'buffer', '*hex', 'binary', 'base64' 
- *  - `ignoreUnknown` {true|*false} ignore unknown object types
- *  - `replacer` optional function that replaces values before hashing
- *  - `respectFunctionProperties` {*true|false} consider function properties when hashing
- *  - `respectFunctionNames` {*true|false} consider 'name' property of functions for hashing
- *  - `respectType` {*true|false} Respect special properties (prototype, constructor)
- *    when hashing to distinguish between types
- *  - `unorderedArrays` {true|*false} Sort all arrays before hashing
- *  - `unorderedSets` {*true|false} Sort `Set` and `Map` instances before hashing
- *  * = default
- *
- * @param {object} object value to hash
- * @param {object} options hashing options
- * @return {string} hash value
- * @api public
- */
 exports = module.exports = objectHash;
 
 function objectHash(object, options){
@@ -18534,6 +18527,7 @@ function applyDefaults(object, options){
   options.unorderedArrays = options.unorderedArrays !== true ? false : true; // default to false
   options.unorderedSets = options.unorderedSets === false ? false : true; // default to false
   options.replacer = options.replacer || undefined;
+  options.excludeKeys = options.excludeKeys || undefined;
 
   if(typeof object === 'undefined') {
     throw new Error('Object argument required.');
@@ -18546,7 +18540,7 @@ function applyDefaults(object, options){
       options.algorithm = hashes[i];
     }
   }
-  
+
   if(hashes.indexOf(options.algorithm) === -1){
     throw new Error('Algorithm "' + options.algorithm + '"  not supported. ' +
       'supported values: ' + hashes.join(', '));
@@ -18557,7 +18551,7 @@ function applyDefaults(object, options){
     throw new Error('Encoding "' + options.encoding + '"  not supported. ' +
       'supported values: ' + encodings.join(', '));
   }
-  
+
   return options;
 }
 
@@ -18572,23 +18566,23 @@ function isNativeFunction(f) {
 
 function hash(object, options) {
   var hashingStream;
-  
+
   if (options.algorithm !== 'passthrough') {
     hashingStream = crypto.createHash(options.algorithm);
   } else {
     hashingStream = new PassThrough();
   }
-  
+
   if (typeof hashingStream.write === 'undefined') {
     hashingStream.write = hashingStream.update;
     hashingStream.end   = hashingStream.update;
   }
-  
+
   var hasher = typeHasher(options, hashingStream);
   hasher.dispatch(object);
   if (!hashingStream.update)
     hashingStream.end('');
-  
+
   if (hashingStream.digest) {
     return hashingStream.digest(options.encoding === 'buffer' ? undefined : options.encoding);
   }
@@ -18597,7 +18591,7 @@ function hash(object, options) {
   if (options.encoding === 'buffer') {
     return buf;
   }
-  
+
   return buf.toString(options.encoding);
 }
 
@@ -18614,9 +18608,9 @@ exports.writeToStream = function(object, options, stream) {
     stream = options;
     options = {};
   }
-  
+
   options = applyDefaults(object, options);
-  
+
   return typeHasher(options, stream).dispatch(object);
 };
 
@@ -18634,14 +18628,14 @@ function typeHasher(options, writeTo, context){
       if (options.replacer) {
         value = options.replacer(value);
       }
-      
+
       var type = typeof value;
       if (value === null) {
         type = 'null';
       }
 
       //console.log("[DEBUG] Dispatch: ", value, "->", type, " -> ", "_" + type);
-      
+
       return this['_' + type](value);
     },
     _object: function(object) {
@@ -18653,9 +18647,9 @@ function typeHasher(options, writeTo, context){
       } else {
         objType = objType[1]; // take only the class name
       }
-      
+
       objType = objType.toLowerCase();
-            
+
       var objectNumber = null;
 
       if ((objectNumber = context.indexOf(object)) >= 0) {
@@ -18663,7 +18657,7 @@ function typeHasher(options, writeTo, context){
       } else {
         context.push(object);
       }
-      
+
       if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(object)) {
         write('buffer:');
         return write(object);
@@ -18689,7 +18683,11 @@ function typeHasher(options, writeTo, context){
         if (options.respectType !== false && !isNativeFunction(object)) {
           keys.splice(0, 0, 'prototype', '__proto__', 'constructor');
         }
-        
+
+        if (options.excludeKeys) {
+          keys = keys.filter(function(key) { return !options.excludeKeys(key); });
+        }
+
         write('object:' + keys.length + ':');
         var self = this;
         return keys.forEach(function(key){
@@ -18705,7 +18703,7 @@ function typeHasher(options, writeTo, context){
     _array: function(arr, unordered){
       unordered = typeof unordered !== 'undefined' ? unordered :
         options.unorderedArrays !== false; // default to options.unorderedArrays
-      
+
       var self = this;
       write('array:' + arr.length + ':');
       if (!unordered || arr.length <= 1) {
@@ -18713,7 +18711,7 @@ function typeHasher(options, writeTo, context){
           return self.dispatch(entry);
         });
       }
-      
+
       // the unordered case is a little more complicated:
       // since there is no canonical ordering on objects,
       // i.e. {a:1} < {a:2} and {a:1} > {a:2} are both false,
@@ -18767,7 +18765,7 @@ function typeHasher(options, writeTo, context){
         // have the same hash
         this.dispatch("function-name:" + String(fn.name));
       }
-      
+
       if (options.respectFunctionProperties) {
         this._object(fn);
       }
@@ -18844,7 +18842,7 @@ function typeHasher(options, writeTo, context){
       if (options.ignoreUnknown) {
         return write('[blob]');
       }
-      
+
       throw Error('Hashing Blob objects is currently not supported\n' +
         '(see https://github.com/puleos/object-hash/issues/26)\n' +
         'Use "options.replacer" or "options.ignoreUnknown"\n');
@@ -18895,6 +18893,10 @@ function PassThrough() {
 });
 
 var objectHash_2 = objectHash_1.sha1;
+var objectHash_3 = objectHash_1.keys;
+var objectHash_4 = objectHash_1.MD5;
+var objectHash_5 = objectHash_1.keysMD5;
+var objectHash_6 = objectHash_1.writeToStream;
 
 /**
  * Saves data in new cache folder or reads it from old one.
@@ -18941,8 +18943,8 @@ var RollingCache = /** @class */ (function () {
      */
     RollingCache.prototype.read = function (name) {
         if (this.checkNewCache && existsSync(this.newCacheRoot + "/" + name))
-            return readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8" });
-        return readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8" });
+            return readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8", throws: false });
+        return readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8", throws: false });
     };
     RollingCache.prototype.write = function (name, data) {
         if (this.rolled)
@@ -19200,8 +19202,7 @@ module['exports'] = function zalgo(text, options) {
       '̷', '͡', ' ҉'
     ]
   },
-  all = [].concat(soul.up, soul.down, soul.mid),
-  zalgo = {};
+  all = [].concat(soul.up, soul.down, soul.mid);
 
   function randomNumber(range) {
     var r = Math.floor(Math.random() * range);
@@ -19470,7 +19471,7 @@ function init() {
 }
 
 var sequencer = function sequencer (map, str) {
-  var exploded = str.split(""), i = 0;
+  var exploded = str.split("");
   exploded = exploded.map(map);
   return exploded.join("");
 };
@@ -19515,17 +19516,34 @@ var safe_3 = safe.red;
 var safe_4 = safe.yellow;
 var safe_5 = safe.blue;
 
+var FormatHost = /** @class */ (function () {
+    function FormatHost() {
+    }
+    FormatHost.prototype.getCurrentDirectory = function () {
+        return tsModule.sys.getCurrentDirectory();
+    };
+    FormatHost.prototype.getCanonicalFileName = function (fileName) {
+        return normalize(fileName);
+    };
+    FormatHost.prototype.getNewLine = function () {
+        return tsModule.sys.newLine;
+    };
+    return FormatHost;
+}());
+var formatHost = new FormatHost();
+
 function convertDiagnostic(type, data) {
     return lodash_7(data, function (diagnostic) {
         var entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
             category: diagnostic.category,
             code: diagnostic.code,
             type: type,
         };
         if (diagnostic.file && diagnostic.start !== undefined) {
             var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-            entry.fileLine = diagnostic.file.fileName + " (" + (line + 1) + "," + (character + 1) + ")";
+            entry.fileLine = diagnostic.file.fileName + "(" + (line + 1) + "," + (character + 1) + ")";
         }
         return entry;
     });
@@ -19537,7 +19555,7 @@ var TsCache = /** @class */ (function () {
         this.options = options;
         this.rollupConfig = rollupConfig;
         this.context = context;
-        this.cacheVersion = "6";
+        this.cacheVersion = "7";
         this.ambientTypesDirty = false;
         this.cacheDir = cache + "/" + objectHash_2({
             version: this.cacheVersion,
@@ -19546,7 +19564,7 @@ var TsCache = /** @class */ (function () {
             rollupConfig: this.rollupConfig,
             tsVersion: tsModule.version,
         });
-        this.dependencyTree = new graphlib_2({ directed: true });
+        this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
         var automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
             .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
@@ -19569,9 +19587,9 @@ var TsCache = /** @class */ (function () {
         this.dependencyTree.setEdge(importer, importee);
     };
     TsCache.prototype.walkTree = function (cb) {
-        var acyclic = graphlib_1.isAcyclic(this.dependencyTree);
+        var acyclic = graphlib_3.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_2(graphlib_1.topsort(this.dependencyTree), function (id) { return cb(id); });
+            lodash_2(graphlib_3.topsort(this.dependencyTree), function (id) { return cb(id); });
             return;
         }
         this.context.info(safe_4("import tree has cycles"));
@@ -19588,17 +19606,21 @@ var TsCache = /** @class */ (function () {
         var name = this.makeName(id, snapshot);
         this.context.info(safe_5("transpiling") + " '" + id + "'");
         this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
-        if (!this.codeCache.exists(name) || this.isDirty(id, false)) {
-            this.context.debug(safe_4("    cache miss"));
-            var transformedData = transform();
-            this.codeCache.write(name, transformedData);
-            this.markAsDirty(id);
-            return transformedData;
+        if (this.codeCache.exists(name) && !this.isDirty(id, false)) {
+            this.context.debug(safe_1("    cache hit"));
+            var data = this.codeCache.read(name);
+            if (data) {
+                this.codeCache.write(name, data);
+                return data;
+            }
+            else
+                this.context.warn(safe_4("    cache broken, discarding"));
         }
-        this.context.debug(safe_1("    cache hit"));
-        var data = this.codeCache.read(name);
-        this.codeCache.write(name, data);
-        return data;
+        this.context.debug(safe_4("    cache miss"));
+        var transformedData = transform();
+        this.codeCache.write(name, transformedData);
+        this.markAsDirty(id);
+        return transformedData;
     };
     TsCache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
         return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
@@ -19623,17 +19645,21 @@ var TsCache = /** @class */ (function () {
     TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
         var name = this.makeName(id, snapshot);
         this.context.debug("    cache: '" + cache.path(name) + "'");
-        if (!cache.exists(name) || this.isDirty(id, true)) {
-            this.context.debug(safe_4("    cache miss"));
-            var convertedData = convertDiagnostic(type, check());
-            cache.write(name, convertedData);
-            this.markAsDirty(id);
-            return convertedData;
+        if (cache.exists(name) && !this.isDirty(id, true)) {
+            this.context.debug(safe_1("    cache hit"));
+            var data = cache.read(name);
+            if (data) {
+                cache.write(name, data);
+                return data;
+            }
+            else
+                this.context.warn(safe_4("    cache broken, discarding"));
         }
-        this.context.debug(safe_1("    cache hit"));
-        var data = cache.read(name);
-        cache.write(name, data);
-        return data;
+        this.context.debug(safe_4("    cache miss"));
+        var convertedData = convertDiagnostic(type, check());
+        cache.write(name, convertedData);
+        this.markAsDirty(id);
+        return convertedData;
     };
     TsCache.prototype.init = function () {
         this.codeCache = new RollingCache(this.cacheDir + "/code", true);
@@ -19654,7 +19680,7 @@ var TsCache = /** @class */ (function () {
             return label.dirty;
         if (this.ambientTypesDirty)
             return true;
-        var dependencies = graphlib_1.dijkstra(this.dependencyTree, id);
+        var dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
         return lodash_4(dependencies, function (dependency, node) {
             if (!node || dependency.distance === Infinity)
                 return false;
@@ -19672,7 +19698,7 @@ var TsCache = /** @class */ (function () {
     return TsCache;
 }());
 
-function printDiagnostics(context, diagnostics) {
+function printDiagnostics(context, diagnostics, pretty) {
     lodash_2(diagnostics, function (diagnostic) {
         var print;
         var color;
@@ -19696,33 +19722,61 @@ function printDiagnostics(context, diagnostics) {
                 break;
         }
         var type = diagnostic.type + " ";
-        if (diagnostic.fileLine)
-            print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
-        else
-            print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+        if (pretty)
+            print.call(context, ["" + diagnostic.formatted]);
+        else {
+            if (diagnostic.fileLine !== undefined)
+                print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+            else
+                print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+        }
     });
 }
 
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
+    var overrides = {
+        module: tsModule.ModuleKind.ES2015,
+        noEmitHelpers: false,
+        importHelpers: true,
+        noResolve: false,
+        noEmit: false,
+        outDir: process.cwd(),
+        moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
+    };
     var declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
-    var overrides = __assign({ module: tsModule.ModuleKind.ES2015, noEmitHelpers: true, importHelpers: true, noResolve: false, outDir: process.cwd(), moduleResolution: tsModule.ModuleResolutionKind.NodeJs }, (!declaration || useTsconfigDeclarationDir ? {} : { declarationDir: process.cwd() }));
+    if (!declaration)
+        overrides.declarationDir = null;
+    if (declaration && !useTsconfigDeclarationDir)
+        overrides.declarationDir = process.cwd();
     return overrides;
 }
 
-function parseTsConfig(tsconfig, context, pluginOptions) {
-    var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, tsconfig);
-    if (!fileName)
-        throw new Error("couldn't find '" + tsconfig + "' in " + process.cwd());
-    var text = tsModule.sys.readFile(fileName);
-    var result = tsModule.parseConfigFileTextToJson(fileName, text);
-    if (result.error) {
-        printDiagnostics(context, convertDiagnostic("config", [result.error]));
-        throw new Error("failed to parse " + fileName);
+function parseTsConfig(context, pluginOptions) {
+    var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
+    // if the value was provided, but no file, fail hard
+    if (pluginOptions.tsconfig !== undefined && !fileName)
+        throw new Error("failed to open '" + fileName + "'");
+    var loadedConfig = {};
+    var baseDir = process.cwd();
+    var configFileName;
+    if (fileName) {
+        var text = tsModule.sys.readFile(fileName);
+        if (text === undefined)
+            throw new Error("failed to read '" + fileName + "'");
+        var result = tsModule.parseConfigFileTextToJson(fileName, text);
+        if (result.error !== undefined) {
+            printDiagnostics(context, convertDiagnostic("config", [result.error]), lodash_1(result.config, "pretty", false));
+            throw new Error("failed to parse '" + fileName + "'");
+        }
+        loadedConfig = result.config;
+        baseDir = dirname(fileName);
+        configFileName = fileName;
     }
-    lodash_14(result.config, pluginOptions.tsconfigOverride);
-    var compilerOptionsOverride = getOptionsOverrides(pluginOptions, result.config);
-    var parsedTsConfig = tsModule.parseJsonConfigFileContent(result.config, tsModule.sys, dirname(fileName), compilerOptionsOverride, fileName);
+    var mergedConfig = {};
+    lodash_14(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    var compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
+    var parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     context.debug("built-in options overrides: " + JSON.stringify(compilerOptionsOverride, undefined, 4));
     context.debug("parsed tsconfig: " + JSON.stringify(parsedTsConfig, undefined, 4));
     return parsedTsConfig;
@@ -19746,8 +19800,7 @@ function typescript(options) {
     var createFilter = require("rollup-pluginutils").createFilter;
     // tslint:enable-next-line:no-var-requires
     var watchMode = false;
-    var round = 0;
-    var targetCount = 0;
+    var generateRound = 0;
     var rollupOptions;
     var context;
     var filter;
@@ -19772,28 +19825,61 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
-        tsconfig: "tsconfig.json",
-        useTsconfigDeclarationDir: false,
         typescript: require("typescript"),
+        tsconfig: undefined,
+        useTsconfigDeclarationDir: false,
         tsconfigOverride: {},
         transformers: undefined,
+        tsconfigDefaults: {},
     });
     setTypescriptModule(pluginOptions.typescript);
     return {
+        name: "rpt2",
         options: function (config) {
-            rollupOptions = config;
+            rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.debug("plugin options: " + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4));
-            filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-            context.debug("rollup config: " + JSON.stringify(rollupOptions, undefined, 4));
-            parsedConfig = parseTsConfig(pluginOptions.tsconfig, context, pluginOptions);
+            context.info("rollup-plugin-typescript2 version: 0.11.2");
+            context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
+            context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
+            watchMode = process.env.ROLLUP_WATCH === "true";
+            if (watchMode)
+                context.info("running in watch mode");
+            parsedConfig = parseTsConfig(context, pluginOptions);
+            if (parsedConfig.options.rootDirs) {
+                var included_1 = lodash_16(parsedConfig.options.rootDirs)
+                    .flatMap(function (root) {
+                    if (pluginOptions.include instanceof Array)
+                        return pluginOptions.include.map(function (include) { return join(root, include); });
+                    else
+                        return join(root, pluginOptions.include);
+                })
+                    .uniq()
+                    .value();
+                var excluded_1 = lodash_16(parsedConfig.options.rootDirs)
+                    .flatMap(function (root) {
+                    if (pluginOptions.exclude instanceof Array)
+                        return pluginOptions.exclude.map(function (exclude) { return join(root, exclude); });
+                    else
+                        return join(root, pluginOptions.exclude);
+                })
+                    .uniq()
+                    .value();
+                filter = createFilter(included_1, excluded_1);
+                context.debug(function () { return "included:\n" + JSON.stringify(included_1, undefined, 4); });
+                context.debug(function () { return "excluded:\n" + JSON.stringify(excluded_1, undefined, 4); });
+            }
+            else {
+                filter = createFilter(pluginOptions.include, pluginOptions.exclude);
+                context.debug(function () { return "included:\n'" + JSON.stringify(pluginOptions.include, undefined, 4) + "'"; });
+                context.debug(function () { return "excluded:\n'" + JSON.stringify(pluginOptions.exclude, undefined, 4) + "'"; });
+            }
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
             servicesHost.setLanguageService(service);
             // printing compiler option errors
             if (pluginOptions.check)
-                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()));
+                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
             if (pluginOptions.clean)
                 cache().clean();
         },
@@ -19810,12 +19896,12 @@ function typescript(options) {
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (lodash_6(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                var resolved = pluginOptions.rollupCommonJSResolveHack
+                var resolved_1 = pluginOptions.rollupCommonJSResolveHack
                     ? sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(safe_5("resolving") + " '" + importee + "'");
-                context.debug("    to '" + resolved + "'");
-                return resolved;
+                context.debug(function () { return safe_5("resolving") + " '" + importee + "'"; });
+                context.debug(function () { return "    to '" + resolved_1 + "'"; });
+                return resolved_1;
             }
             return null;
         },
@@ -19826,6 +19912,7 @@ function typescript(options) {
         },
         transform: function (code, id) {
             var _this = this;
+            generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
             if (!filter(id))
                 return undefined;
             var contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
@@ -19841,7 +19928,7 @@ function typescript(options) {
                     }), cache().getSemanticDiagnostics(id, snapshot, function () {
                         return service.getSemanticDiagnostics(id);
                     }));
-                    printDiagnostics(contextWrapper, diagnostics);
+                    printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
                     if (lodash_9(_this.error))
@@ -19864,45 +19951,39 @@ function typescript(options) {
                 }));
                 if (diagnostics.length > 0)
                     noErrors = false;
-                printDiagnostics(contextWrapper, diagnostics);
+                printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
             }
             if (result && result.dts) {
-                var key = normalize(id);
-                declarations[key] = result.dts;
-                context.debug(safe_5("generated declarations") + " for '" + key + "'");
+                var key_1 = normalize$1(id);
+                declarations[key_1] = result.dts;
+                context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
                 result.dts = undefined;
             }
             return result;
         },
-        ongenerate: function (bundleOptions) {
-            targetCount = lodash_1(bundleOptions, "targets.length", 1);
-            if (round >= targetCount) {
-                watchMode = true;
-                round = 0;
-            }
-            context.debug("generating target " + (round + 1) + " of " + targetCount);
-            if (watchMode && round === 0) {
-                context.debug("running in watch mode");
+        ongenerate: function () {
+            context.debug(function () { return "generating target " + (generateRound + 1); });
+            if (watchMode && generateRound === 0) {
                 cache().walkTree(function (id) {
                     if (!filter(id))
                         return;
                     var diagnostics = lodash_10(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
-                    printDiagnostics(context, diagnostics);
+                    printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
                 });
             }
             if (!watchMode && !noErrors)
-                context.info(safe_4("there were errors or warnings above."));
+                context.info(safe_4("there were errors or warnings."));
             cache().done();
-            round++;
+            generateRound++;
         },
         onwrite: function (_a) {
             var dest = _a.dest, file = _a.file;
             if (parsedConfig.options.declaration) {
                 lodash_2(parsedConfig.fileNames, function (name) {
-                    var key = normalize(name);
+                    var key = normalize$1(name);
                     if (lodash_8(declarations, key) || !filter(key))
                         return;
-                    context.debug("generating missed declarations for '" + key + "'");
+                    context.debug(function () { return "generating missed declarations for '" + key + "'"; });
                     var output = service.getEmitOutput(key, true);
                     var dts = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".d.ts"); });
                     if (dts)
@@ -19923,7 +20004,7 @@ function typescript(options) {
                         var destDirectory = isAbsolute(bundleFile_1) ? destDirname : join(process.cwd(), destDirname);
                         writeToPath = join(destDirectory, relative(baseDeclarationDir_1, name));
                     }
-                    context.debug(safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'");
+                    context.debug(function () { return safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'"; });
                     // Write the declaration file to disk.
                     tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
                 });
@@ -19933,3 +20014,4 @@ function typescript(options) {
 }
 
 export default typescript;
+//# sourceMappingURL=rollup-plugin-typescript2.es.js.map

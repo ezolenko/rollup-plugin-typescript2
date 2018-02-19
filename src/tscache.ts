@@ -8,6 +8,7 @@ import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { blue, yellow, green } from "colors/safe";
 import { emptyDirSync } from "fs-extra";
+import { formatHost } from "./diagnostics-format-host";
 
 export interface ICode
 {
@@ -24,6 +25,7 @@ interface INodeLabel
 export interface IDiagnostics
 {
 	flatMessage: string;
+	formatted: string;
 	fileLine?: string;
 	category: tsTypes.DiagnosticCategory;
 	code: number;
@@ -43,6 +45,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 		const entry: IDiagnostics =
 			{
 				flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+				formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
 				category: diagnostic.category,
 				code: diagnostic.code,
 				type,
@@ -51,7 +54,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 		if (diagnostic.file && diagnostic.start !== undefined)
 		{
 			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-			entry.fileLine = `${diagnostic.file.fileName} (${line + 1},${character + 1})`;
+			entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
 		}
 
 		return entry;
@@ -60,15 +63,15 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 
 export class TsCache
 {
-	private cacheVersion = "6";
+	private cacheVersion = "7";
 	private dependencyTree: Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
 	private cacheDir: string;
-	private codeCache: ICache<ICode | undefined>;
-	private typesCache: ICache<string>;
-	private semanticDiagnosticsCache: ICache<IDiagnostics[]>;
-	private syntacticDiagnosticsCache: ICache<IDiagnostics[]>;
+	private codeCache!: ICache<ICode | undefined>;
+	private typesCache!: ICache<string>;
+	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
+	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 
 	constructor(private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
@@ -143,21 +146,25 @@ export class TsCache
 		this.context.info(`${blue("transpiling")} '${id}'`);
 		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
 
-		if (!this.codeCache.exists(name) || this.isDirty(id, false))
+		if (this.codeCache.exists(name) && !this.isDirty(id, false))
 		{
-			this.context.debug(yellow("    cache miss"));
-
-			const transformedData = transform();
-			this.codeCache.write(name, transformedData);
-			this.markAsDirty(id);
-			return transformedData;
+			this.context.debug(green("    cache hit"));
+			const data = this.codeCache.read(name);
+			if (data)
+			{
+				this.codeCache.write(name, data);
+				return data;
+			}
+			else
+				this.context.warn(yellow("    cache broken, discarding"));
 		}
 
-		this.context.debug(green("    cache hit"));
+		this.context.debug(yellow("    cache miss"));
 
-		const data = this.codeCache.read(name);
-		this.codeCache.write(name, data);
-		return data;
+		const transformedData = transform();
+		this.codeCache.write(name, transformedData);
+		this.markAsDirty(id);
+		return transformedData;
 	}
 
 	public getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -194,21 +201,26 @@ export class TsCache
 
 		this.context.debug(`    cache: '${cache.path(name)}'`);
 
-		if (!cache.exists(name) || this.isDirty(id, true))
+		if (cache.exists(name) && !this.isDirty(id, true))
 		{
-			this.context.debug(yellow("    cache miss"));
+			this.context.debug(green("    cache hit"));
 
-			const convertedData = convertDiagnostic(type, check());
-			cache.write(name, convertedData);
-			this.markAsDirty(id);
-			return convertedData;
+			const data = cache.read(name);
+			if (data)
+			{
+				cache.write(name, data);
+				return data;
+			}
+			else
+				this.context.warn(yellow("    cache broken, discarding"));
 		}
 
-		this.context.debug(green("    cache hit"));
+		this.context.debug(yellow("    cache miss"));
 
-		const data = cache.read(name);
-		cache.write(name, data);
-		return data;
+		const convertedData = convertDiagnostic(type, check());
+		cache.write(name, convertedData);
+		this.markAsDirty(id);
+		return convertedData;
 	}
 
 	private init()

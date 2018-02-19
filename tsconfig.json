@@ -15,7 +15,9 @@
 		"strictNullChecks": true,
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitReturns": true,
-		"declaration": true
+		"declaration": true,
+		"strict": true,
+		"outDir": "./build"
 	},
 	"include": [
 		"src/**/*.ts"

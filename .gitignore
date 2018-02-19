@@ -4,3 +4,5 @@
 /.rpt2_cache
 /.vscode
 /.idea
+/build-self
+/build

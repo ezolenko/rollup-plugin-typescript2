@@ -7,6 +7,7 @@ export interface ICode {
 }
 export interface IDiagnostics {
     flatMessage: string;
+    formatted: string;
     fileLine?: string;
     category: tsTypes.DiagnosticCategory;
     code: number;

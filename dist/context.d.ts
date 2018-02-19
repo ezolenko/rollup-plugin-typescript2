@@ -3,10 +3,10 @@ export interface IRollupContext {
     error(message: string): void;
 }
 export interface IContext {
-    warn(message: string): void;
-    error(message: string): void;
-    info(message: string): void;
-    debug(message: string): void;
+    warn(message: string | (() => string)): void;
+    error(message: string | (() => string)): void;
+    info(message: string | (() => string)): void;
+    debug(message: string | (() => string)): void;
 }
 export declare enum VerbosityLevel {
     Error = 0,
@@ -18,8 +18,8 @@ export declare class ConsoleContext implements IContext {
     private verbosity;
     private prefix;
     constructor(verbosity: VerbosityLevel, prefix?: string);
-    warn(message: string): void;
-    error(message: string): void;
-    info(message: string): void;
-    debug(message: string): void;
+    warn(message: string | (() => string)): void;
+    error(message: string | (() => string)): void;
+    info(message: string | (() => string)): void;
+    debug(message: string | (() => string)): void;
 }
