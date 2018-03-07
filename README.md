@@ -29,9 +29,8 @@ export default {
 
 The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfigDefaults`, `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
 
-The following compiler options are forced though:
+#### Some compiler options are forced
 
-* `module`: `es2015`
 * `noEmitHelpers`: false
 * `importHelpers`: true
 * `noResolve`: false
@@ -39,6 +38,10 @@ The following compiler options are forced though:
 * `outDir`: `process.cwd()`
 * `declarationDir`: `process.cwd()` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
 * `moduleResolution`: `node` (*`classic` is [depreciated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
+
+#### Some compiler options have more than one compatible value.
+
+* `module`: defaults to `ES2015`, other valid value is `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
 
 ### Plugin options
 

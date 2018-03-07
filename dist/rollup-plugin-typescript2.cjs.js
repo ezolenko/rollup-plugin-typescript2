@@ -23,9 +23,6 @@ MERCHANTABLITY OR NON-INFRINGEMENT.
 See the Apache Version 2.0 License for specific language governing permissions
 and limitations under the License.
 ***************************************************************************** */
-/* global Reflect, Promise */
-
-
 
 var __assign = Object.assign || function __assign(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
@@ -41,21 +38,11 @@ function commonjsRequire () {
 	throw new Error('Dynamic requires are not currently supported by rollup-plugin-commonjs');
 }
 
-
-
 function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
 var lodash = createCommonjsModule(function (module, exports) {
-/**
- * @license
- * Lodash <https://lodash.com/>
- * Copyright JS Foundation and other contributors <https://js.foundation/>
- * Released under MIT license <https://lodash.com/license>
- * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
- * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
- */
 (function() {
 
   /** Used as a safe reference for `undefined` in pre-ES5 environments. */
@@ -17133,7 +17120,6 @@ var lodash = createCommonjsModule(function (module, exports) {
   }
 }.call(commonjsGlobal));
 });
-
 var lodash_1 = lodash.get;
 var lodash_2 = lodash.each;
 var lodash_3 = lodash.isEqual;
@@ -17314,25 +17300,25 @@ var LanguageServiceHost = /** @class */ (function () {
 
 /* global window */
 
-var lodash$2;
+var lodash$1;
 
 if (typeof commonjsRequire === "function") {
   try {
-    lodash$2 = lodash;
+    lodash$1 = lodash;
   } catch (e) {}
 }
 
-if (!lodash$2) {
-  lodash$2 = window._;
+if (!lodash$1) {
+  lodash$1 = window._;
 }
 
-var lodash_1$1 = lodash$2;
+var lodash_1$1 = lodash$1;
 
 var graph = Graph;
 
-var DEFAULT_EDGE_NAME = "\x00";
-var GRAPH_NODE = "\x00";
-var EDGE_KEY_DELIM = "\x01";
+var DEFAULT_EDGE_NAME = "\x00",
+    GRAPH_NODE = "\x00",
+    EDGE_KEY_DELIM = "\x01";
 
 // Implementation notes:
 //
@@ -18470,11 +18456,36 @@ var graphlib = {
   alg: alg,
   version: lib.version
 };
-
 var graphlib_1 = graphlib.Graph;
 var graphlib_3 = graphlib.alg;
 
 var objectHash_1 = createCommonjsModule(function (module, exports) {
+
+
+
+/**
+ * Exported function
+ *
+ * Options:
+ *
+ *  - `algorithm` hash algo to be used by this instance: *'sha1', 'md5'
+ *  - `excludeValues` {true|*false} hash object keys, values ignored
+ *  - `encoding` hash encoding, supports 'buffer', '*hex', 'binary', 'base64'
+ *  - `ignoreUnknown` {true|*false} ignore unknown object types
+ *  - `replacer` optional function that replaces values before hashing
+ *  - `respectFunctionProperties` {*true|false} consider function properties when hashing
+ *  - `respectFunctionNames` {*true|false} consider 'name' property of functions for hashing
+ *  - `respectType` {*true|false} Respect special properties (prototype, constructor)
+ *    when hashing to distinguish between types
+ *  - `unorderedArrays` {true|*false} Sort all arrays before hashing
+ *  - `unorderedSets` {*true|false} Sort `Set` and `Map` instances before hashing
+ *  * = default
+ *
+ * @param {object} object value to hash
+ * @param {object} options hashing options
+ * @return {string} hash value
+ * @api public
+ */
 exports = module.exports = objectHash;
 
 function objectHash(object, options){
@@ -18886,7 +18897,6 @@ function PassThrough() {
   };
 }
 });
-
 var objectHash_2 = objectHash_1.sha1;
 var objectHash_3 = objectHash_1.keys;
 var objectHash_4 = objectHash_1.MD5;
@@ -19504,7 +19514,6 @@ var safe = createCommonjsModule(function (module) {
 
 module['exports'] = colors_1;
 });
-
 var safe_1 = safe.green;
 var safe_2 = safe.white;
 var safe_3 = safe.red;
@@ -19731,7 +19740,6 @@ function printDiagnostics(context, diagnostics, pretty) {
 function getOptionsOverrides(_a, tsConfigJson) {
     var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
     var overrides = {
-        module: tsModule.ModuleKind.ES2015,
         noEmitHelpers: false,
         importHelpers: true,
         noResolve: false,
@@ -19745,6 +19753,27 @@ function getOptionsOverrides(_a, tsConfigJson) {
     if (declaration && !useTsconfigDeclarationDir)
         overrides.declarationDir = process.cwd();
     return overrides;
+}
+
+function checkTsConfig(parsedConfig) {
+    var module = parsedConfig.options.module;
+    switch (module) {
+        case tsModule.ModuleKind.ES2015:
+        case tsModule.ModuleKind.ESNext:
+            break;
+        case undefined:
+            throw new Error("Incompatible tsconfig option. Missing module option. This is incompatible with rollup, please use 'module: \"ES2015\"' or 'module: \"ESNext\"'.");
+        default:
+            throw new Error("Incompatible tsconfig option. Module resolves to '" + tsModule.ModuleKind[module] + "'. This is incompatible with rollup, please use 'module: \"ES2015\"' or 'module: \"ESNext\"'.");
+    }
+}
+
+function getOptionsDefaults() {
+    return {
+        compilerOptions: {
+            module: "ES2015",
+        },
+    };
 }
 
 function parseTsConfig(context, pluginOptions) {
@@ -19769,9 +19798,10 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     var mergedConfig = {};
-    lodash_14(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodash_14(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     var compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
     var parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
+    checkTsConfig(parsedTsConfig);
     context.debug("built-in options overrides: " + JSON.stringify(compilerOptionsOverride, undefined, 4));
     context.debug("parsed tsconfig: " + JSON.stringify(parsedTsConfig, undefined, 4));
     return parsedTsConfig;
@@ -19833,7 +19863,7 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
-            context.info("rollup-plugin-typescript2 version: 0.11.1");
+            context.info("rollup-plugin-typescript2 version: 0.12.0");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             watchMode = process.env.ROLLUP_WATCH === "true";

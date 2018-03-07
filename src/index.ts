@@ -9,7 +9,7 @@ import * as _ from "lodash";
 import { IRollupOptions } from "./irollup-options";
 import { IOptions } from "./ioptions";
 import { Partial } from "./partial";
-import { parseTsConfig } from "./parse-ts-config";
+import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource } from "./tslib";
 import { blue, red, yellow } from "colors/safe";

@@ -6,7 +6,6 @@ import * as _ from "lodash";
 export function getOptionsOverrides({ useTsconfigDeclarationDir }: IOptions, tsConfigJson?: any): tsTypes.CompilerOptions
 {
 	const overrides = {
-		module: tsModule.ModuleKind.ES2015,
 		noEmitHelpers: false,
 		importHelpers: true,
 		noResolve: false,
