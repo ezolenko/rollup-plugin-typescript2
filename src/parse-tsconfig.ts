@@ -7,6 +7,8 @@ import { convertDiagnostic } from "./tscache";
 import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
 import * as _ from "lodash";
+import { checkTsConfig } from "./check-tsconfig";
+import { getOptionsDefaults } from "./get-option-defaults";
 
 export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTypes.ParsedCommandLine
 {
@@ -39,10 +41,12 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 	}
 
 	const mergedConfig = {};
-	_.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+	_.merge(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
 
 	const compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
 	const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
+
+	checkTsConfig(parsedTsConfig);
 
 	context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
 	context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
