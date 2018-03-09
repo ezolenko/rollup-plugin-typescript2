@@ -216,6 +216,10 @@ export default function typescript(options?: Partial<IOptions>)
 				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map"));
 				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
 
+				if (pluginOptions.sourceMapCallback && map) {
+					pluginOptions.sourceMapCallback(id, map.text);
+				}
+
 				return {
 					code: transpiled ? transpiled.text : undefined,
 					map: map ? JSON.parse(map.text) : { mappings: "" },
