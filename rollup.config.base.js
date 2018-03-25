@@ -1,5 +1,3 @@
-import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
 import replace from "rollup-plugin-re";
 
 const pkg = require("./package.json");
@@ -8,9 +6,10 @@ export default {
 	input: "src/index.ts",
 
 	external: [
+		...Object.keys(pkg.dependencies),
+		...Object.keys(pkg.devDependencies),
+		"colors/safe",
 		"fs",
-		"fs-extra",
-		"resolve",
 		"crypto",
 		"path",
 		"constants",
@@ -23,19 +22,8 @@ export default {
 	plugins: [
 		replace
 		({
-			replaces: { "$RPT2_VERSION": pkg.version },
-		}),
-		resolve({ jsnext: true, preferBuiltins: true }),
-		commonjs
-		({
-			include: "node_modules/**",
-			namedExports:
-			{
-				"colors/safe": [ "green", "white", "red", "yellow", "blue" ],
-				"lodash": [ "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults", "assign", "merge", "flatMap", "chain" ],
-			//	"fs-extra": [ "renameSync", "removeSync", "ensureFileSync", "writeJsonSync", "readJsonSync", "existsSync", "readdirSync", "emptyDirSync" ],
-			},
-		}),
+			replaces: {"$RPT2_VERSION": pkg.version},
+		})
 	],
 
 	output: [
