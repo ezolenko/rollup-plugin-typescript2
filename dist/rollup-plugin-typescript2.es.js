@@ -2,7 +2,8 @@
 import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import crypto from 'crypto';
 import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from 'fs-extra';
-import { dirname, isAbsolute, join, relative, normalize } from 'path';
+import os from 'os';
+import { join, dirname, isAbsolute, relative, normalize } from 'path';
 import { sync } from 'resolve';
 
 /*! *****************************************************************************
@@ -18541,6 +18542,7 @@ function applyDefaults(object, options){
   options.respectFunctionProperties = options.respectFunctionProperties === false ? false : true;
   options.unorderedArrays = options.unorderedArrays !== true ? false : true; // default to false
   options.unorderedSets = options.unorderedSets === false ? false : true; // default to false
+  options.unorderedObjects = options.unorderedObjects === false ? false : true; // default to true
   options.replacer = options.replacer || undefined;
   options.excludeKeys = options.excludeKeys || undefined;
 
@@ -18687,7 +18689,10 @@ function typeHasher(options, writeTo, context){
           throw new Error('Unknown object type "' + objType + '"');
         }
       }else{
-        var keys = Object.keys(object).sort();
+        var keys = Object.keys(object);
+        if (options.unorderedObjects) {
+          keys = keys.sort();
+        }
         // Make sure to incorporate special properties, so
         // Types with different prototypes will produce
         // a different hash and objects derived from
@@ -18886,7 +18891,7 @@ function typeHasher(options, writeTo, context){
 
 // Mini-implementation of stream.PassThrough
 // We are far from having need for the full implementation, and we can
-// make assumtions like "many writes, then only one final read"
+// make assumptions like "many writes, then only one final read"
 // and we can ignore encoding specifics
 function PassThrough() {
   return {
@@ -19066,66 +19071,144 @@ Object.keys(codes).forEach(function (key) {
 });
 
 /*
-The MIT License (MIT)
+MIT License
 
 Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
-
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-var argv = process.argv;
+var hasFlag = function (flag, argv) {
+	argv = argv || process.argv;
 
-var supportsColors = (function () {
-  if (argv.indexOf('--no-color') !== -1 ||
-    argv.indexOf('--color=false') !== -1) {
-    return false;
-  }
+	var terminatorPos = argv.indexOf('--');
+	var prefix = /^-{1,2}/.test(flag) ? '' : '--';
+	var pos = argv.indexOf(prefix + flag);
 
-  if (argv.indexOf('--color') !== -1 ||
-    argv.indexOf('--color=true') !== -1 ||
-    argv.indexOf('--color=always') !== -1) {
-    return true;
-  }
+	return pos !== -1 && (terminatorPos === -1 ? true : pos < terminatorPos);
+};
 
-  if (process.stdout && !process.stdout.isTTY) {
-    return false;
-  }
+var env = process.env;
 
-  if (process.platform === 'win32') {
-    return true;
-  }
+var forceColor = void 0;
+if (hasFlag('no-color') || hasFlag('no-colors') || hasFlag('color=false')) {
+	forceColor = false;
+} else if (hasFlag('color') || hasFlag('colors') || hasFlag('color=true') || hasFlag('color=always')) {
+	forceColor = true;
+}
+if ('FORCE_COLOR' in env) {
+	forceColor = env.FORCE_COLOR.length === 0 || parseInt(env.FORCE_COLOR, 10) !== 0;
+}
 
-  if ('COLORTERM' in process.env) {
-    return true;
-  }
+function translateLevel(level) {
+	if (level === 0) {
+		return false;
+	}
 
-  if (process.env.TERM === 'dumb') {
-    return false;
-  }
+	return {
+		level: level,
+		hasBasic: true,
+		has256: level >= 2,
+		has16m: level >= 3
+	};
+}
 
-  if (/^screen|^xterm|^vt100|color|ansi|cygwin|linux/i.test(process.env.TERM)) {
-    return true;
-  }
+function supportsColor(stream) {
+	if (forceColor === false) {
+		return 0;
+	}
 
-  return false;
-})();
+	if (hasFlag('color=16m') || hasFlag('color=full') || hasFlag('color=truecolor')) {
+		return 3;
+	}
+
+	if (hasFlag('color=256')) {
+		return 2;
+	}
+
+	if (stream && !stream.isTTY && forceColor !== true) {
+		return 0;
+	}
+
+	var min = forceColor ? 1 : 0;
+
+	if (process.platform === 'win32') {
+		// Node.js 7.5.0 is the first version of Node.js to include a patch to
+		// libuv that enables 256 color output on Windows. Anything earlier and it
+		// won't work. However, here we target Node.js 8 at minimum as it is an LTS
+		// release, and Node.js 7 is not. Windows 10 build 10586 is the first Windows
+		// release that supports 256 colors. Windows 10 build 14931 is the first release
+		// that supports 16m/TrueColor.
+		var osRelease = os.release().split('.');
+		if (Number(process.versions.node.split('.')[0]) >= 8 && Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
+			return Number(osRelease[2]) >= 14931 ? 3 : 2;
+		}
+
+		return 1;
+	}
+
+	if ('CI' in env) {
+		if (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI'].some(function (sign) {
+			return sign in env;
+		}) || env.CI_NAME === 'codeship') {
+			return 1;
+		}
+
+		return min;
+	}
+
+	if ('TEAMCITY_VERSION' in env) {
+		return (/^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0
+		);
+	}
+
+	if ('TERM_PROGRAM' in env) {
+		var version = parseInt((env.TERM_PROGRAM_VERSION || '').split('.')[0], 10);
+
+		switch (env.TERM_PROGRAM) {
+			case 'iTerm.app':
+				return version >= 3 ? 3 : 2;
+			case 'Hyper':
+				return 3;
+			case 'Apple_Terminal':
+				return 2;
+			// No default
+		}
+	}
+
+	if (/-256(color)?$/i.test(env.TERM)) {
+		return 2;
+	}
+
+	if (/^screen|^xterm|^vt100|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+		return 1;
+	}
+
+	if ('COLORTERM' in env) {
+		return 1;
+	}
+
+	if (env.TERM === 'dumb') {
+		return min;
+	}
+
+	return min;
+}
+
+function getSupportLevel(stream) {
+	var level = supportsColor(stream);
+	return translateLevel(level);
+}
+
+var supportsColors = {
+	supportsColor: getSupportLevel,
+	stdout: getSupportLevel(process.stdout),
+	stderr: getSupportLevel(process.stderr)
+};
 
 var trap = createCommonjsModule(function (module) {
 module['exports'] = function runTheTrap (text, options) {
@@ -19216,7 +19299,7 @@ module['exports'] = function zalgo(text, options) {
       '̷', '͡', ' ҉'
     ]
   },
-  all = [].concat(soul.up, soul.down, soul.mid);
+  all = [].concat(soul.up, soul.down, soul.mid);
 
   function randomNumber(range) {
     var r = Math.floor(Math.random() * range);
@@ -19361,10 +19444,10 @@ colors.themes = {};
 var ansiStyles = colors.styles = styles_1;
 var defineProps = Object.defineProperties;
 
-colors.supportsColor = supportsColors;
+colors.supportsColor = supportsColors.supportsColor;
 
 if (typeof colors.enabled === "undefined") {
-  colors.enabled = colors.supportsColor;
+  colors.enabled = colors.supportsColor() !== false;
 }
 
 colors.stripColors = colors.strip = function(str){
@@ -19440,7 +19523,14 @@ function applyStyle() {
   return str;
 }
 
-function applyTheme (theme) {
+colors.setTheme = function (theme) {
+  if (typeof theme === 'string') {
+    console.log('colors.setTheme now only accepts an object, not a string.  ' +
+      'If you are trying to set a theme from a file, it is now your (the caller\'s) responsibility to require the file.  ' +
+      'The old syntax looked like colors.setTheme(__dirname + \'/../themes/generic-logging.js\'); ' +
+      'The new syntax looks like colors.setTheme(require(__dirname + \'/../themes/generic-logging.js\'));');
+    return;
+  }
   for (var style in theme) {
     (function(style){
       colors[style] = function(str){
@@ -19454,21 +19544,6 @@ function applyTheme (theme) {
         return colors[theme[style]](str);
       };
     })(style);
-  }
-}
-
-colors.setTheme = function (theme) {
-  if (typeof theme === 'string') {
-    try {
-      colors.themes[theme] = commonjsRequire(theme);
-      applyTheme(colors.themes[theme]);
-      return colors.themes[theme];
-    } catch (err) {
-      console.log(err);
-      return err;
-    }
-  } else {
-    applyTheme(theme);
   }
 };
 
@@ -19516,7 +19591,7 @@ var safe = createCommonjsModule(function (module) {
 //
 // Remark: Requiring this file will use the "safe" colors API which will not touch String.prototype
 //
-//   var colors = require('colors/safe);
+//   var colors = require('colors/safe');
 //   colors.red("foo")
 //
 //
@@ -19969,12 +20044,9 @@ function typescript(options) {
                 var transpiled = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".js") || lodash_6(entry.name, ".jsx"); });
                 var map = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".map"); });
                 var dts = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".d.ts"); });
-                if (pluginOptions.sourceMapCallback && map) {
-                    pluginOptions.sourceMapCallback(id, map.text);
-                }
                 return {
                     code: transpiled ? transpiled.text : undefined,
-                    map: map ? JSON.parse(map.text) : { mappings: "" },
+                    map: map ? map.text : undefined,
                     dts: dts,
                 };
             });
@@ -19993,6 +20065,12 @@ function typescript(options) {
                 declarations[key_1] = result.dts;
                 context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
                 result.dts = undefined;
+            }
+            if (result && result.map) {
+                if (pluginOptions.sourceMapCallback) {
+                    pluginOptions.sourceMapCallback(id, result.map);
+                }
+                result.map = JSON.parse(result.map);
             }
             return result;
         },
