@@ -1,7 +1,7 @@
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, ICode } from "./tscache";
+import { TsCache, convertDiagnostic, ICode, IRollupCode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";
@@ -173,7 +173,7 @@ export default function typescript(options?: Partial<IOptions>)
 			return undefined;
 		},
 
-		transform(this: IRollupContext, code: string, id: string): ICode | undefined
+		transform(this: IRollupContext, code: string, id: string): IRollupCode | undefined
 		{
 			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
 
@@ -249,18 +249,21 @@ export default function typescript(options?: Partial<IOptions>)
 					const key = normalize(id);
 					declarations[key] = result.dts;
 					context.debug(() => `${blue("generated declarations")} for '${key}'`);
-					result.dts = undefined;
 				}
+
+				const transformResult = { code: result.code, map: { mappings: "" } };
 
 				if (result.map)
 				{
 					if (pluginOptions.sourceMapCallback)
 						pluginOptions.sourceMapCallback(id, result.map);
-					result.map = JSON.parse(result.map);
+					transformResult.map = JSON.parse(result.map);
 				}
+
+				return transformResult;
 			}
 
-			return result;
+			return undefined;
 		},
 
 		ongenerate(): void

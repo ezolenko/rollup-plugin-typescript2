@@ -17,6 +17,12 @@ export interface ICode
 	dts?: tsTypes.OutputFile | undefined;
 }
 
+export interface IRollupCode
+{
+	code: string | undefined;
+	map: { mappings: string };
+}
+
 interface INodeLabel
 {
 	dirty: boolean;
