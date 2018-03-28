@@ -242,19 +242,22 @@ export default function typescript(options?: Partial<IOptions>)
 				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 			}
 
-			if (result && result.dts)
+			if (result)
 			{
-				const key = normalize(id);
-				declarations[key] = result.dts;
-				context.debug(() => `${blue("generated declarations")} for '${key}'`);
-				result.dts = undefined;
-			}
-
-			if (result && result.map) {
-				if (pluginOptions.sourceMapCallback) {
-					pluginOptions.sourceMapCallback(id, result.map);
+				if (result.dts)
+				{
+					const key = normalize(id);
+					declarations[key] = result.dts;
+					context.debug(() => `${blue("generated declarations")} for '${key}'`);
+					result.dts = undefined;
 				}
-				result.map = JSON.parse(result.map);
+
+				if (result.map)
+				{
+					if (pluginOptions.sourceMapCallback)
+						pluginOptions.sourceMapCallback(id, result.map);
+					result.map = JSON.parse(result.map);
+				}
 			}
 
 			return result;
