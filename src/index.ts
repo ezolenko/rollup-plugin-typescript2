@@ -1,7 +1,7 @@
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, ICode, IRollupCode } from "./tscache";
+import { TsCache, convertDiagnostic, IRollupCode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";

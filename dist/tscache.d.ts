@@ -5,6 +5,12 @@ export interface ICode {
     map: string | undefined;
     dts?: tsTypes.OutputFile | undefined;
 }
+export interface IRollupCode {
+    code: string | undefined;
+    map: {
+        mappings: string;
+    };
+}
 export interface IDiagnostics {
     flatMessage: string;
     formatted: string;
