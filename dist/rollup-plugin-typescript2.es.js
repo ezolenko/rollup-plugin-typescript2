@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import crypto from 'crypto';
-import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from 'fs-extra';
+import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync, pathExistsSync } from 'fs-extra';
 import { dirname, isAbsolute, join, relative, normalize } from 'path';
 import { sync } from 'resolve';
 
@@ -19523,6 +19523,33 @@ var FormatHost = /** @class */ (function () {
 }());
 var formatHost = new FormatHost();
 
+var NoCache = /** @class */ (function () {
+    function NoCache() {
+    }
+    NoCache.prototype.exists = function (_name) {
+        return false;
+    };
+    NoCache.prototype.path = function (name) {
+        return name;
+    };
+    NoCache.prototype.match = function (_names) {
+        return false;
+    };
+    NoCache.prototype.read = function (_name) {
+        return undefined;
+    };
+    NoCache.prototype.write = function (_name, _data) {
+        return;
+    };
+    NoCache.prototype.touch = function (_name) {
+        return;
+    };
+    NoCache.prototype.roll = function () {
+        return;
+    };
+    return NoCache;
+}());
+
 function convertDiagnostic(type, data) {
     return lodash_7(data, function (diagnostic) {
         var entry = {
@@ -19540,8 +19567,9 @@ function convertDiagnostic(type, data) {
     });
 }
 var TsCache = /** @class */ (function () {
-    function TsCache(host, cache, options, rollupConfig, rootFilenames, context) {
+    function TsCache(noCache, host, cache, options, rollupConfig, rootFilenames, context) {
         var _this = this;
+        this.noCache = noCache;
         this.host = host;
         this.options = options;
         this.rollupConfig = rollupConfig;
@@ -19567,8 +19595,10 @@ var TsCache = /** @class */ (function () {
         this.checkAmbientTypes();
     }
     TsCache.prototype.clean = function () {
-        this.context.info(safe_5("cleaning cache: " + this.cacheDir));
-        emptyDirSync(this.cacheDir);
+        if (pathExistsSync(this.cacheDir)) {
+            this.context.info(safe_5("cleaning cache: " + this.cacheDir));
+            emptyDirSync(this.cacheDir);
+        }
         this.init();
     };
     TsCache.prototype.setDependency = function (importee, importer) {
@@ -19653,10 +19683,18 @@ var TsCache = /** @class */ (function () {
         return convertedData;
     };
     TsCache.prototype.init = function () {
-        this.codeCache = new RollingCache(this.cacheDir + "/code", true);
-        this.typesCache = new RollingCache(this.cacheDir + "/types", true);
-        this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", true);
-        this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", true);
+        if (this.noCache) {
+            this.codeCache = new NoCache();
+            this.typesCache = new NoCache();
+            this.syntacticDiagnosticsCache = new NoCache();
+            this.semanticDiagnosticsCache = new NoCache();
+        }
+        else {
+            this.codeCache = new RollingCache(this.cacheDir + "/code", true);
+            this.typesCache = new RollingCache(this.cacheDir + "/types", true);
+            this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", true);
+            this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", true);
+        }
     };
     TsCache.prototype.markAsDirty = function (id) {
         this.dependencyTree.setNode(id, { dirty: true });
@@ -19824,7 +19862,7 @@ function typescript(options) {
     var _cache;
     var cache = function () {
         if (!_cache)
-            _cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+            _cache = new TsCache(pluginOptions.clean, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
         return _cache;
     };
     var pluginOptions = __assign({}, options);

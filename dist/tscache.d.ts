@@ -21,6 +21,7 @@ export interface IDiagnostics {
 }
 export declare function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[];
 export declare class TsCache {
+    private noCache;
     private host;
     private options;
     private rollupConfig;
@@ -34,7 +35,7 @@ export declare class TsCache {
     private typesCache;
     private semanticDiagnosticsCache;
     private syntacticDiagnosticsCache;
-    constructor(host: tsTypes.LanguageServiceHost, cache: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
+    constructor(noCache: boolean, host: tsTypes.LanguageServiceHost, cache: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
     clean(): void;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;
