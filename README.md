@@ -43,6 +43,16 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 
 * `module`: defaults to `ES2015`, other valid value is `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
 
+### Compatibility
+
+#### rollup-plugin-node-resolve
+
+Must be before this plugin in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)
+
+#### rollup-plugin-commonjs
+
+See explanation for `rollupCommonJSResolveHack` option below.
+
 ### Plugin options
 
 * `tsconfigDefaults`: `{}`
