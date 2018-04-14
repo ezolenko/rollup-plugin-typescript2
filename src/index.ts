@@ -1,7 +1,7 @@
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, ICode } from "./tscache";
+import { TsCache, convertDiagnostic, IRollupCode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";
@@ -36,7 +36,7 @@ export default function typescript(options?: Partial<IOptions>)
 	const cache = (): TsCache =>
 	{
 		if (!_cache)
-			_cache = new TsCache(servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+			_cache = new TsCache(pluginOptions.clean, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 		return _cache;
 	};
 
@@ -175,7 +175,7 @@ export default function typescript(options?: Partial<IOptions>)
 			return undefined;
 		},
 
-		transform(this: IRollupContext, code: string, id: string): ICode | undefined
+		transform(this: IRollupContext, code: string, id: string): IRollupCode | undefined
 		{
 			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
 
@@ -220,7 +220,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 				return {
 					code: transpiled ? transpiled.text : undefined,
-					map: map ? JSON.parse(map.text) : { mappings: "" },
+					map: map ? map.text : undefined,
 					dts,
 				};
 			});
@@ -244,15 +244,28 @@ export default function typescript(options?: Partial<IOptions>)
 				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 			}
 
-			if (result && result.dts)
+			if (result)
 			{
-				const key = normalize(id);
-				declarations[key] = result.dts;
-				context.debug(() => `${blue("generated declarations")} for '${key}'`);
-				result.dts = undefined;
+				if (result.dts)
+				{
+					const key = normalize(id);
+					declarations[key] = result.dts;
+					context.debug(() => `${blue("generated declarations")} for '${key}'`);
+				}
+
+				const transformResult = { code: result.code, map: { mappings: "" } };
+
+				if (result.map)
+				{
+					if (pluginOptions.sourceMapCallback)
+						pluginOptions.sourceMapCallback(id, result.map);
+					transformResult.map = JSON.parse(result.map);
+				}
+
+				return transformResult;
 			}
 
-			return result;
+			return undefined;
 		},
 
 		ongenerate(): void

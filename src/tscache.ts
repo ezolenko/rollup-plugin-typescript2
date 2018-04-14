@@ -7,14 +7,21 @@ import * as _ from "lodash";
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { blue, yellow, green } from "colors/safe";
-import { emptyDirSync } from "fs-extra";
+import { emptyDirSync, pathExistsSync } from "fs-extra";
 import { formatHost } from "./diagnostics-format-host";
+import { NoCache } from "./nocache";
 
 export interface ICode
 {
 	code: string | undefined;
 	map: string | undefined;
 	dts?: tsTypes.OutputFile | undefined;
+}
+
+export interface IRollupCode
+{
+	code: string | undefined;
+	map: { mappings: string };
 }
 
 interface INodeLabel
@@ -73,7 +80,7 @@ export class TsCache
 	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 
-	constructor(private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
+	constructor(private noCache: boolean, private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
 		this.cacheDir = `${cache}/${sha1({
 			version: this.cacheVersion,
@@ -101,8 +108,11 @@ export class TsCache
 
 	public clean()
 	{
-		this.context.info(blue(`cleaning cache: ${this.cacheDir}`));
-		emptyDirSync(this.cacheDir);
+		if (pathExistsSync(this.cacheDir))
+		{
+			this.context.info(blue(`cleaning cache: ${this.cacheDir}`));
+			emptyDirSync(this.cacheDir);
+		}
 
 		this.init();
 	}
@@ -225,10 +235,20 @@ export class TsCache
 
 	private init()
 	{
-		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
-		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
-		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
-		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
+		if (this.noCache)
+		{
+			this.codeCache = new NoCache<ICode>();
+			this.typesCache = new NoCache<string>();
+			this.syntacticDiagnosticsCache = new NoCache<IDiagnostics[]>();
+			this.semanticDiagnosticsCache = new NoCache<IDiagnostics[]>();
+		}
+		else
+		{
+			this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
+			this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
+			this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
+			this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
+		}
 	}
 
 	private markAsDirty(id: string): void

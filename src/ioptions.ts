@@ -17,4 +17,5 @@ export interface IOptions
 	tsconfigOverride: any;
 	transformers: (service: tsTypes.LanguageService) => tsTypes.CustomTransformers;
 	tsconfigDefaults: any;
+	sourceMapCallback: (id: string, map: string) => void;
 }

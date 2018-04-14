@@ -37,11 +37,21 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 * `noEmit`: false
 * `outDir`: `process.cwd()`
 * `declarationDir`: `process.cwd()` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
-* `moduleResolution`: `node` (*`classic` is [depreciated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
+* `moduleResolution`: `node` (*`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
 
 #### Some compiler options have more than one compatible value.
 
 * `module`: defaults to `ES2015`, other valid value is `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
+
+### Compatibility
+
+#### rollup-plugin-node-resolve
+
+Must be before this plugin in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)
+
+#### rollup-plugin-commonjs
+
+See explanation for `rollupCommonJSResolveHack` option below.
 
 ### Plugin options
 
