@@ -10,6 +10,7 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir }: IOptions, tsC
 		importHelpers: true,
 		noResolve: false,
 		noEmit: false,
+		inlineSourceMap: false,
 		outDir: process.cwd(),
 		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
 	};

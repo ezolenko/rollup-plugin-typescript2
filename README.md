@@ -35,6 +35,7 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 * `importHelpers`: true
 * `noResolve`: false
 * `noEmit`: false
+* `inlineSourceMap`: false (see [#71](https://github.com/ezolenko/rollup-plugin-typescript2/issues/71))
 * `outDir`: `process.cwd()`
 * `declarationDir`: `process.cwd()` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
 * `moduleResolution`: `node` (*`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
