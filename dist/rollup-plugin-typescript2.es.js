@@ -17240,8 +17240,9 @@ function normalize$1(fileName) {
 }
 
 var LanguageServiceHost = /** @class */ (function () {
-    function LanguageServiceHost(parsedConfig) {
+    function LanguageServiceHost(parsedConfig, transformers) {
         this.parsedConfig = parsedConfig;
+        this.transformers = transformers;
         this.cwd = process.cwd();
         this.snapshots = {};
         this.versions = {};
@@ -17249,6 +17250,9 @@ var LanguageServiceHost = /** @class */ (function () {
     LanguageServiceHost.prototype.reset = function () {
         this.snapshots = {};
         this.versions = {};
+    };
+    LanguageServiceHost.prototype.setLanguageService = function (service) {
+        this.service = service;
     };
     LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
         fileName = normalize$1(fileName);
@@ -17304,6 +17308,11 @@ var LanguageServiceHost = /** @class */ (function () {
     };
     LanguageServiceHost.prototype.getDirectories = function (directoryName) {
         return tsModule.sys.getDirectories(directoryName);
+    };
+    LanguageServiceHost.prototype.getCustomTransformers = function () {
+        if (this.service === undefined || this.transformers === undefined)
+            return undefined;
+        return this.transformers(this.service);
     };
     return LanguageServiceHost;
 }());
@@ -19976,6 +19985,7 @@ function typescript(options) {
         tsconfig: undefined,
         useTsconfigDeclarationDir: false,
         tsconfigOverride: {},
+        transformers: undefined,
         tsconfigDefaults: {},
     });
     setTypescriptModule(pluginOptions.typescript);
@@ -20020,8 +20030,9 @@ function typescript(options) {
                 context.debug(function () { return "included:\n'" + JSON.stringify(pluginOptions.include, undefined, 4) + "'"; });
                 context.debug(function () { return "excluded:\n'" + JSON.stringify(pluginOptions.exclude, undefined, 4) + "'"; });
             }
-            servicesHost = new LanguageServiceHost(parsedConfig);
+            servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
+            servicesHost.setLanguageService(service);
             // printing compiler option errors
             if (pluginOptions.check)
                 printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);

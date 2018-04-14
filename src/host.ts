@@ -9,8 +9,9 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	private cwd = process.cwd();
 	private snapshots: { [fileName: string]: tsTypes.IScriptSnapshot } = {};
 	private versions: { [fileName: string]: number } = {};
+	private service?: tsTypes.LanguageService;
 
-	constructor(private parsedConfig: tsTypes.ParsedCommandLine)
+	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: (service: tsTypes.LanguageService) => tsTypes.CustomTransformers | undefined)
 	{
 	}
 
@@ -18,6 +19,11 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	{
 		this.snapshots = {};
 		this.versions = {};
+	}
+
+	public setLanguageService(service: tsTypes.LanguageService)
+	{
+		this.service = service;
 	}
 
 	public setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot
@@ -107,5 +113,13 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	public getDirectories(directoryName: string): string[]
 	{
 		return tsModule.sys.getDirectories(directoryName);
+	}
+
+	public getCustomTransformers(): tsTypes.CustomTransformers | undefined
+	{
+		if (this.service === undefined || this.transformers === undefined)
+			return undefined;
+
+		return this.transformers(this.service);
 	}
 }

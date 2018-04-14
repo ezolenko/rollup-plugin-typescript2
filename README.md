@@ -128,6 +128,28 @@ See explanation for `rollupCommonJSResolveHack` option below.
 
 	When typescript version installed by the plugin (latest 2.x) is unacceptable, you can import your own typescript module and pass it in as `typescript: require("typescript")`. Must be 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
 
+* `transformers`: `undefined`
+
+	**experimental**, typescript 2.4.1+
+
+	Transformers will likely be available in tsconfig eventually, so this is not a stable interface, see [Microsoft/TypeScript/issues/14419](https://github.com/Microsoft/TypeScript/issues/14419).
+
+	For example, integrating [kimamula/ts-transformer-keys](https://github.com/kimamula/ts-transformer-keys):
+
+	```js
+	const keysTransformer = require('ts-transformer-keys/transformer').default;
+	const transformers = (service) =>
+	{
+  		before: [ keysTransformer(service.getProgram()) ],
+  		after: []
+	};
+
+	// ...
+	plugins: [
+		typescript({ transformers })
+	]
+	```
+
 ### Declarations
 
 This plugin respects `declaration: true` in your `tsconfig.json` file. When set, it will emit `*.d.ts` files for your bundle. The resulting file(s) can then be used with the `types` property in your `package.json` file as described [here](https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html).
