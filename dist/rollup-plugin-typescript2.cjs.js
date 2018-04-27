@@ -17318,7 +17318,7 @@ var LanguageServiceHost = /** @class */ (function () {
             return undefined;
         var transformer = {
             before: [],
-            after: []
+            after: [],
         };
         for (var _i = 0, _a = this.transformers; _i < _a.length; _i++) {
             var creator = _a[_i];

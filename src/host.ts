@@ -121,13 +121,13 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
 			return undefined;
 
-		const transformer = 
+		const transformer =
 		{
-			before: <tsTypes.TransformerFactory<tsTypes.SourceFile>[]>[],
-			after: <tsTypes.TransformerFactory<tsTypes.SourceFile>[]>[]
-		}
+			before: [] as Array<tsTypes.TransformerFactory<tsTypes.SourceFile>>,
+			after: [] as Array<tsTypes.TransformerFactory<tsTypes.SourceFile>>,
+		};
 
-		for (let creator of this.transformers)
+		for (const creator of this.transformers)
 		{
 			const factory = creator(this.service);
 			if (factory.before)
