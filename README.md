@@ -139,7 +139,7 @@ See explanation for `rollupCommonJSResolveHack` option below.
 
 	```js
 	const keysTransformer = require('ts-transformer-keys/transformer').default;
-	const transformers = (service) =>
+	const transformer = (service) =>
 	{
   		before: [ keysTransformer(service.getProgram()) ],
   		after: []
@@ -147,7 +147,7 @@ See explanation for `rollupCommonJSResolveHack` option below.
 
 	// ...
 	plugins: [
-		typescript({ transformers })
+		typescript({ transformers: [transformer] })
 	]
 	```
 

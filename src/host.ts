@@ -3,6 +3,7 @@ import * as tsTypes from "typescript";
 import { existsSync } from "fs";
 import * as _ from "lodash";
 import { normalize } from "./normalize";
+import { TransformerFactoryCreator } from "./ioptions";
 
 export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 {
@@ -11,7 +12,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	private versions: { [fileName: string]: number } = {};
 	private service?: tsTypes.LanguageService;
 
-	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: (service: tsTypes.LanguageService) => tsTypes.CustomTransformers | undefined)
+	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[])
 	{
 	}
 
@@ -117,9 +118,24 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public getCustomTransformers(): tsTypes.CustomTransformers | undefined
 	{
-		if (this.service === undefined || this.transformers === undefined)
+		if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
 			return undefined;
 
-		return this.transformers(this.service);
+		const transformer = 
+		{
+			before: <tsTypes.TransformerFactory<tsTypes.SourceFile>[]>[],
+			after: <tsTypes.TransformerFactory<tsTypes.SourceFile>[]>[]
+		}
+
+		for (let creator of this.transformers)
+		{
+			const factory = creator(this.service);
+			if (factory.before)
+				transformer.before.push.apply(factory.before);
+			if (factory.after)
+				transformer.after.push.apply(factory.after);
+		}
+
+		return transformer;
 	}
 }

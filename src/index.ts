@@ -56,7 +56,7 @@ export default function typescript(options?: Partial<IOptions>)
 			tsconfig: undefined,
 			useTsconfigDeclarationDir: false,
 			tsconfigOverride: {},
-			transformers: undefined,
+			transformers: [],
 			tsconfigDefaults: {},
 		});
 

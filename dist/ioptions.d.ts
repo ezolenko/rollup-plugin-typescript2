@@ -1,5 +1,6 @@
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
+export declare type TransformerFactoryCreator = (ls: tsTypes.LanguageService) => tsTypes.CustomTransformers;
 export interface IOptions {
     include: string | string[];
     exclude: string | string[];
@@ -13,7 +14,7 @@ export interface IOptions {
     useTsconfigDeclarationDir: boolean;
     typescript: typeof tsModule;
     tsconfigOverride: any;
-    transformers: (service: tsTypes.LanguageService) => tsTypes.CustomTransformers;
+    transformers: TransformerFactoryCreator[];
     tsconfigDefaults: any;
     sourceMapCallback: (id: string, map: string) => void;
 }

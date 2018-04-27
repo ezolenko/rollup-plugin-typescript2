@@ -1,4 +1,5 @@
 import * as tsTypes from "typescript";
+import { TransformerFactoryCreator } from "./ioptions";
 export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost {
     private parsedConfig;
     private transformers;
@@ -6,7 +7,7 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     private snapshots;
     private versions;
     private service?;
-    constructor(parsedConfig: tsTypes.ParsedCommandLine, transformers: (service: tsTypes.LanguageService) => tsTypes.CustomTransformers | undefined);
+    constructor(parsedConfig: tsTypes.ParsedCommandLine, transformers: TransformerFactoryCreator[]);
     reset(): void;
     setLanguageService(service: tsTypes.LanguageService): void;
     setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot;

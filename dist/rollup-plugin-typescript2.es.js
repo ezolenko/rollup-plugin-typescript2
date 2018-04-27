@@ -17310,9 +17310,21 @@ var LanguageServiceHost = /** @class */ (function () {
         return tsModule.sys.getDirectories(directoryName);
     };
     LanguageServiceHost.prototype.getCustomTransformers = function () {
-        if (this.service === undefined || this.transformers === undefined)
+        if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
             return undefined;
-        return this.transformers(this.service);
+        var transformer = {
+            before: [],
+            after: []
+        };
+        for (var _i = 0, _a = this.transformers; _i < _a.length; _i++) {
+            var creator = _a[_i];
+            var factory = creator(this.service);
+            if (factory.before)
+                transformer.before.push.apply(factory.before);
+            if (factory.after)
+                transformer.after.push.apply(factory.after);
+        }
+        return transformer;
     };
     return LanguageServiceHost;
 }());
@@ -19986,7 +19998,7 @@ function typescript(options) {
         tsconfig: undefined,
         useTsconfigDeclarationDir: false,
         tsconfigOverride: {},
-        transformers: undefined,
+        transformers: [],
         tsconfigDefaults: {},
     });
     setTypescriptModule(pluginOptions.typescript);
