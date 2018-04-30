@@ -1,10 +1,10 @@
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
-export interface CustomTransformer {
+export interface ICustomTransformer {
     before?: tsTypes.TransformerFactory<tsTypes.SourceFile>;
     after?: tsTypes.TransformerFactory<tsTypes.SourceFile>;
 }
-export declare type TransformerFactoryCreator = (ls: tsTypes.LanguageService) => tsTypes.CustomTransformers | CustomTransformer;
+export declare type TransformerFactoryCreator = (ls: tsTypes.LanguageService) => tsTypes.CustomTransformers | ICustomTransformer;
 export interface IOptions {
     include: string | string[];
     exclude: string | string[];
