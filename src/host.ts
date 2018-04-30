@@ -121,19 +121,19 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
 			return undefined;
 
-		const transformer =
+		const transformer: tsTypes.CustomTransformers =
 		{
-			before: [] as Array<tsTypes.TransformerFactory<tsTypes.SourceFile>>,
-			after: [] as Array<tsTypes.TransformerFactory<tsTypes.SourceFile>>,
+			before: [],
+			after: [],
 		};
 
 		for (const creator of this.transformers)
 		{
 			const factory = creator(this.service);
 			if (factory.before)
-				transformer.before.push.apply(factory.before);
+				transformer.before = _.concat(transformer.before!, factory.before);
 			if (factory.after)
-				transformer.after.push.apply(factory.after);
+				transformer.after = _.concat(transformer.after!, factory.after);
 		}
 
 		return transformer;

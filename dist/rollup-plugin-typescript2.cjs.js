@@ -17324,9 +17324,9 @@ var LanguageServiceHost = /** @class */ (function () {
             var creator = _a[_i];
             var factory = creator(this.service);
             if (factory.before)
-                transformer.before.push.apply(factory.before);
+                transformer.before = lodash_10(transformer.before, factory.before);
             if (factory.after)
-                transformer.after.push.apply(factory.after);
+                transformer.after = lodash_10(transformer.after, factory.after);
         }
         return transformer;
     };
