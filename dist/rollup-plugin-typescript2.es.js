@@ -6042,11 +6042,10 @@ var lodash = createCommonjsModule(function (module, exports) {
 
       try {
         value[symToStringTag] = undefined;
-        var unmasked = true;
       } catch (e) {}
 
       var result = nativeObjectToString.call(value);
-      if (unmasked) {
+      {
         if (isOwn) {
           value[symToStringTag] = tag;
         } else {
@@ -20008,10 +20007,13 @@ function parseTsConfig(context, pluginOptions) {
 // The injected id for helpers.
 var TSLIB = "tslib";
 var tslibSource;
+var tslibVersion;
 try {
     // tslint:disable-next-line:no-string-literal no-var-requires
-    var tslibPath = require.resolve("tslib/" + require("tslib/package.json")["module"]);
+    var tslibPackage = require("tslib/package.json");
+    var tslibPath = require.resolve("tslib/" + tslibPackage.module);
     tslibSource = readFileSync(tslibPath, "utf8");
+    tslibVersion = tslibPackage.version;
 }
 catch (e) {
     console.warn("Error loading `tslib` helper library.");
@@ -20062,6 +20064,7 @@ function typescript(options) {
             rollupOptions = __assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
+            context.info("tslib version: " + tslibVersion);
             context.info("rollup-plugin-typescript2 version: 0.14.1");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
@@ -20194,7 +20197,7 @@ function typescript(options) {
         },
         ongenerate: function () {
             context.debug(function () { return "generating target " + (generateRound + 1); });
-            if (watchMode && generateRound === 0) {
+            if (pluginOptions.check && watchMode && generateRound === 0) {
                 cache().walkTree(function (id) {
                     if (!filter(id))
                         return;

@@ -43,10 +43,10 @@ export declare class TsCache {
     getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined;
     getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
     getSemanticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
-    private checkAmbientTypes();
-    private getDiagnostics(type, cache, id, snapshot, check);
-    private init();
-    private markAsDirty(id);
-    private isDirty(id, checkImports);
-    private makeName(id, snapshot);
+    private checkAmbientTypes;
+    private getDiagnostics;
+    private init;
+    private markAsDirty;
+    private isDirty;
+    private makeName;
 }

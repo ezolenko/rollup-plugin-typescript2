@@ -11,7 +11,7 @@ import { IOptions } from "./ioptions";
 import { Partial } from "./partial";
 import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
-import { TSLIB, tslibSource } from "./tslib";
+import { TSLIB, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow } from "colors/safe";
 import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
@@ -72,6 +72,8 @@ export default function typescript(options?: Partial<IOptions>)
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
 			context.info(`typescript version: ${tsModule.version}`);
+			context.info(`tslib version: ${tslibVersion}`);
+
 			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
 			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
@@ -272,7 +274,7 @@ export default function typescript(options?: Partial<IOptions>)
 		{
 			context.debug(() => `generating target ${generateRound + 1}`);
 
-			if (watchMode && generateRound === 0)
+			if (pluginOptions.check && watchMode && generateRound === 0)
 			{
 				cache().walkTree((id) =>
 				{
