@@ -19934,14 +19934,14 @@ function printDiagnostics(context, diagnostics, pretty) {
 }
 
 function getOptionsOverrides(_a, tsConfigJson) {
-    var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir;
+    var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir, cacheRoot = _a.cacheRoot;
     var overrides = {
         noEmitHelpers: false,
         importHelpers: true,
         noResolve: false,
         noEmit: false,
         inlineSourceMap: false,
-        outDir: process.cwd(),
+        outDir: cacheRoot + "/placeholder",
         moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
     };
     var declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
@@ -20065,7 +20065,7 @@ function typescript(options) {
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info("typescript version: " + tsModule.version);
             context.info("tslib version: " + tslibVersion);
-            context.info("rollup-plugin-typescript2 version: 0.14.1");
+            context.info("rollup-plugin-typescript2 version: 0.15.0");
             context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
             context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
             watchMode = process.env.ROLLUP_WATCH === "true";
@@ -20224,7 +20224,6 @@ function typescript(options) {
                         declarations[key] = dts;
                 });
                 var bundleFile_1 = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
-                var baseDeclarationDir_1 = parsedConfig.options.outDir;
                 lodash_2(declarations, function (_a, key) {
                     var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
                     var writeToPath;
@@ -20235,8 +20234,8 @@ function typescript(options) {
                     else {
                         // Otherwise, take the directory name from the path and make sure it is absolute.
                         var destDirname = dirname(bundleFile_1);
-                        var destDirectory = isAbsolute(bundleFile_1) ? destDirname : join(process.cwd(), destDirname);
-                        writeToPath = join(destDirectory, relative(baseDeclarationDir_1, name));
+                        var destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+                        writeToPath = join(destDirectory, relative(process.cwd(), name));
                     }
                     context.debug(function () { return safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'"; });
                     // Write the declaration file to disk.

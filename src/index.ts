@@ -316,7 +316,6 @@ export default function typescript(options?: Partial<IOptions>)
 
 				const bundleFile = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
 
-				const baseDeclarationDir = parsedConfig.options.outDir;
 				_.each(declarations, ({ name, text, writeByteOrderMark }, key) =>
 				{
 					let writeToPath: string;
@@ -328,8 +327,8 @@ export default function typescript(options?: Partial<IOptions>)
 					{
 						// Otherwise, take the directory name from the path and make sure it is absolute.
 						const destDirname = dirname(bundleFile);
-						const destDirectory = isAbsolute(bundleFile) ? destDirname : join(process.cwd(), destDirname);
-						writeToPath = join(destDirectory, relative(baseDeclarationDir!, name));
+						const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+						writeToPath = join(destDirectory, relative(process.cwd(), name));
 					}
 
 					context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
