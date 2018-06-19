@@ -15,9 +15,11 @@ import { TSLIB, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow } from "colors/safe";
 import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
+import { satisfies } from "semver";
 
 export default function typescript(options?: Partial<IOptions>)
 {
+
 	// tslint:disable-next-line:no-var-requires
 	const createFilter = require("rollup-pluginutils").createFilter;
 	// tslint:enable-next-line:no-var-requires
@@ -31,6 +33,7 @@ export default function typescript(options?: Partial<IOptions>)
 	let service: tsTypes.LanguageService;
 	let noErrors = true;
 	const declarations: { [name: string]: tsTypes.OutputFile } = {};
+	const requredTypescriptRange = ">=2.4.0";
 
 	let _cache: TsCache;
 	const cache = (): TsCache =>
@@ -61,6 +64,10 @@ export default function typescript(options?: Partial<IOptions>)
 		});
 
 	setTypescriptModule(pluginOptions.typescript);
+
+	if (!satisfies(tsModule.version, requredTypescriptRange)) {
+		throw new Error(`Please make sure typescript version is ${requredTypescriptRange}`);
+	}
 
 	return {
 
