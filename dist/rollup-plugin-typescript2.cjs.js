@@ -17292,7 +17292,7 @@ var LanguageServiceHost = /** @class */ (function () {
         return (this.versions[fileName] || 0).toString();
     };
     LanguageServiceHost.prototype.getScriptFileNames = function () {
-        return this.parsedConfig.fileNames;
+        return Object.keys(this.snapshots);
     };
     LanguageServiceHost.prototype.getCompilationSettings = function () {
         return this.parsedConfig.options;

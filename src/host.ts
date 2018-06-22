@@ -68,7 +68,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public getScriptFileNames()
 	{
-		return this.parsedConfig.fileNames;
+		return Object.keys(this.snapshots);
 	}
 
 	public getCompilationSettings(): tsTypes.CompilerOptions
