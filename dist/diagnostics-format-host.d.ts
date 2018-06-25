@@ -5,3 +5,4 @@ export declare class FormatHost implements tsTypes.FormatDiagnosticsHost {
     getNewLine(): string;
 }
 export declare const formatHost: FormatHost;
+//# sourceMappingURL=diagnostics-format-host.d.ts.map

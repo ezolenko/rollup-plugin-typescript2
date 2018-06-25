@@ -19721,6 +19721,20 @@ var NoCache = /** @class */ (function () {
     return NoCache;
 }());
 
+function convertEmitOutput(output) {
+    var out = {};
+    output.outputFiles.forEach(function (e) {
+        if (lodash_6(e.name, ".d.ts"))
+            out.dts = e;
+        else if (lodash_6(e.name, ".d.ts.map"))
+            out.dtsmap = e;
+        else if (lodash_6(e.name, ".map"))
+            out.map = e.text;
+        else
+            out.code = e.text;
+    });
+    return out;
+}
 function convertDiagnostic(type, data) {
     return lodash_7(data, function (diagnostic) {
         var entry = {
@@ -20160,14 +20174,7 @@ function typescript(options) {
                     if (lodash_9(_this.error))
                         _this.error(safe_3("failed to transpile '" + id + "'"));
                 }
-                var transpiled = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".js") || lodash_6(entry.name, ".jsx"); });
-                var map = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".map"); });
-                var dts = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".d.ts"); });
-                return {
-                    code: transpiled ? transpiled.text : undefined,
-                    map: map ? map.text : undefined,
-                    dts: dts,
-                };
+                return convertEmitOutput(output);
             });
             if (pluginOptions.check) {
                 var diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, function () {
@@ -20182,7 +20189,7 @@ function typescript(options) {
             if (result) {
                 if (result.dts) {
                     var key_1 = normalize$1(id);
-                    declarations[key_1] = result.dts;
+                    declarations[key_1] = { type: result.dts, map: result.dtsmap };
                     context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
                 }
                 var transformResult = { code: result.code, map: { mappings: "" } };
@@ -20219,27 +20226,31 @@ function typescript(options) {
                         return;
                     context.debug(function () { return "generating missed declarations for '" + key + "'"; });
                     var output = service.getEmitOutput(key, true);
-                    var dts = lodash_11(output.outputFiles, function (entry) { return lodash_6(entry.name, ".d.ts"); });
-                    if (dts)
-                        declarations[key] = dts;
+                    var out = convertEmitOutput(output);
+                    if (out.dts)
+                        declarations[key] = { type: out.dts, map: out.dtsmap };
                 });
                 var bundleFile_1 = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
                 lodash_2(declarations, function (_a, key) {
-                    var name = _a.name, text = _a.text, writeByteOrderMark = _a.writeByteOrderMark;
-                    var writeToPath;
-                    // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-                    // use the path provided by Typescript's LanguageService.
-                    if (!bundleFile_1 || pluginOptions.useTsconfigDeclarationDir)
-                        writeToPath = name;
-                    else {
-                        // Otherwise, take the directory name from the path and make sure it is absolute.
-                        var destDirname = dirname(bundleFile_1);
-                        var destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
-                        writeToPath = join(destDirectory, relative(process.cwd(), name));
-                    }
-                    context.debug(function () { return safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'"; });
-                    // Write the declaration file to disk.
-                    tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
+                    var type = _a.type, map = _a.map;
+                    lodash_2([type, map], function (e) {
+                        if (!e)
+                            return;
+                        var writeToPath;
+                        // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+                        // use the path provided by Typescript's LanguageService.
+                        if (!bundleFile_1 || pluginOptions.useTsconfigDeclarationDir)
+                            writeToPath = e.name;
+                        else {
+                            // Otherwise, take the directory name from the path and make sure it is absolute.
+                            var destDirname = dirname(bundleFile_1);
+                            var destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+                            writeToPath = join(destDirectory, relative(process.cwd(), e.name));
+                        }
+                        context.debug(function () { return safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'"; });
+                        // Write the declaration file to disk.
+                        tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
+                    });
                 });
             }
         },

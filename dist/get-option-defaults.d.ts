@@ -3,3 +3,4 @@ export declare function getOptionsDefaults(): {
         module: string;
     };
 };
+//# sourceMappingURL=get-option-defaults.d.ts.map

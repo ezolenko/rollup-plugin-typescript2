@@ -12,3 +12,4 @@ export default function typescript(options?: Partial<IOptions>): {
     ongenerate(): void;
     onwrite({ dest, file }: IRollupOptions): void;
 };
+//# sourceMappingURL=index.d.ts.map

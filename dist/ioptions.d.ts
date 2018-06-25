@@ -22,3 +22,4 @@ export interface IOptions {
     tsconfigDefaults: any;
     sourceMapCallback: (id: string, map: string) => void;
 }
+//# sourceMappingURL=ioptions.d.ts.map

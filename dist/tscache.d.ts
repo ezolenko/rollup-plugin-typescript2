@@ -1,9 +1,10 @@
 import { IContext } from "./context";
 import * as tsTypes from "typescript";
 export interface ICode {
-    code: string | undefined;
-    map: string | undefined;
-    dts?: tsTypes.OutputFile | undefined;
+    code?: string;
+    map?: string;
+    dts?: tsTypes.OutputFile;
+    dtsmap?: tsTypes.OutputFile;
 }
 export interface IRollupCode {
     code: string | undefined;
@@ -19,6 +20,7 @@ export interface IDiagnostics {
     code: number;
     type: string;
 }
+export declare function convertEmitOutput(output: tsTypes.EmitOutput): ICode;
 export declare function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[];
 export declare class TsCache {
     private noCache;
@@ -50,3 +52,4 @@ export declare class TsCache {
     private isDirty;
     private makeName;
 }
+//# sourceMappingURL=tscache.d.ts.map

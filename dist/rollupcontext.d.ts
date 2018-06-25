@@ -11,3 +11,4 @@ export declare class RollupContext implements IContext {
     info(message: string | (() => string)): void;
     debug(message: string | (() => string)): void;
 }
+//# sourceMappingURL=rollupcontext.d.ts.map

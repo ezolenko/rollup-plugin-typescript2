@@ -26,3 +26,4 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     getDirectories(directoryName: string): string[];
     getCustomTransformers(): tsTypes.CustomTransformers | undefined;
 }
+//# sourceMappingURL=host.d.ts.map

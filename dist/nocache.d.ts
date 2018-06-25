@@ -8,3 +8,4 @@ export declare class NoCache<DataType> implements ICache<DataType> {
     touch(_name: string): void;
     roll(): void;
 }
+//# sourceMappingURL=nocache.d.ts.map

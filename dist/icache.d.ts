@@ -7,3 +7,4 @@ export interface ICache<DataType> {
     touch(name: string): void;
     roll(): void;
 }
+//# sourceMappingURL=icache.d.ts.map

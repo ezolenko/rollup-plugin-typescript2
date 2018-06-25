@@ -23,3 +23,4 @@ export declare class ConsoleContext implements IContext {
     info(message: string | (() => string)): void;
     debug(message: string | (() => string)): void;
 }
+//# sourceMappingURL=context.d.ts.map

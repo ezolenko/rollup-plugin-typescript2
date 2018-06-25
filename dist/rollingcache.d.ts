@@ -34,3 +34,4 @@ export declare class RollingCache<DataType> implements ICache<DataType> {
      */
     roll(): void;
 }
+//# sourceMappingURL=rollingcache.d.ts.map
