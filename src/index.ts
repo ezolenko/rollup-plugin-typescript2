@@ -1,7 +1,7 @@
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, IRollupCode } from "./tscache";
+import { TsCache, convertDiagnostic, IRollupCode, convertEmitOutput } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";
@@ -30,7 +30,7 @@ export default function typescript(options?: Partial<IOptions>)
 	let servicesHost: LanguageServiceHost;
 	let service: tsTypes.LanguageService;
 	let noErrors = true;
-	const declarations: { [name: string]: tsTypes.OutputFile } = {};
+	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
 
 	let _cache: TsCache;
 	const cache = (): TsCache =>
@@ -216,15 +216,7 @@ export default function typescript(options?: Partial<IOptions>)
 						this.error(red(`failed to transpile '${id}'`));
 				}
 
-				const transpiled = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".js") || _.endsWith(entry.name, ".jsx"));
-				const map = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".map"));
-				const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
-
-				return {
-					code: transpiled ? transpiled.text : undefined,
-					map: map ? map.text : undefined,
-					dts,
-				};
+				return convertEmitOutput(output);
 			});
 
 			if (pluginOptions.check)
@@ -251,7 +243,7 @@ export default function typescript(options?: Partial<IOptions>)
 				if (result.dts)
 				{
 					const key = normalize(id);
-					declarations[key] = result.dts;
+					declarations[key] = { type: result.dts, map: result.dtsmap };
 					context.debug(() => `${blue("generated declarations")} for '${key}'`);
 				}
 
@@ -309,32 +301,37 @@ export default function typescript(options?: Partial<IOptions>)
 						return;
 					context.debug(() => `generating missed declarations for '${key}'`);
 					const output = service.getEmitOutput(key, true);
-					const dts = _.find(output.outputFiles, (entry) => _.endsWith(entry.name, ".d.ts"));
-					if (dts)
-						declarations[key] = dts;
+					const out = convertEmitOutput(output);
+					if (out.dts)
+						declarations[key] = { type: out.dts, map: out.dtsmap };
 				});
 
 				const bundleFile = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
 
-				_.each(declarations, ({ name, text, writeByteOrderMark }, key) =>
+				_.each(declarations, ({ type, map }, key) =>
 				{
-					let writeToPath: string;
-					// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-					// use the path provided by Typescript's LanguageService.
-					if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
-						writeToPath = name;
-					else
+					_.each([type, map], (e) => 
 					{
-						// Otherwise, take the directory name from the path and make sure it is absolute.
-						const destDirname = dirname(bundleFile);
-						const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
-						writeToPath = join(destDirectory, relative(process.cwd(), name));
-					}
+						if (!e)
+							return;
+						let writeToPath: string;
+						// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+						// use the path provided by Typescript's LanguageService.
+						if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
+							writeToPath = e.name;
+						else
+						{
+							// Otherwise, take the directory name from the path and make sure it is absolute.
+							const destDirname = dirname(bundleFile);
+							const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+							writeToPath = join(destDirectory, relative(process.cwd(), e.name));
+						}
 
-					context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+						context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
 
-					// Write the declaration file to disk.
-					tsModule.sys.writeFile(writeToPath, text, writeByteOrderMark);
+						// Write the declaration file to disk.
+						tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
+					});
 				});
 			}
 		},

@@ -13,9 +13,10 @@ import { NoCache } from "./nocache";
 
 export interface ICode
 {
-	code: string | undefined;
-	map: string | undefined;
-	dts?: tsTypes.OutputFile | undefined;
+	code?: string;
+	map?: string;
+	dts?: tsTypes.OutputFile
+	dtsmap?: tsTypes.OutputFile;
 }
 
 export interface IRollupCode
@@ -43,6 +44,25 @@ interface ITypeSnapshot
 {
 	id: string;
 	snapshot: tsTypes.IScriptSnapshot | undefined;
+}
+
+export function convertEmitOutput(output: tsTypes.EmitOutput): ICode
+{
+	const out: ICode = { };
+
+	output.outputFiles.forEach((e) =>
+	{
+		if (_.endsWith(e.name, ".d.ts"))
+			out.dts = e;
+		else if (_.endsWith(e.name, ".d.ts.map"))
+			out.dtsmap = e;
+		else if (_.endsWith(e.name, ".map"))
+			out.map = e.text;
+		else
+			out.code = e.text;
+	});
+
+	return out;
 }
 
 export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[]
