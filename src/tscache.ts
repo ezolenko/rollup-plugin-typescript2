@@ -15,7 +15,7 @@ export interface ICode
 {
 	code?: string;
 	map?: string;
-	dts?: tsTypes.OutputFile
+	dts?: tsTypes.OutputFile;
 	dtsmap?: tsTypes.OutputFile;
 }
 

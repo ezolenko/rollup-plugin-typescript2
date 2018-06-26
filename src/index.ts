@@ -310,7 +310,7 @@ export default function typescript(options?: Partial<IOptions>)
 
 				_.each(declarations, ({ type, map }, key) =>
 				{
-					_.each([type, map], (e) => 
+					_.each([type, map], (e) =>
 					{
 						if (!e)
 							return;
