@@ -11,29 +11,6 @@ var util = _interopDefault(require('util'));
 var path = require('path');
 var resolve = require('resolve');
 
-/*! *****************************************************************************
-Copyright (c) Microsoft Corporation. All rights reserved.
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use
-this file except in compliance with the License. You may obtain a copy of the
-License at http://www.apache.org/licenses/LICENSE-2.0
-
-THIS CODE IS PROVIDED ON AN *AS IS* BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-KIND, EITHER EXPRESS OR IMPLIED, INCLUDING WITHOUT LIMITATION ANY IMPLIED
-WARRANTIES OR CONDITIONS OF TITLE, FITNESS FOR A PARTICULAR PURPOSE,
-MERCHANTABLITY OR NON-INFRINGEMENT.
-
-See the Apache Version 2.0 License for specific language governing permissions
-and limitations under the License.
-***************************************************************************** */
-
-var __assign = Object.assign || function __assign(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p)) t[p] = s[p];
-    }
-    return t;
-};
-
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function commonjsRequire () {
@@ -344,22 +321,6 @@ var lodash = createCommonjsModule(function (module, exports) {
   typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
   typedArrayTags[setTag] = typedArrayTags[stringTag] =
   typedArrayTags[weakMapTag] = false;
-
-  /** Used to identify `toStringTag` values supported by `_.clone`. */
-  var cloneableTags = {};
-  cloneableTags[argsTag] = cloneableTags[arrayTag] =
-  cloneableTags[arrayBufferTag] = cloneableTags[dataViewTag] =
-  cloneableTags[boolTag] = cloneableTags[dateTag] =
-  cloneableTags[float32Tag] = cloneableTags[float64Tag] =
-  cloneableTags[int8Tag] = cloneableTags[int16Tag] =
-  cloneableTags[int32Tag] = cloneableTags[mapTag] =
-  cloneableTags[numberTag] = cloneableTags[objectTag] =
-  cloneableTags[regexpTag] = cloneableTags[setTag] =
-  cloneableTags[stringTag] = cloneableTags[symbolTag] =
-  cloneableTags[uint8Tag] = cloneableTags[uint8ClampedTag] =
-  cloneableTags[uint16Tag] = cloneableTags[uint32Tag] = true;
-  cloneableTags[errorTag] = cloneableTags[funcTag] =
-  cloneableTags[weakMapTag] = false;
 
   /** Used to map Latin Unicode letters to basic Latin letters. */
   var deburredLetters = {
@@ -2706,7 +2667,7 @@ var lodash = createCommonjsModule(function (module, exports) {
               : copySymbols(value, baseAssign(result, value));
           }
         } else {
-          if (!cloneableTags[tag]) {
+          {
             return object ? value : {};
           }
           result = initCloneByTag(value, tag, isDeep);
@@ -17116,21 +17077,7 @@ var lodash = createCommonjsModule(function (module, exports) {
   var _ = runInContext();
 
   // Some AMD build optimizers, like r.js, check for condition patterns like:
-  if (typeof undefined == 'function' && typeof undefined.amd == 'object' && undefined.amd) {
-    // Expose Lodash on the global object to prevent errors when Lodash is
-    // loaded by a script tag in the presence of an AMD loader.
-    // See http://requirejs.org/docs/errors.html#mismatch for more details.
-    // Use `_.noConflict` to remove Lodash from the global object.
-    root._ = _;
-
-    // Define as an anonymous module so, through path mapping, it can be
-    // referenced as the "underscore" module.
-    undefined(function() {
-      return _;
-    });
-  }
-  // Check for `exports` after `define` in case a build optimizer adds it.
-  else if (freeModule) {
+  if (freeModule) {
     // Export for Node.js.
     (freeModule.exports = _)._ = _;
     // Export for CommonJS support.
@@ -17166,38 +17113,35 @@ var VerbosityLevel;
     VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
     VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
 })(VerbosityLevel || (VerbosityLevel = {}));
-var ConsoleContext = /** @class */ (function () {
-    function ConsoleContext(verbosity, prefix) {
-        if (prefix === void 0) { prefix = ""; }
+class ConsoleContext {
+    constructor(verbosity, prefix = "") {
         this.verbosity = verbosity;
         this.prefix = prefix;
     }
-    ConsoleContext.prototype.warn = function (message) {
+    warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
-    };
-    ConsoleContext.prototype.error = function (message) {
+        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+    }
+    error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
-    };
-    ConsoleContext.prototype.info = function (message) {
+        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+    }
+    info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
-    };
-    ConsoleContext.prototype.debug = function (message) {
+        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+    }
+    debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log("" + this.prefix + (lodash_9(message) ? message() : message));
-    };
-    return ConsoleContext;
-}());
+        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+    }
+}
 
-var RollupContext = /** @class */ (function () {
-    function RollupContext(verbosity, bail, context, prefix) {
-        if (prefix === void 0) { prefix = ""; }
+class RollupContext {
+    constructor(verbosity, bail, context, prefix = "") {
         this.verbosity = verbosity;
         this.bail = bail;
         this.context = context;
@@ -17205,44 +17149,43 @@ var RollupContext = /** @class */ (function () {
         this.hasContext = true;
         this.hasContext = lodash_9(this.context.warn) && lodash_9(this.context.error);
     }
-    RollupContext.prototype.warn = function (message) {
+    warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        var text = lodash_9(message) ? message() : message;
+        const text = lodash_9(message) ? message() : message;
         if (this.hasContext)
-            this.context.warn("" + text);
+            this.context.warn(`${text}`);
         else
-            console.log("" + this.prefix + text);
-    };
-    RollupContext.prototype.error = function (message) {
+            console.log(`${this.prefix}${text}`);
+    }
+    error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        var text = lodash_9(message) ? message() : message;
+        const text = lodash_9(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
-                this.context.error("" + text);
+                this.context.error(`${text}`);
             else
-                this.context.warn("" + text);
+                this.context.warn(`${text}`);
         }
         else
-            console.log("" + this.prefix + text);
-    };
-    RollupContext.prototype.info = function (message) {
+            console.log(`${this.prefix}${text}`);
+    }
+    info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        var text = lodash_9(message) ? message() : message;
-        console.log("" + this.prefix + text);
-    };
-    RollupContext.prototype.debug = function (message) {
+        const text = lodash_9(message) ? message() : message;
+        console.log(`${this.prefix}${text}`);
+    }
+    debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        var text = lodash_9(message) ? message() : message;
-        console.log("" + this.prefix + text);
-    };
-    return RollupContext;
-}());
+        const text = lodash_9(message) ? message() : message;
+        console.log(`${this.prefix}${text}`);
+    }
+}
 
-var tsModule;
+let tsModule;
 function setTypescriptModule(override) {
     tsModule = override;
 }
@@ -17251,29 +17194,31 @@ function normalize(fileName) {
     return fileName.split("\\").join("/");
 }
 
-var LanguageServiceHost = /** @class */ (function () {
-    function LanguageServiceHost(parsedConfig, transformers) {
+class LanguageServiceHost {
+    constructor(parsedConfig, transformers) {
         this.parsedConfig = parsedConfig;
         this.transformers = transformers;
         this.cwd = process.cwd();
         this.snapshots = {};
         this.versions = {};
+        this.fileNames = new Set(parsedConfig.fileNames);
     }
-    LanguageServiceHost.prototype.reset = function () {
+    reset() {
         this.snapshots = {};
         this.versions = {};
-    };
-    LanguageServiceHost.prototype.setLanguageService = function (service) {
+    }
+    setLanguageService(service) {
         this.service = service;
-    };
-    LanguageServiceHost.prototype.setSnapshot = function (fileName, data) {
+    }
+    setSnapshot(fileName, data) {
         fileName = normalize(fileName);
-        var snapshot = tsModule.ScriptSnapshot.fromString(data);
+        const snapshot = tsModule.ScriptSnapshot.fromString(data);
         this.snapshots[fileName] = snapshot;
         this.versions[fileName] = (this.versions[fileName] || 0) + 1;
+        this.fileNames.add(fileName);
         return snapshot;
-    };
-    LanguageServiceHost.prototype.getScriptSnapshot = function (fileName) {
+    }
+    getScriptSnapshot(fileName) {
         fileName = normalize(fileName);
         if (lodash_8(this.snapshots, fileName))
             return this.snapshots[fileName];
@@ -17283,63 +17228,61 @@ var LanguageServiceHost = /** @class */ (function () {
             return this.snapshots[fileName];
         }
         return undefined;
-    };
-    LanguageServiceHost.prototype.getCurrentDirectory = function () {
+    }
+    getCurrentDirectory() {
         return this.cwd;
-    };
-    LanguageServiceHost.prototype.getScriptVersion = function (fileName) {
+    }
+    getScriptVersion(fileName) {
         fileName = normalize(fileName);
         return (this.versions[fileName] || 0).toString();
-    };
-    LanguageServiceHost.prototype.getScriptFileNames = function () {
-        return Object.keys(this.snapshots);
-    };
-    LanguageServiceHost.prototype.getCompilationSettings = function () {
+    }
+    getScriptFileNames() {
+        return Array.from(this.fileNames.values());
+    }
+    getCompilationSettings() {
         return this.parsedConfig.options;
-    };
-    LanguageServiceHost.prototype.getDefaultLibFileName = function (opts) {
+    }
+    getDefaultLibFileName(opts) {
         return tsModule.getDefaultLibFilePath(opts);
-    };
-    LanguageServiceHost.prototype.useCaseSensitiveFileNames = function () {
+    }
+    useCaseSensitiveFileNames() {
         return tsModule.sys.useCaseSensitiveFileNames;
-    };
-    LanguageServiceHost.prototype.readDirectory = function (path$$1, extensions, exclude, include) {
+    }
+    readDirectory(path$$1, extensions, exclude, include) {
         return tsModule.sys.readDirectory(path$$1, extensions, exclude, include);
-    };
-    LanguageServiceHost.prototype.readFile = function (path$$1, encoding) {
+    }
+    readFile(path$$1, encoding) {
         return tsModule.sys.readFile(path$$1, encoding);
-    };
-    LanguageServiceHost.prototype.fileExists = function (path$$1) {
+    }
+    fileExists(path$$1) {
         return tsModule.sys.fileExists(path$$1);
-    };
-    LanguageServiceHost.prototype.getTypeRootsVersion = function () {
+    }
+    getTypeRootsVersion() {
         return 0;
-    };
-    LanguageServiceHost.prototype.directoryExists = function (directoryName) {
+    }
+    directoryExists(directoryName) {
         return tsModule.sys.directoryExists(directoryName);
-    };
-    LanguageServiceHost.prototype.getDirectories = function (directoryName) {
+    }
+    getDirectories(directoryName) {
         return tsModule.sys.getDirectories(directoryName);
-    };
-    LanguageServiceHost.prototype.getCustomTransformers = function () {
+    }
+    getCustomTransformers() {
         if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
             return undefined;
-        var transformer = {
+        const transformer = {
             before: [],
             after: [],
         };
-        for (var _i = 0, _a = this.transformers; _i < _a.length; _i++) {
-            var creator = _a[_i];
-            var factory = creator(this.service);
+        for (const creator of this.transformers) {
+            const factory = creator(this.service);
             if (factory.before)
                 transformer.before = lodash_10(transformer.before, factory.before);
             if (factory.after)
                 transformer.after = lodash_10(transformer.after, factory.after);
         }
         return transformer;
-    };
-    return LanguageServiceHost;
-}());
+    }
+}
 
 /* global window */
 
@@ -18954,74 +18897,73 @@ var objectHash_6 = objectHash_1.writeToStream;
  * Saves data in new cache folder or reads it from old one.
  * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
  */
-var RollingCache = /** @class */ (function () {
+class RollingCache {
     /**
      * @param cacheRoot: root folder for the cache
      * @param checkNewCache: whether to also look in new cache when reading from cache
      */
-    function RollingCache(cacheRoot, checkNewCache) {
+    constructor(cacheRoot, checkNewCache) {
         this.cacheRoot = cacheRoot;
         this.checkNewCache = checkNewCache;
         this.rolled = false;
-        this.oldCacheRoot = this.cacheRoot + "/cache";
-        this.newCacheRoot = this.cacheRoot + "/cache_";
+        this.oldCacheRoot = `${this.cacheRoot}/cache`;
+        this.newCacheRoot = `${this.cacheRoot}/cache_`;
         fsExtra.emptyDirSync(this.newCacheRoot);
     }
     /**
      * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
      */
-    RollingCache.prototype.exists = function (name) {
+    exists(name) {
         if (this.rolled)
             return false;
-        if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
+        if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
             return true;
-        return fs.existsSync(this.oldCacheRoot + "/" + name);
-    };
-    RollingCache.prototype.path = function (name) {
-        return this.oldCacheRoot + "/" + name;
-    };
+        return fs.existsSync(`${this.oldCacheRoot}/${name}`);
+    }
+    path(name) {
+        return `${this.oldCacheRoot}/${name}`;
+    }
     /**
      * @returns true if old cache contains all names and nothing more
      */
-    RollingCache.prototype.match = function (names) {
+    match(names) {
         if (this.rolled)
             return false;
         if (!fs.existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
         return lodash_3(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
-    };
+    }
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
      */
-    RollingCache.prototype.read = function (name) {
-        if (this.checkNewCache && fs.existsSync(this.newCacheRoot + "/" + name))
-            return fsExtra.readJsonSync(this.newCacheRoot + "/" + name, { encoding: "utf8", throws: false });
-        return fsExtra.readJsonSync(this.oldCacheRoot + "/" + name, { encoding: "utf8", throws: false });
-    };
-    RollingCache.prototype.write = function (name, data) {
+    read(name) {
+        if (this.checkNewCache && fs.existsSync(`${this.newCacheRoot}/${name}`))
+            return fsExtra.readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8", throws: false });
+        return fsExtra.readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8", throws: false });
+    }
+    write(name, data) {
         if (this.rolled)
             return;
         if (data === undefined)
             return;
-        fsExtra.writeJsonSync(this.newCacheRoot + "/" + name, data);
-    };
-    RollingCache.prototype.touch = function (name) {
+        fsExtra.writeJsonSync(`${this.newCacheRoot}/${name}`, data);
+    }
+    touch(name) {
         if (this.rolled)
             return;
-        fsExtra.ensureFileSync(this.newCacheRoot + "/" + name);
-    };
+        fsExtra.ensureFileSync(`${this.newCacheRoot}/${name}`);
+    }
     /**
      * clears old cache and moves new in its place
      */
-    RollingCache.prototype.roll = function () {
+    roll() {
         if (this.rolled)
             return;
         this.rolled = true;
         fsExtra.removeSync(this.oldCacheRoot);
         fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
-    };
-    return RollingCache;
-}());
+    }
+}
 
 var styles_1 = createCommonjsModule(function (module) {
 /*
@@ -19682,52 +19624,46 @@ var safe_3 = safe.red;
 var safe_4 = safe.yellow;
 var safe_5 = safe.blue;
 
-var FormatHost = /** @class */ (function () {
-    function FormatHost() {
-    }
-    FormatHost.prototype.getCurrentDirectory = function () {
+class FormatHost {
+    getCurrentDirectory() {
         return tsModule.sys.getCurrentDirectory();
-    };
-    FormatHost.prototype.getCanonicalFileName = function (fileName) {
-        return path.normalize(fileName);
-    };
-    FormatHost.prototype.getNewLine = function () {
-        return tsModule.sys.newLine;
-    };
-    return FormatHost;
-}());
-var formatHost = new FormatHost();
-
-var NoCache = /** @class */ (function () {
-    function NoCache() {
     }
-    NoCache.prototype.exists = function (_name) {
+    getCanonicalFileName(fileName) {
+        return path.normalize(fileName);
+    }
+    getNewLine() {
+        return tsModule.sys.newLine;
+    }
+}
+const formatHost = new FormatHost();
+
+class NoCache {
+    exists(_name) {
         return false;
-    };
-    NoCache.prototype.path = function (name) {
+    }
+    path(name) {
         return name;
-    };
-    NoCache.prototype.match = function (_names) {
+    }
+    match(_names) {
         return false;
-    };
-    NoCache.prototype.read = function (_name) {
+    }
+    read(_name) {
         return undefined;
-    };
-    NoCache.prototype.write = function (_name, _data) {
+    }
+    write(_name, _data) {
         return;
-    };
-    NoCache.prototype.touch = function (_name) {
+    }
+    touch(_name) {
         return;
-    };
-    NoCache.prototype.roll = function () {
+    }
+    roll() {
         return;
-    };
-    return NoCache;
-}());
+    }
+}
 
 function convertEmitOutput(output) {
-    var out = {};
-    output.outputFiles.forEach(function (e) {
+    const out = {};
+    output.outputFiles.forEach((e) => {
         if (lodash_6(e.name, ".d.ts"))
             out.dts = e;
         else if (lodash_6(e.name, ".d.ts.map"))
@@ -19740,24 +19676,23 @@ function convertEmitOutput(output) {
     return out;
 }
 function convertDiagnostic(type, data) {
-    return lodash_7(data, function (diagnostic) {
-        var entry = {
+    return lodash_7(data, (diagnostic) => {
+        const entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
             category: diagnostic.category,
             code: diagnostic.code,
-            type: type,
+            type,
         };
         if (diagnostic.file && diagnostic.start !== undefined) {
-            var _a = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start), line = _a.line, character = _a.character;
-            entry.fileLine = diagnostic.file.fileName + "(" + (line + 1) + "," + (character + 1) + ")";
+            const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
         }
         return entry;
     });
 }
-var TsCache = /** @class */ (function () {
-    function TsCache(noCache, host, cache, options, rollupConfig, rootFilenames, context) {
-        var _this = this;
+class TsCache {
+    constructor(noCache, host, cache, options, rollupConfig, rootFilenames, context) {
         this.noCache = noCache;
         this.host = host;
         this.options = options;
@@ -19765,60 +19700,60 @@ var TsCache = /** @class */ (function () {
         this.context = context;
         this.cacheVersion = "7";
         this.ambientTypesDirty = false;
-        this.cacheDir = cache + "/" + objectHash_2({
+        this.cacheDir = `${cache}/${objectHash_2({
             version: this.cacheVersion,
-            rootFilenames: rootFilenames,
+            rootFilenames,
             options: this.options,
             rollupConfig: this.rollupConfig,
             tsVersion: tsModule.version,
-        });
+        })}`;
         this.dependencyTree = new graphlib_1({ directed: true });
-        this.dependencyTree.setDefaultNodeLabel(function (_node) { return ({ dirty: false }); });
-        var automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), function (entry) { return tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys); })
-            .filter(function (entry) { return entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName; })
-            .map(function (entry) { return entry.resolvedTypeReferenceDirective.resolvedFileName; });
-        this.ambientTypes = lodash_5(rootFilenames, function (file) { return lodash_6(file, ".d.ts"); })
+        this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
+        const automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+            .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
+            .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
+        this.ambientTypes = lodash_5(rootFilenames, (file) => lodash_6(file, ".d.ts"))
             .concat(automaticTypes)
-            .map(function (id) { return ({ id: id, snapshot: _this.host.getScriptSnapshot(id) }); });
+            .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
         this.init();
         this.checkAmbientTypes();
     }
-    TsCache.prototype.clean = function () {
+    clean() {
         if (fsExtra.pathExistsSync(this.cacheDir)) {
-            this.context.info(safe_5("cleaning cache: " + this.cacheDir));
+            this.context.info(safe_5(`cleaning cache: ${this.cacheDir}`));
             fsExtra.emptyDirSync(this.cacheDir);
         }
         this.init();
-    };
-    TsCache.prototype.setDependency = function (importee, importer) {
+    }
+    setDependency(importee, importer) {
         // importee -> importer
-        this.context.debug(safe_5("dependency") + " '" + importee + "'");
-        this.context.debug("    imported by '" + importer + "'");
+        this.context.debug(`${safe_5("dependency")} '${importee}'`);
+        this.context.debug(`    imported by '${importer}'`);
         this.dependencyTree.setEdge(importer, importee);
-    };
-    TsCache.prototype.walkTree = function (cb) {
-        var acyclic = graphlib_3.isAcyclic(this.dependencyTree);
+    }
+    walkTree(cb) {
+        const acyclic = graphlib_3.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_2(graphlib_3.topsort(this.dependencyTree), function (id) { return cb(id); });
+            lodash_2(graphlib_3.topsort(this.dependencyTree), (id) => cb(id));
             return;
         }
         this.context.info(safe_4("import tree has cycles"));
-        lodash_2(this.dependencyTree.nodes(), function (id) { return cb(id); });
-    };
-    TsCache.prototype.done = function () {
+        lodash_2(this.dependencyTree.nodes(), (id) => cb(id));
+    }
+    done() {
         this.context.info(safe_5("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
         this.typesCache.roll();
-    };
-    TsCache.prototype.getCompiled = function (id, snapshot, transform) {
-        var name = this.makeName(id, snapshot);
-        this.context.info(safe_5("transpiling") + " '" + id + "'");
-        this.context.debug("    cache: '" + this.codeCache.path(name) + "'");
+    }
+    getCompiled(id, snapshot, transform) {
+        const name = this.makeName(id, snapshot);
+        this.context.info(`${safe_5("transpiling")} '${id}'`);
+        this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
         if (this.codeCache.exists(name) && !this.isDirty(id, false)) {
             this.context.debug(safe_1("    cache hit"));
-            var data = this.codeCache.read(name);
+            const data = this.codeCache.read(name);
             if (data) {
                 this.codeCache.write(name, data);
                 return data;
@@ -19827,37 +19762,36 @@ var TsCache = /** @class */ (function () {
                 this.context.warn(safe_4("    cache broken, discarding"));
         }
         this.context.debug(safe_4("    cache miss"));
-        var transformedData = transform();
+        const transformedData = transform();
         this.codeCache.write(name, transformedData);
         this.markAsDirty(id);
         return transformedData;
-    };
-    TsCache.prototype.getSyntacticDiagnostics = function (id, snapshot, check) {
+    }
+    getSyntacticDiagnostics(id, snapshot, check) {
         return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
-    };
-    TsCache.prototype.getSemanticDiagnostics = function (id, snapshot, check) {
+    }
+    getSemanticDiagnostics(id, snapshot, check) {
         return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
-    };
-    TsCache.prototype.checkAmbientTypes = function () {
-        var _this = this;
+    }
+    checkAmbientTypes() {
         this.context.debug(safe_5("Ambient types:"));
-        var typeNames = lodash_5(this.ambientTypes, function (snapshot) { return snapshot.snapshot !== undefined; })
-            .map(function (snapshot) {
-            _this.context.debug("    " + snapshot.id);
-            return _this.makeName(snapshot.id, snapshot.snapshot);
+        const typeNames = lodash_5(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+            .map((snapshot) => {
+            this.context.debug(`    ${snapshot.id}`);
+            return this.makeName(snapshot.id, snapshot.snapshot);
         });
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
             this.context.info(safe_4("ambient types changed, redoing all semantic diagnostics"));
-        lodash_2(typeNames, function (name) { return _this.typesCache.touch(name); });
-    };
-    TsCache.prototype.getDiagnostics = function (type, cache, id, snapshot, check) {
-        var name = this.makeName(id, snapshot);
-        this.context.debug("    cache: '" + cache.path(name) + "'");
+        lodash_2(typeNames, (name) => this.typesCache.touch(name));
+    }
+    getDiagnostics(type, cache, id, snapshot, check) {
+        const name = this.makeName(id, snapshot);
+        this.context.debug(`    cache: '${cache.path(name)}'`);
         if (cache.exists(name) && !this.isDirty(id, true)) {
             this.context.debug(safe_1("    cache hit"));
-            var data = cache.read(name);
+            const data = cache.read(name);
             if (data) {
                 cache.write(name, data);
                 return data;
@@ -19866,12 +19800,12 @@ var TsCache = /** @class */ (function () {
                 this.context.warn(safe_4("    cache broken, discarding"));
         }
         this.context.debug(safe_4("    cache miss"));
-        var convertedData = convertDiagnostic(type, check());
+        const convertedData = convertDiagnostic(type, check());
         cache.write(name, convertedData);
         this.markAsDirty(id);
         return convertedData;
-    };
-    TsCache.prototype.init = function () {
+    }
+    init() {
         if (this.noCache) {
             this.codeCache = new NoCache();
             this.typesCache = new NoCache();
@@ -19879,48 +19813,46 @@ var TsCache = /** @class */ (function () {
             this.semanticDiagnosticsCache = new NoCache();
         }
         else {
-            this.codeCache = new RollingCache(this.cacheDir + "/code", true);
-            this.typesCache = new RollingCache(this.cacheDir + "/types", true);
-            this.syntacticDiagnosticsCache = new RollingCache(this.cacheDir + "/syntacticDiagnostics", true);
-            this.semanticDiagnosticsCache = new RollingCache(this.cacheDir + "/semanticDiagnostics", true);
+            this.codeCache = new RollingCache(`${this.cacheDir}/code`, true);
+            this.typesCache = new RollingCache(`${this.cacheDir}/types`, true);
+            this.syntacticDiagnosticsCache = new RollingCache(`${this.cacheDir}/syntacticDiagnostics`, true);
+            this.semanticDiagnosticsCache = new RollingCache(`${this.cacheDir}/semanticDiagnostics`, true);
         }
-    };
-    TsCache.prototype.markAsDirty = function (id) {
+    }
+    markAsDirty(id) {
         this.dependencyTree.setNode(id, { dirty: true });
-    };
+    }
     // returns true if node or any of its imports or any of global types changed
-    TsCache.prototype.isDirty = function (id, checkImports) {
-        var _this = this;
-        var label = this.dependencyTree.node(id);
+    isDirty(id, checkImports) {
+        const label = this.dependencyTree.node(id);
         if (!label)
             return false;
         if (!checkImports || label.dirty)
             return label.dirty;
         if (this.ambientTypesDirty)
             return true;
-        var dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
-        return lodash_4(dependencies, function (dependency, node) {
+        const dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
+        return lodash_4(dependencies, (dependency, node) => {
             if (!node || dependency.distance === Infinity)
                 return false;
-            var l = _this.dependencyTree.node(node);
-            var dirty = l === undefined ? true : l.dirty;
+            const l = this.dependencyTree.node(node);
+            const dirty = l === undefined ? true : l.dirty;
             if (dirty)
-                _this.context.debug("    import changed: " + node);
+                this.context.debug(`    import changed: ${node}`);
             return dirty;
         });
-    };
-    TsCache.prototype.makeName = function (id, snapshot) {
-        var data = snapshot.getText(0, snapshot.getLength());
-        return objectHash_2({ data: data, id: id });
-    };
-    return TsCache;
-}());
+    }
+    makeName(id, snapshot) {
+        const data = snapshot.getText(0, snapshot.getLength());
+        return objectHash_2({ data, id });
+    }
+}
 
 function printDiagnostics(context, diagnostics, pretty) {
-    lodash_2(diagnostics, function (diagnostic) {
-        var print;
-        var color;
-        var category;
+    lodash_2(diagnostics, (diagnostic) => {
+        let print;
+        let color;
+        let category;
         switch (diagnostic.category) {
             case tsModule.DiagnosticCategory.Message:
                 print = context.info;
@@ -19939,30 +19871,29 @@ function printDiagnostics(context, diagnostics, pretty) {
                 category = "warning";
                 break;
         }
-        var type = diagnostic.type + " ";
+        const type = diagnostic.type + " ";
         if (pretty)
-            print.call(context, ["" + diagnostic.formatted]);
+            print.call(context, [`${diagnostic.formatted}`]);
         else {
             if (diagnostic.fileLine !== undefined)
-                print.call(context, [diagnostic.fileLine + ": " + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+                print.call(context, [`${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
             else
-                print.call(context, ["" + type + category + " TS" + diagnostic.code + " " + color(diagnostic.flatMessage)]);
+                print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
         }
     });
 }
 
-function getOptionsOverrides(_a, tsConfigJson) {
-    var useTsconfigDeclarationDir = _a.useTsconfigDeclarationDir, cacheRoot = _a.cacheRoot;
-    var overrides = {
+function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, tsConfigJson) {
+    const overrides = {
         noEmitHelpers: false,
         importHelpers: true,
         noResolve: false,
         noEmit: false,
         inlineSourceMap: false,
-        outDir: cacheRoot + "/placeholder",
+        outDir: `${cacheRoot}/placeholder`,
         moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
     };
-    var declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
+    const declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
     if (!declaration)
         overrides.declarationDir = null;
     if (declaration && !useTsconfigDeclarationDir)
@@ -19971,15 +19902,15 @@ function getOptionsOverrides(_a, tsConfigJson) {
 }
 
 function checkTsConfig(parsedConfig) {
-    var module = parsedConfig.options.module;
+    const module = parsedConfig.options.module;
     switch (module) {
         case tsModule.ModuleKind.ES2015:
         case tsModule.ModuleKind.ESNext:
             break;
         case undefined:
-            throw new Error("Incompatible tsconfig option. Missing module option. This is incompatible with rollup, please use 'module: \"ES2015\"' or 'module: \"ESNext\"'.");
+            throw new Error(`Incompatible tsconfig option. Missing module option. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
         default:
-            throw new Error("Incompatible tsconfig option. Module resolves to '" + tsModule.ModuleKind[module] + "'. This is incompatible with rollup, please use 'module: \"ES2015\"' or 'module: \"ESNext\"'.");
+            throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
     }
 }
 
@@ -19992,44 +19923,44 @@ function getOptionsDefaults() {
 }
 
 function parseTsConfig(context, pluginOptions) {
-    var fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
+    const fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
     // if the value was provided, but no file, fail hard
     if (pluginOptions.tsconfig !== undefined && !fileName)
-        throw new Error("failed to open '" + fileName + "'");
-    var loadedConfig = {};
-    var baseDir = process.cwd();
-    var configFileName;
+        throw new Error(`failed to open '${fileName}'`);
+    let loadedConfig = {};
+    let baseDir = process.cwd();
+    let configFileName;
     if (fileName) {
-        var text = tsModule.sys.readFile(fileName);
+        const text = tsModule.sys.readFile(fileName);
         if (text === undefined)
-            throw new Error("failed to read '" + fileName + "'");
-        var result = tsModule.parseConfigFileTextToJson(fileName, text);
+            throw new Error(`failed to read '${fileName}'`);
+        const result = tsModule.parseConfigFileTextToJson(fileName, text);
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), lodash_1(result.config, "pretty", false));
-            throw new Error("failed to parse '" + fileName + "'");
+            throw new Error(`failed to parse '${fileName}'`);
         }
         loadedConfig = result.config;
         baseDir = path.dirname(fileName);
         configFileName = fileName;
     }
-    var mergedConfig = {};
+    const mergedConfig = {};
     lodash_14(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
-    var compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
-    var parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
+    const compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
+    const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     checkTsConfig(parsedTsConfig);
-    context.debug("built-in options overrides: " + JSON.stringify(compilerOptionsOverride, undefined, 4));
-    context.debug("parsed tsconfig: " + JSON.stringify(parsedTsConfig, undefined, 4));
+    context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
+    context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
     return parsedTsConfig;
 }
 
 // The injected id for helpers.
-var TSLIB = "tslib";
-var tslibSource;
-var tslibVersion;
+const TSLIB = "tslib";
+let tslibSource;
+let tslibVersion;
 try {
     // tslint:disable-next-line:no-string-literal no-var-requires
-    var tslibPackage = require("tslib/package.json");
-    var tslibPath = require.resolve("tslib/" + tslibPackage.module);
+    const tslibPackage = require("tslib/package.json");
+    const tslibPath = require.resolve("tslib/" + tslibPackage.module);
     tslibSource = fs.readFileSync(tslibPath, "utf8");
     tslibVersion = tslibPackage.version;
 }
@@ -20040,30 +19971,30 @@ catch (e) {
 
 function typescript(options) {
     // tslint:disable-next-line:no-var-requires
-    var createFilter = require("rollup-pluginutils").createFilter;
+    const createFilter = require("rollup-pluginutils").createFilter;
     // tslint:enable-next-line:no-var-requires
-    var watchMode = false;
-    var generateRound = 0;
-    var rollupOptions;
-    var context;
-    var filter;
-    var parsedConfig;
-    var servicesHost;
-    var service;
-    var noErrors = true;
-    var declarations = {};
-    var _cache;
-    var cache = function () {
+    let watchMode = false;
+    let generateRound = 0;
+    let rollupOptions;
+    let context;
+    let filter;
+    let parsedConfig;
+    let servicesHost;
+    let service;
+    let noErrors = true;
+    const declarations = {};
+    let _cache;
+    const cache = () => {
         if (!_cache)
             _cache = new TsCache(pluginOptions.clean, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
         return _cache;
     };
-    var pluginOptions = __assign({}, options);
+    const pluginOptions = Object.assign({}, options);
     lodash_12(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
-        cacheRoot: process.cwd() + "/.rpt2_cache",
+        cacheRoot: `${process.cwd()}/.rpt2_cache`,
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
@@ -20078,45 +20009,45 @@ function typescript(options) {
     setTypescriptModule(pluginOptions.typescript);
     return {
         name: "rpt2",
-        options: function (config) {
-            rollupOptions = __assign({}, config);
+        options(config) {
+            rollupOptions = Object.assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
-            context.info("typescript version: " + tsModule.version);
-            context.info("tslib version: " + tslibVersion);
-            context.info("rollup-plugin-typescript2 version: 0.15.2");
-            context.debug(function () { return "plugin options:\n" + JSON.stringify(pluginOptions, function (key, value) { return key === "typescript" ? "version " + value.version : value; }, 4); });
-            context.debug(function () { return "rollup config:\n" + JSON.stringify(rollupOptions, undefined, 4); });
+            context.info(`typescript version: ${tsModule.version}`);
+            context.info(`tslib version: ${tslibVersion}`);
+            context.info(`rollup-plugin-typescript2 version: 0.16.0`);
+            context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
+            context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";
             if (watchMode)
-                context.info("running in watch mode");
+                context.info(`running in watch mode`);
             parsedConfig = parseTsConfig(context, pluginOptions);
             if (parsedConfig.options.rootDirs) {
-                var included_1 = lodash_16(parsedConfig.options.rootDirs)
-                    .flatMap(function (root) {
+                const included = lodash_16(parsedConfig.options.rootDirs)
+                    .flatMap((root) => {
                     if (pluginOptions.include instanceof Array)
-                        return pluginOptions.include.map(function (include) { return path.join(root, include); });
+                        return pluginOptions.include.map((include) => path.join(root, include));
                     else
                         return path.join(root, pluginOptions.include);
                 })
                     .uniq()
                     .value();
-                var excluded_1 = lodash_16(parsedConfig.options.rootDirs)
-                    .flatMap(function (root) {
+                const excluded = lodash_16(parsedConfig.options.rootDirs)
+                    .flatMap((root) => {
                     if (pluginOptions.exclude instanceof Array)
-                        return pluginOptions.exclude.map(function (exclude) { return path.join(root, exclude); });
+                        return pluginOptions.exclude.map((exclude) => path.join(root, exclude));
                     else
                         return path.join(root, pluginOptions.exclude);
                 })
                     .uniq()
                     .value();
-                filter = createFilter(included_1, excluded_1);
-                context.debug(function () { return "included:\n" + JSON.stringify(included_1, undefined, 4); });
-                context.debug(function () { return "excluded:\n" + JSON.stringify(excluded_1, undefined, 4); });
+                filter = createFilter(included, excluded);
+                context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+                context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
             }
             else {
                 filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-                context.debug(function () { return "included:\n'" + JSON.stringify(pluginOptions.include, undefined, 4) + "'"; });
-                context.debug(function () { return "excluded:\n'" + JSON.stringify(pluginOptions.exclude, undefined, 4) + "'"; });
+                context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
+                context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
             }
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
@@ -20127,63 +20058,62 @@ function typescript(options) {
             if (pluginOptions.clean)
                 cache().clean();
         },
-        resolveId: function (importee, importer) {
+        resolveId(importee, importer) {
             if (importee === TSLIB)
                 return "\0" + TSLIB;
             if (!importer)
                 return null;
             importer = importer.split("\\").join("/");
             // TODO: use module resolution cache
-            var result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
+            const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (lodash_6(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return null;
-                var resolved_1 = pluginOptions.rollupCommonJSResolveHack
+                const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(function () { return safe_5("resolving") + " '" + importee + "'"; });
-                context.debug(function () { return "    to '" + resolved_1 + "'"; });
-                return resolved_1;
+                context.debug(() => `${safe_5("resolving")} '${importee}'`);
+                context.debug(() => `    to '${resolved}'`);
+                return resolved;
             }
             return null;
         },
-        load: function (id) {
+        load(id) {
             if (id === "\0" + TSLIB)
                 return tslibSource;
             return undefined;
         },
-        transform: function (code, id) {
-            var _this = this;
+        transform(code, id) {
             generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
             if (!filter(id))
                 return undefined;
-            var contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
-            var snapshot = servicesHost.setSnapshot(id, code);
+            const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
+            const snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
-            var result = cache().getCompiled(id, snapshot, function () {
-                var output = service.getEmitOutput(id);
+            const result = cache().getCompiled(id, snapshot, () => {
+                const output = service.getEmitOutput(id);
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    var diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, function () {
+                    const diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
-                    }), cache().getSemanticDiagnostics(id, snapshot, function () {
+                    }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
                     }));
                     printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (lodash_9(_this.error))
-                        _this.error(safe_3("failed to transpile '" + id + "'"));
+                    if (lodash_9(this.error))
+                        this.error(safe_3(`failed to transpile '${id}'`));
                 }
                 return convertEmitOutput(output);
             });
             if (pluginOptions.check) {
-                var diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, function () {
+                const diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, () => {
                     return service.getSyntacticDiagnostics(id);
-                }), cache().getSemanticDiagnostics(id, snapshot, function () {
+                }), cache().getSemanticDiagnostics(id, snapshot, () => {
                     return service.getSemanticDiagnostics(id);
                 }));
                 if (diagnostics.length > 0)
@@ -20192,11 +20122,11 @@ function typescript(options) {
             }
             if (result) {
                 if (result.dts) {
-                    var key_1 = normalize(id);
-                    declarations[key_1] = { type: result.dts, map: result.dtsmap };
-                    context.debug(function () { return safe_5("generated declarations") + " for '" + key_1 + "'"; });
+                    const key = normalize(id);
+                    declarations[key] = { type: result.dts, map: result.dtsmap };
+                    context.debug(() => `${safe_5("generated declarations")} for '${key}'`);
                 }
-                var transformResult = { code: result.code, map: { mappings: "" } };
+                const transformResult = { code: result.code, map: { mappings: "" } };
                 if (result.map) {
                     if (pluginOptions.sourceMapCallback)
                         pluginOptions.sourceMapCallback(id, result.map);
@@ -20206,13 +20136,13 @@ function typescript(options) {
             }
             return undefined;
         },
-        ongenerate: function () {
-            context.debug(function () { return "generating target " + (generateRound + 1); });
+        ongenerate() {
+            context.debug(() => `generating target ${generateRound + 1}`);
             if (pluginOptions.check && watchMode && generateRound === 0) {
-                cache().walkTree(function (id) {
+                cache().walkTree((id) => {
                     if (!filter(id))
                         return;
-                    var diagnostics = lodash_10(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
+                    const diagnostics = lodash_10(convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)), convertDiagnostic("semantic", service.getSemanticDiagnostics(id)));
                     printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
                 });
             }
@@ -20221,37 +20151,35 @@ function typescript(options) {
             cache().done();
             generateRound++;
         },
-        onwrite: function (_a) {
-            var dest = _a.dest, file = _a.file;
+        onwrite({ dest, file }) {
             if (parsedConfig.options.declaration) {
-                lodash_2(parsedConfig.fileNames, function (name) {
-                    var key = normalize(name);
+                lodash_2(parsedConfig.fileNames, (name) => {
+                    const key = normalize(name);
                     if (lodash_8(declarations, key) || !filter(key))
                         return;
-                    context.debug(function () { return "generating missed declarations for '" + key + "'"; });
-                    var output = service.getEmitOutput(key, true);
-                    var out = convertEmitOutput(output);
+                    context.debug(() => `generating missed declarations for '${key}'`);
+                    const output = service.getEmitOutput(key, true);
+                    const out = convertEmitOutput(output);
                     if (out.dts)
                         declarations[key] = { type: out.dts, map: out.dtsmap };
                 });
-                var bundleFile_1 = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
-                lodash_2(declarations, function (_a, key) {
-                    var type = _a.type, map = _a.map;
-                    lodash_2([type, map], function (e) {
+                const bundleFile = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
+                lodash_2(declarations, ({ type, map }, key) => {
+                    lodash_2([type, map], (e) => {
                         if (!e)
                             return;
-                        var writeToPath;
+                        let writeToPath;
                         // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
                         // use the path provided by Typescript's LanguageService.
-                        if (!bundleFile_1 || pluginOptions.useTsconfigDeclarationDir)
+                        if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
                             writeToPath = e.name;
                         else {
                             // Otherwise, take the directory name from the path and make sure it is absolute.
-                            var destDirname = path.dirname(bundleFile_1);
-                            var destDirectory = path.isAbsolute(destDirname) ? destDirname : path.join(process.cwd(), destDirname);
+                            const destDirname = path.dirname(bundleFile);
+                            const destDirectory = path.isAbsolute(destDirname) ? destDirname : path.join(process.cwd(), destDirname);
                             writeToPath = path.join(destDirectory, path.relative(process.cwd(), e.name));
                         }
-                        context.debug(function () { return safe_5("writing declarations") + " for '" + key + "' to '" + writeToPath + "'"; });
+                        context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
                         // Write the declaration file to disk.
                         tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
                     });
