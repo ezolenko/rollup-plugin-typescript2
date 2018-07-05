@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"target": "es5",
+		"target": "es6",
 		"noImplicitAny": true,
 		"sourceMap": true,
 		"noUnusedParameters": true,

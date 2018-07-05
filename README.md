@@ -162,13 +162,11 @@ The way typescript handles type-only imports and ambient types effectively hides
 
 Otherwise the plugin should work in watch mode. Make sure to run a normal build after watch session to catch any type errors.
 
-### Version
+### Requirements
 
-This plugin currently requires TypeScript `2.4+`.
-
-### Rollup version
-
-This plugin currently requires rollup `0.50+`.
+TypeScript `2.4+`
+Rollup `0.50+`
+Node `6.4.0+` (basic es6 support)
 
 ### Reporting bugs
 

@@ -11,9 +11,11 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	private snapshots: { [fileName: string]: tsTypes.IScriptSnapshot } = {};
 	private versions: { [fileName: string]: number } = {};
 	private service?: tsTypes.LanguageService;
+	private fileNames: Set<string>;
 
 	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[])
 	{
+		this.fileNames = new Set(parsedConfig.fileNames);
 	}
 
 	public reset()
@@ -34,6 +36,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		const snapshot = tsModule.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
+		this.fileNames.add(fileName);
 		return snapshot;
 	}
 
@@ -68,7 +71,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public getScriptFileNames()
 	{
-		return Object.keys(this.snapshots);
+		return Array.from(this.fileNames.values());
 	}
 
 	public getCompilationSettings(): tsTypes.CompilerOptions
