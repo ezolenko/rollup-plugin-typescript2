@@ -314,6 +314,7 @@ export default function typescript(options?: Partial<IOptions>)
 					{
 						if (!e)
 							return;
+
 						let writeToPath: string;
 						// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
 						// use the path provided by Typescript's LanguageService.
@@ -327,10 +328,18 @@ export default function typescript(options?: Partial<IOptions>)
 							writeToPath = join(destDirectory, relative(process.cwd(), e.name));
 						}
 
-						context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+						if (writeToPath.includes("?"))
+						{
+							// HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.d.ts'
+							context.debug(() => `${yellow("skipping declarations")} for '${key}', invalid file path`);
+						}
+						else
+						{
+							context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
 
-						// Write the declaration file to disk.
-						tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
+							// Write the declaration file to disk.
+							tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
+						}
 					});
 				});
 			}

@@ -20175,9 +20175,15 @@ function typescript(options) {
                             const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
                             writeToPath = join(destDirectory, relative(process.cwd(), e.name));
                         }
-                        context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
-                        // Write the declaration file to disk.
-                        tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
+                        if (writeToPath.includes("?")) {
+                            // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.d.ts'
+                            context.debug(() => `${safe_4("skipping declarations")} for '${key}', invalid file path`);
+                        }
+                        else {
+                            context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
+                            // Write the declaration file to disk.
+                            tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
+                        }
                     });
                 });
             }
