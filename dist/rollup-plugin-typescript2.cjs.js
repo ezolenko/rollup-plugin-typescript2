@@ -19898,6 +19898,10 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, tsConfigJ
         overrides.declarationDir = null;
     if (declaration && !useTsconfigDeclarationDir)
         overrides.declarationDir = process.cwd();
+    // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
+    const sourceMap = lodash_1(tsConfigJson, "compilerOptions.sourceMap", false);
+    if (!sourceMap)
+        overrides.sourceRoot = null;
     return overrides;
 }
 
