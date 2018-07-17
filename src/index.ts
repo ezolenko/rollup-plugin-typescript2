@@ -339,7 +339,7 @@ export default function typescript(options?: Partial<IOptions>)
 				_.each(declarations, ({ type, map }, key) =>
 				{
 					writeDeclaration(key, ".d.ts", type);
-					writeDeclaration(key, ".map.d.ts", map);
+					writeDeclaration(key, ".d.ts.map", map);
 				});
 			}
 		},

@@ -20187,7 +20187,7 @@ function typescript(options) {
                 };
                 lodash_2(declarations, ({ type, map }, key) => {
                     writeDeclaration(key, ".d.ts", type);
-                    writeDeclaration(key, ".map.d.ts", map);
+                    writeDeclaration(key, ".d.ts.map", map);
                 });
             }
         },
