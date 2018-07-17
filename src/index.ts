@@ -308,39 +308,38 @@ export default function typescript(options?: Partial<IOptions>)
 
 				const bundleFile = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
 
+				const writeDeclaration = (key: string, extension: string, entry?: tsTypes.OutputFile) =>
+				{
+					if (!entry)
+						return;
+
+					let fileName = entry.name;
+					if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
+						fileName = fileName.split("?", 1) + extension;
+
+					let writeToPath: string;
+					// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+					// use the path provided by Typescript's LanguageService.
+					if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
+						writeToPath = fileName;
+					else
+					{
+						// Otherwise, take the directory name from the path and make sure it is absolute.
+						const destDirname = dirname(bundleFile);
+						const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+						writeToPath = join(destDirectory, relative(process.cwd(), fileName));
+					}
+
+					context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+
+					// Write the declaration file to disk.
+					tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
+				};
+
 				_.each(declarations, ({ type, map }, key) =>
 				{
-					_.each([type, map], (e) =>
-					{
-						if (!e)
-							return;
-
-						let writeToPath: string;
-						// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-						// use the path provided by Typescript's LanguageService.
-						if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
-							writeToPath = e.name;
-						else
-						{
-							// Otherwise, take the directory name from the path and make sure it is absolute.
-							const destDirname = dirname(bundleFile);
-							const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
-							writeToPath = join(destDirectory, relative(process.cwd(), e.name));
-						}
-
-						if (writeToPath.includes("?"))
-						{
-							// HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.d.ts'
-							context.debug(() => `${yellow("skipping declarations")} for '${key}', invalid file path`);
-						}
-						else
-						{
-							context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
-
-							// Write the declaration file to disk.
-							tsModule.sys.writeFile(writeToPath, e.text, e.writeByteOrderMark);
-						}
-					});
+					writeDeclaration(key, ".d.ts", type);
+					writeDeclaration(key, ".map.d.ts", map);
 				});
 			}
 		},
