@@ -20018,7 +20018,7 @@ function typescript(options) {
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info(`typescript version: ${tsModule.version}`);
             context.info(`tslib version: ${tslibVersion}`);
-            context.info(`rollup-plugin-typescript2 version: 0.16.0`);
+            context.info(`rollup-plugin-typescript2 version: 0.16.2`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";
