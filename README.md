@@ -1,7 +1,7 @@
 # rollup-plugin-typescript2
 
 [![npm-version](https://img.shields.io/npm/v/rollup-plugin-typescript2.svg?maxAge=259200)](https://npmjs.org/package/rollup-plugin-typescript2)
-![npm-dependencies](https://img.shields.io/librariesio/github/ezolenko/rollup-plugin-typescript2.svg?maxAge=25920)
+![npm-dependencies](https://img.shields.io/librariesio/github/ezolenko/rollup-plugin-typescript2.svg?maxAge=259200)
 ![npm-monthly-downloads](https://img.shields.io/npm/dm/rollup-plugin-typescript2.svg?maxAge=259200)
 [![Codeship Status](https://app.codeship.com/projects/fe9cf8f0-e8d4-0134-ec88-4e3d33dcd7ed/status?branch=master)](https://app.codeship.com/projects/207445)
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/e19b72ab9658405bbfb32dd6d65d1856)](https://www.codacy.com/app/zolenkoe/rollup-plugin-typescript2?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=ezolenko/rollup-plugin-typescript2&amp;utm_campaign=Badge_Grade)
