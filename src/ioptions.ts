@@ -26,4 +26,5 @@ export interface IOptions
 	transformers: TransformerFactoryCreator[];
 	tsconfigDefaults: any;
 	sourceMapCallback: (id: string, map: string) => void;
+	objectHashIgnoreUnknownHack: boolean;
 }

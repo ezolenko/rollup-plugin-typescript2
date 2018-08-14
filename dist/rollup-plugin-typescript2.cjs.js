@@ -19691,9 +19691,8 @@ function convertDiagnostic(type, data) {
         return entry;
     });
 }
-const hashOptions = { algorithm: "sha1", ignoreUnknown: true };
 class TsCache {
-    constructor(noCache, host, cache, options, rollupConfig, rootFilenames, context) {
+    constructor(noCache, hashIgnoreUnknown, host, cache, options, rollupConfig, rootFilenames, context) {
         this.noCache = noCache;
         this.host = host;
         this.options = options;
@@ -19701,13 +19700,15 @@ class TsCache {
         this.context = context;
         this.cacheVersion = "7";
         this.ambientTypesDirty = false;
+        this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
+        this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
         this.cacheDir = `${cache}/${objectHash_1({
             version: this.cacheVersion,
             rootFilenames,
             options: this.options,
             rollupConfig: this.rollupConfig,
             tsVersion: tsModule.version,
-        }, hashOptions)}`;
+        }, this.hashOptions)}`;
         this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
         const automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
@@ -19845,7 +19846,7 @@ class TsCache {
     }
     makeName(id, snapshot) {
         const data = snapshot.getText(0, snapshot.getLength());
-        return objectHash_1({ data, id }, hashOptions);
+        return objectHash_1({ data, id }, this.hashOptions);
     }
 }
 
@@ -19991,7 +19992,7 @@ function typescript(options) {
     let _cache;
     const cache = () => {
         if (!_cache)
-            _cache = new TsCache(pluginOptions.clean, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+            _cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
         return _cache;
     };
     const pluginOptions = Object.assign({}, options);
@@ -20010,6 +20011,7 @@ function typescript(options) {
         tsconfigOverride: {},
         transformers: [],
         tsconfigDefaults: {},
+        objectHashIgnoreUnknownHack: false,
     });
     setTypescriptModule(pluginOptions.typescript);
     return {

@@ -54,6 +54,10 @@ Must be before this plugin in the plugin list, especially when `browser: true` o
 
 See explanation for `rollupCommonJSResolveHack` option below.
 
+#### plugins using async/await
+
+See `objectHashIgnoreUnknownHack` below.
+
 ### Plugin options
 
 * `tsconfigDefaults`: `{}`
@@ -121,6 +125,10 @@ See explanation for `rollupCommonJSResolveHack` option below.
 
 	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in `namedExports` being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with `rollup-plugin-commonjs`.
 
+* `objectHashIgnoreUnknownHack`: false
+
+	The plugin uses rollup config as part of cache key. `object-hash` is used to generate a hash, but it can't hash certain elements at the moment. Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed. Only enable this if you need it (`Error: Unknown object type "asyncfunction"` for example) and make sure to run with `clean: true` once in a while and definitely before a release. (See [#105](https://github.com/ezolenko/rollup-plugin-typescript2/issues/105))
+	
 * `useTsconfigDeclarationDir`: false
 
 	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.

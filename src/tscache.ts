@@ -88,7 +88,6 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 	});
 }
 
-const hashOptions = { algorithm: "sha1", ignoreUnknown: true };
 
 export class TsCache
 {
@@ -101,9 +100,11 @@ export class TsCache
 	private typesCache!: ICache<string>;
 	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
+	private hashOptions = { algorithm: "sha1", ignoreUnknown: false };
 	
-	constructor(private noCache: boolean, private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
+	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
+		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
 		this.cacheDir = `${cache}/${hash(
 			{
 				version: this.cacheVersion,
@@ -112,7 +113,7 @@ export class TsCache
 				rollupConfig: this.rollupConfig,
 				tsVersion: tsModule.version,
 			},
-			hashOptions
+			this.hashOptions
 		)}`;
 
 		this.dependencyTree = new Graph({ directed: true });
@@ -315,6 +316,6 @@ export class TsCache
 	private makeName(id: string, snapshot: tsTypes.IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
-		return hash({ data, id }, hashOptions);
+		return hash({ data, id }, this.hashOptions);
 	}
 }

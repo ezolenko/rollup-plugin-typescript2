@@ -36,7 +36,7 @@ export default function typescript(options?: Partial<IOptions>)
 	const cache = (): TsCache =>
 	{
 		if (!_cache)
-			_cache = new TsCache(pluginOptions.clean, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+			_cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 		return _cache;
 	};
 
@@ -58,6 +58,7 @@ export default function typescript(options?: Partial<IOptions>)
 			tsconfigOverride: {},
 			transformers: [],
 			tsconfigDefaults: {},
+			objectHashIgnoreUnknownHack: false,
 		});
 
 	setTypescriptModule(pluginOptions.typescript);
