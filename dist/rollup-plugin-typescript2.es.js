@@ -19687,6 +19687,7 @@ function convertDiagnostic(type, data) {
         return entry;
     });
 }
+const hashOptions = { algorithm: "sha1", ignoreUnknown: true };
 class TsCache {
     constructor(noCache, host, cache, options, rollupConfig, rootFilenames, context) {
         this.noCache = noCache;
@@ -19696,13 +19697,13 @@ class TsCache {
         this.context = context;
         this.cacheVersion = "7";
         this.ambientTypesDirty = false;
-        this.cacheDir = `${cache}/${objectHash_2({
+        this.cacheDir = `${cache}/${objectHash_1({
             version: this.cacheVersion,
             rootFilenames,
             options: this.options,
             rollupConfig: this.rollupConfig,
             tsVersion: tsModule.version,
-        })}`;
+        }, hashOptions)}`;
         this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
         const automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
@@ -19840,7 +19841,7 @@ class TsCache {
     }
     makeName(id, snapshot) {
         const data = snapshot.getText(0, snapshot.getLength());
-        return objectHash_2({ data, id });
+        return objectHash_1({ data, id }, hashOptions);
     }
 }
 

@@ -17,7 +17,8 @@
 		"declaration": true,
 		"declarationMap": true,
 		"strict": true,
-		"outDir": "./build" 
+		"outDir": "./build",
+		"allowSyntheticDefaultImports": true
 	},
 	"include": [
 		"src/**/*.ts"

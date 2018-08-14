@@ -1,6 +1,6 @@
 import { IContext } from "./context";
 import { Graph, alg } from "graphlib";
-import { sha1 } from "object-hash";
+import hash from "object-hash";
 import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
 import * as _ from "lodash";
@@ -88,6 +88,8 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 	});
 }
 
+const hashOptions = { algorithm: "sha1", ignoreUnknown: true };
+
 export class TsCache
 {
 	private cacheVersion = "7";
@@ -99,16 +101,19 @@ export class TsCache
 	private typesCache!: ICache<string>;
 	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
-
+	
 	constructor(private noCache: boolean, private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
-		this.cacheDir = `${cache}/${sha1({
-			version: this.cacheVersion,
-			rootFilenames,
-			options: this.options,
-			rollupConfig: this.rollupConfig,
-			tsVersion: tsModule.version,
-		})}`;
+		this.cacheDir = `${cache}/${hash(
+			{
+				version: this.cacheVersion,
+				rootFilenames,
+				options: this.options,
+				rollupConfig: this.rollupConfig,
+				tsVersion: tsModule.version,
+			},
+			hashOptions
+		)}`;
 
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
@@ -310,6 +315,6 @@ export class TsCache
 	private makeName(id: string, snapshot: tsTypes.IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
-		return sha1({ data, id });
+		return hash({ data, id }, hashOptions);
 	}
 }
