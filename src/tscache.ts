@@ -101,7 +101,7 @@ export class TsCache
 	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private hashOptions = { algorithm: "sha1", ignoreUnknown: false };
-	
+
 	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
 		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
@@ -115,7 +115,7 @@ export class TsCache
 					rollupConfig: this.rollupConfig,
 					tsVersion: tsModule.version,
 				},
-				this.hashOptions
+				this.hashOptions,
 			)}`;
 		}
 
@@ -140,7 +140,7 @@ export class TsCache
 		if (pathExistsSync(this.cacheRoot))
 		{
 			const entries = readdirSync(this.cacheRoot);
-			entries.forEach((e) => 
+			entries.forEach((e) =>
 			{
 				const dir = `${this.cacheRoot}/${e}`;
 				if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory)
@@ -263,7 +263,7 @@ export class TsCache
 		if (this.noCache)
 		{
 			this.markAsDirty(id);
-			return convertDiagnostic(type, check());;
+			return convertDiagnostic(type, check());
 		}
 
 		const name = this.makeName(id, snapshot);
