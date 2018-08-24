@@ -322,6 +322,22 @@ var lodash = createCommonjsModule(function (module, exports) {
   typedArrayTags[setTag] = typedArrayTags[stringTag] =
   typedArrayTags[weakMapTag] = false;
 
+  /** Used to identify `toStringTag` values supported by `_.clone`. */
+  var cloneableTags = {};
+  cloneableTags[argsTag] = cloneableTags[arrayTag] =
+  cloneableTags[arrayBufferTag] = cloneableTags[dataViewTag] =
+  cloneableTags[boolTag] = cloneableTags[dateTag] =
+  cloneableTags[float32Tag] = cloneableTags[float64Tag] =
+  cloneableTags[int8Tag] = cloneableTags[int16Tag] =
+  cloneableTags[int32Tag] = cloneableTags[mapTag] =
+  cloneableTags[numberTag] = cloneableTags[objectTag] =
+  cloneableTags[regexpTag] = cloneableTags[setTag] =
+  cloneableTags[stringTag] = cloneableTags[symbolTag] =
+  cloneableTags[uint8Tag] = cloneableTags[uint8ClampedTag] =
+  cloneableTags[uint16Tag] = cloneableTags[uint32Tag] = true;
+  cloneableTags[errorTag] = cloneableTags[funcTag] =
+  cloneableTags[weakMapTag] = false;
+
   /** Used to map Latin Unicode letters to basic Latin letters. */
   var deburredLetters = {
     // Latin-1 Supplement block.
@@ -2667,7 +2683,7 @@ var lodash = createCommonjsModule(function (module, exports) {
               : copySymbols(value, baseAssign(result, value));
           }
         } else {
-          {
+          if (!cloneableTags[tag]) {
             return object ? value : {};
           }
           result = initCloneByTag(value, tag, isDeep);
@@ -19363,49 +19379,51 @@ module['exports'] = function zalgo(text, options) {
 });
 
 var america = createCommonjsModule(function (module) {
-module['exports'] = (function() {
+module['exports'] = function(colors) {
   return function(letter, i, exploded) {
     if (letter === ' ') return letter;
     switch (i%3) {
-      case 0: return colors_1.red(letter);
-      case 1: return colors_1.white(letter);
-      case 2: return colors_1.blue(letter);
+      case 0: return colors.red(letter);
+      case 1: return colors.white(letter);
+      case 2: return colors.blue(letter);
     }
   };
-})();
+};
 });
 
 var zebra = createCommonjsModule(function (module) {
-module['exports'] = function(letter, i, exploded) {
-  return i % 2 === 0 ? letter : colors_1.inverse(letter);
+module['exports'] = function(colors) {
+  return function(letter, i, exploded) {
+    return i % 2 === 0 ? letter : colors.inverse(letter);
+  };
 };
 });
 
 var rainbow = createCommonjsModule(function (module) {
-module['exports'] = (function() {
+module['exports'] = function(colors) {
   // RoY G BiV
   var rainbowColors = ['red', 'yellow', 'green', 'blue', 'magenta'];
   return function(letter, i, exploded) {
     if (letter === ' ') {
       return letter;
     } else {
-      return colors_1[rainbowColors[i++ % rainbowColors.length]](letter);
+      return colors[rainbowColors[i++ % rainbowColors.length]](letter);
     }
   };
-})();
+};
 });
 
 var random = createCommonjsModule(function (module) {
-module['exports'] = (function() {
+module['exports'] = function(colors) {
   var available = ['underline', 'inverse', 'grey', 'yellow', 'red', 'green',
     'blue', 'white', 'cyan', 'magenta'];
   return function(letter, i, exploded) {
     return letter === ' ' ? letter :
-      colors_1[
+      colors[
         available[Math.round(Math.random() * (available.length - 2))]
       ](letter);
   };
-})();
+};
 });
 
 var colors_1 = createCommonjsModule(function (module) {
@@ -19516,7 +19534,11 @@ function applyStyle() {
   var args = Array.prototype.slice.call(arguments);
 
   var str = args.map(function(arg) {
-    return arg.constructor === String ? arg : util.inspect(arg);
+    if (arg != undefined && arg.constructor === String) {
+      return arg;
+    } else {
+      return util.inspect(arg);
+    }
   }).join(' ');
 
   if (!colors.enabled || !str) {
@@ -19532,7 +19554,9 @@ function applyStyle() {
     var code = ansiStyles[nestedStyles[i]];
     str = code.open + str.replace(code.closeRe, code.open) + code.close;
     if (newLinesPresent) {
-      str = str.replace(newLineRegex, code.close + '\n' + code.open);
+      str = str.replace(newLineRegex, function(match) {
+        return code.close + match + code.open;
+      });
     }
   }
 
@@ -19590,10 +19614,10 @@ colors.zalgo = zalgo;
 
 // maps
 colors.maps = {};
-colors.maps.america = america;
-colors.maps.zebra = zebra;
-colors.maps.rainbow = rainbow;
-colors.maps.random = random;
+colors.maps.america = america(colors);
+colors.maps.zebra = zebra(colors);
+colors.maps.rainbow = rainbow(colors);
+colors.maps.random = random(colors);
 
 for (var map in colors.maps) {
   (function(map) {
