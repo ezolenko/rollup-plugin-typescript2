@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import crypto from 'crypto';
-import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync, pathExistsSync } from 'fs-extra';
+import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync, pathExistsSync, readdirSync as readdirSync$1, statSync } from 'fs-extra';
 import os from 'os';
 import util from 'util';
 import { join, dirname, isAbsolute, relative, normalize } from 'path';
@@ -19712,23 +19712,27 @@ function convertDiagnostic(type, data) {
     });
 }
 class TsCache {
-    constructor(noCache, hashIgnoreUnknown, host, cache, options, rollupConfig, rootFilenames, context) {
+    constructor(noCache, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
         this.noCache = noCache;
         this.host = host;
+        this.cacheRoot = cacheRoot;
         this.options = options;
         this.rollupConfig = rollupConfig;
         this.context = context;
-        this.cacheVersion = "7";
+        this.cacheVersion = "8";
+        this.cachePrefix = "rpt2_";
         this.ambientTypesDirty = false;
         this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
         this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
-        this.cacheDir = `${cache}/${objectHash_1({
-            version: this.cacheVersion,
-            rootFilenames,
-            options: this.options,
-            rollupConfig: this.rollupConfig,
-            tsVersion: tsModule.version,
-        }, this.hashOptions)}`;
+        if (!noCache) {
+            this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objectHash_1({
+                version: this.cacheVersion,
+                rootFilenames,
+                options: this.options,
+                rollupConfig: this.rollupConfig,
+                tsVersion: tsModule.version,
+            }, this.hashOptions)}`;
+        }
         this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
         const automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
@@ -19741,9 +19745,18 @@ class TsCache {
         this.checkAmbientTypes();
     }
     clean() {
-        if (pathExistsSync(this.cacheDir)) {
-            this.context.info(safe_5(`cleaning cache: ${this.cacheDir}`));
-            emptyDirSync(this.cacheDir);
+        if (pathExistsSync(this.cacheRoot)) {
+            const entries = readdirSync$1(this.cacheRoot);
+            entries.forEach((e) => {
+                const dir = `${this.cacheRoot}/${e}`;
+                if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory) {
+                    this.context.info(safe_5(`cleaning cache: ${dir}`));
+                    emptyDirSync(`${dir}`);
+                    removeSync(`${dir}`);
+                }
+                else
+                    this.context.debug(`not cleaning ${dir}`);
+            });
         }
         this.init();
     }
@@ -19770,6 +19783,11 @@ class TsCache {
         this.typesCache.roll();
     }
     getCompiled(id, snapshot, transform) {
+        if (this.noCache) {
+            this.context.info(`${safe_5("transpiling")} '${id}'`);
+            this.markAsDirty(id);
+            return transform();
+        }
         const name = this.makeName(id, snapshot);
         this.context.info(`${safe_5("transpiling")} '${id}'`);
         this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
@@ -19796,6 +19814,10 @@ class TsCache {
         return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
     }
     checkAmbientTypes() {
+        if (this.noCache) {
+            this.ambientTypesDirty = true;
+            return;
+        }
         this.context.debug(safe_5("Ambient types:"));
         const typeNames = lodash_5(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
             .map((snapshot) => {
@@ -19809,6 +19831,10 @@ class TsCache {
         lodash_2(typeNames, (name) => this.typesCache.touch(name));
     }
     getDiagnostics(type, cache, id, snapshot, check) {
+        if (this.noCache) {
+            this.markAsDirty(id);
+            return convertDiagnostic(type, check());
+        }
         const name = this.makeName(id, snapshot);
         this.context.debug(`    cache: '${cache.path(name)}'`);
         if (cache.exists(name) && !this.isDirty(id, true)) {
@@ -19835,6 +19861,8 @@ class TsCache {
             this.semanticDiagnosticsCache = new NoCache();
         }
         else {
+            if (this.cacheDir === undefined)
+                throw new Error(`this.cacheDir undefined`);
             this.codeCache = new RollingCache(`${this.cacheDir}/code`, true);
             this.typesCache = new RollingCache(`${this.cacheDir}/types`, true);
             this.syntacticDiagnosticsCache = new RollingCache(`${this.cacheDir}/syntacticDiagnostics`, true);
@@ -20041,7 +20069,7 @@ function typescript(options) {
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info(`typescript version: ${tsModule.version}`);
             context.info(`tslib version: ${tslibVersion}`);
-            context.info(`rollup-plugin-typescript2 version: 0.16.2`);
+            context.info(`rollup-plugin-typescript2 version: 0.17.0`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";

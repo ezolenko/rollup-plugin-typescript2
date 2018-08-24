@@ -25,10 +25,12 @@ export declare function convertDiagnostic(type: string, data: tsTypes.Diagnostic
 export declare class TsCache {
     private noCache;
     private host;
+    private cacheRoot;
     private options;
     private rollupConfig;
     private context;
     private cacheVersion;
+    private cachePrefix;
     private dependencyTree;
     private ambientTypes;
     private ambientTypesDirty;
@@ -38,7 +40,7 @@ export declare class TsCache {
     private semanticDiagnosticsCache;
     private syntacticDiagnosticsCache;
     private hashOptions;
-    constructor(noCache: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cache: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
+    constructor(noCache: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
     clean(): void;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;

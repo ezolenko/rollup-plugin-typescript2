@@ -7,7 +7,7 @@ import * as _ from "lodash";
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { blue, yellow, green } from "colors/safe";
-import { emptyDirSync, pathExistsSync } from "fs-extra";
+import { emptyDirSync, pathExistsSync, readdirSync, removeSync, statSync } from "fs-extra";
 import { formatHost } from "./diagnostics-format-host";
 import { NoCache } from "./nocache";
 
@@ -88,33 +88,36 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 	});
 }
 
-
 export class TsCache
 {
-	private cacheVersion = "7";
+	private cacheVersion = "8";
+	private cachePrefix = "rpt2_";
 	private dependencyTree: Graph;
 	private ambientTypes: ITypeSnapshot[];
 	private ambientTypesDirty = false;
-	private cacheDir: string;
+	private cacheDir: string | undefined;
 	private codeCache!: ICache<ICode | undefined>;
 	private typesCache!: ICache<string>;
 	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private hashOptions = { algorithm: "sha1", ignoreUnknown: false };
 	
-	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, cache: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
+	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
 		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
-		this.cacheDir = `${cache}/${hash(
-			{
-				version: this.cacheVersion,
-				rootFilenames,
-				options: this.options,
-				rollupConfig: this.rollupConfig,
-				tsVersion: tsModule.version,
-			},
-			this.hashOptions
-		)}`;
+		if (!noCache)
+		{
+			this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${hash(
+				{
+					version: this.cacheVersion,
+					rootFilenames,
+					options: this.options,
+					rollupConfig: this.rollupConfig,
+					tsVersion: tsModule.version,
+				},
+				this.hashOptions
+			)}`;
+		}
 
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
@@ -134,10 +137,21 @@ export class TsCache
 
 	public clean()
 	{
-		if (pathExistsSync(this.cacheDir))
+		if (pathExistsSync(this.cacheRoot))
 		{
-			this.context.info(blue(`cleaning cache: ${this.cacheDir}`));
-			emptyDirSync(this.cacheDir);
+			const entries = readdirSync(this.cacheRoot);
+			entries.forEach((e) => 
+			{
+				const dir = `${this.cacheRoot}/${e}`;
+				if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory)
+				{
+					this.context.info(blue(`cleaning cache: ${dir}`));
+					emptyDirSync(`${dir}`);
+					removeSync(`${dir}`);
+				}
+				else
+					this.context.debug(`not cleaning ${dir}`);
+			});
 		}
 
 		this.init();
@@ -177,6 +191,13 @@ export class TsCache
 
 	public getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined
 	{
+		if (this.noCache)
+		{
+			this.context.info(`${blue("transpiling")} '${id}'`);
+			this.markAsDirty(id);
+			return transform();
+		}
+
 		const name = this.makeName(id, snapshot);
 
 		this.context.info(`${blue("transpiling")} '${id}'`);
@@ -215,6 +236,12 @@ export class TsCache
 
 	private checkAmbientTypes(): void
 	{
+		if (this.noCache)
+		{
+			this.ambientTypesDirty = true;
+			return;
+		}
+
 		this.context.debug(blue("Ambient types:"));
 		const typeNames = _.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
@@ -233,6 +260,12 @@ export class TsCache
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
+		if (this.noCache)
+		{
+			this.markAsDirty(id);
+			return convertDiagnostic(type, check());;
+		}
+
 		const name = this.makeName(id, snapshot);
 
 		this.context.debug(`    cache: '${cache.path(name)}'`);
@@ -270,6 +303,8 @@ export class TsCache
 		}
 		else
 		{
+			if (this.cacheDir === undefined)
+				throw new Error(`this.cacheDir undefined`);
 			this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
 			this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
 			this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
