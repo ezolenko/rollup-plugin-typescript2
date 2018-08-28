@@ -21,6 +21,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 	let loadedConfig: any = {};
 	let baseDir = process.cwd();
 	let configFileName;
+	let pretty = false;
 	if (fileName)
 	{
 		const text = tsModule.sys.readFile(fileName);
@@ -28,10 +29,11 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 			throw new Error(`failed to read '${fileName}'`);
 
 		const result = tsModule.parseConfigFileTextToJson(fileName, text);
+		pretty = _.get(result.config, "pretty", pretty);
 
 		if (result.error !== undefined)
 		{
-			printDiagnostics(context, convertDiagnostic("config", [result.error]), _.get(result.config, "pretty", false));
+			printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
 			throw new Error(`failed to parse '${fileName}'`);
 		}
 
@@ -47,6 +49,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 	const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
 
 	checkTsConfig(parsedTsConfig);
+	printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
 
 	context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
 	context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
