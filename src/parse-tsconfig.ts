@@ -45,7 +45,8 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 	const mergedConfig = {};
 	_.merge(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
 
-	const compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
+	const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
+	const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
 	const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
 
 	checkTsConfig(parsedTsConfig);

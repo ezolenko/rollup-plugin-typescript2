@@ -3,7 +3,7 @@ import * as tsTypes from "typescript";
 import { IOptions } from "./ioptions";
 import * as _ from "lodash";
 
-export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, tsConfigJson?: any): tsTypes.CompilerOptions
+export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
 {
 	const overrides = {
 		noEmitHelpers: false,
@@ -15,17 +15,19 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
 	};
 
-	const declaration = _.get(tsConfigJson, "compilerOptions.declaration", false);
+	if (preParsedTsconfig)
+	{
+		const declaration = preParsedTsconfig.options.declaration;
+		if (!declaration)
+			(overrides as any).declarationDir = null;
+		if (declaration && !useTsconfigDeclarationDir)
+			(overrides as any).declarationDir = process.cwd();
 
-	if (!declaration)
-		(overrides as any).declarationDir = null;
-	if (declaration && !useTsconfigDeclarationDir)
-		(overrides as any).declarationDir = process.cwd();
-
-	// unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
-	const sourceMap = _.get(tsConfigJson, "compilerOptions.sourceMap", false);
-	if (!sourceMap)
-		(overrides as any).sourceRoot = null;
+		// unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
+		const sourceMap = preParsedTsconfig.options.sourceMap;
+		if (!sourceMap)
+			(overrides as any).sourceRoot = null;
+	}
 
 	return overrides;
 }

@@ -1,4 +1,5 @@
 {
+	 "extends": "./tsconfig.base",
 	"compilerOptions": {
 		"target": "es6",
 		"noImplicitAny": true,
@@ -14,13 +15,12 @@
 		"strictNullChecks": true,
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitReturns": true,
-		"declaration": true,
-		"declarationMap": true,
 		"strict": true,
 		"outDir": "./build",
 		"allowSyntheticDefaultImports": true
 	},
 	"include": [
 		"src/**/*.ts"
-	]
+	],
+	"exclude": []
 }

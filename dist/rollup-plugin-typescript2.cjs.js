@@ -19937,7 +19937,7 @@ function printDiagnostics(context, diagnostics, pretty) {
     });
 }
 
-function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, tsConfigJson) {
+function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
     const overrides = {
         noEmitHelpers: false,
         importHelpers: true,
@@ -19947,15 +19947,17 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, tsConfigJ
         outDir: `${cacheRoot}/placeholder`,
         moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
     };
-    const declaration = lodash_1(tsConfigJson, "compilerOptions.declaration", false);
-    if (!declaration)
-        overrides.declarationDir = null;
-    if (declaration && !useTsconfigDeclarationDir)
-        overrides.declarationDir = process.cwd();
-    // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
-    const sourceMap = lodash_1(tsConfigJson, "compilerOptions.sourceMap", false);
-    if (!sourceMap)
-        overrides.sourceRoot = null;
+    if (preParsedTsconfig) {
+        const declaration = preParsedTsconfig.options.declaration;
+        if (!declaration)
+            overrides.declarationDir = null;
+        if (declaration && !useTsconfigDeclarationDir)
+            overrides.declarationDir = process.cwd();
+        // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
+        const sourceMap = preParsedTsconfig.options.sourceMap;
+        if (!sourceMap)
+            overrides.sourceRoot = null;
+    }
     return overrides;
 }
 
@@ -20005,7 +20007,8 @@ function parseTsConfig(context, pluginOptions) {
     }
     const mergedConfig = {};
     lodash_14(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
-    const compilerOptionsOverride = getOptionsOverrides(pluginOptions, mergedConfig);
+    const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
+    const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     checkTsConfig(parsedTsConfig);
     printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
@@ -20076,7 +20079,7 @@ function typescript(options) {
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info(`typescript version: ${tsModule.version}`);
             context.info(`tslib version: ${tslibVersion}`);
-            context.info(`rollup-plugin-typescript2 version: 0.17.0`);
+            context.info(`rollup-plugin-typescript2 version: 0.17.1`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";
