@@ -15,6 +15,7 @@ import { TSLIB, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow } from "colors/safe";
 import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
+import { satisfies } from "semver";
 
 export default function typescript(options?: Partial<IOptions>)
 {
@@ -74,6 +75,9 @@ export default function typescript(options?: Partial<IOptions>)
 
 			context.info(`typescript version: ${tsModule.version}`);
 			context.info(`tslib version: ${tslibVersion}`);
+
+			if (!satisfies(tsModule.version, "$TS_VERSION_RANGE"))
+				throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '$TS_VERSION_RANGE'`);
 
 			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
 			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
