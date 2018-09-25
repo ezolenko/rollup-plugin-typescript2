@@ -23,10 +23,10 @@ export default {
 	plugins: [
 		replace
 		({
-			replaces: 
-			{ 
-				"$RPT2_VERSION": pkg.version, 
-				"$TS_VERSION_RANGE": pkg.peerDependencies.typescript
+			replaces:
+			{
+				"$RPT2_VERSION": pkg.version,
+				"$TS_VERSION_RANGE": pkg.peerDependencies.typescript,
 			},
 		}),
 		resolve({ jsnext: true, preferBuiltins: true }),
