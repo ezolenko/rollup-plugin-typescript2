@@ -12,6 +12,15 @@ This is a rewrite of original rollup-plugin-typescript, starting and borrowing f
 
 This version is somewhat slower than original, but it will print out typescript syntactic and semantic diagnostic messages (the main reason for using typescript after all).
 
+## Installation
+
+```bash
+# with npm
+npm install rollup-plugin-typescript2 typescript --save-dev
+# with yarn
+yarn add rollup-plugin-typescript2 typescript --dev
+```
+
 ## Usage
 
 ```js
