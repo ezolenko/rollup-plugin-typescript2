@@ -76,7 +76,7 @@ export default function typescript(options?: Partial<IOptions>)
 			context.info(`typescript version: ${tsModule.version}`);
 			context.info(`tslib version: ${tslibVersion}`);
 
-			if (!satisfies(tsModule.version, "$TS_VERSION_RANGE"))
+			if (!satisfies(tsModule.version, "$TS_VERSION_RANGE", { includePrerelease : true } as any))
 				throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '$TS_VERSION_RANGE'`);
 
 			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
