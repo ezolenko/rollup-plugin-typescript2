@@ -19944,6 +19944,7 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         inlineSourceMap: false,
         outDir: `${cacheRoot}/placeholder`,
         moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
+        allowNonTsExtensions: true,
     };
     if (preParsedTsconfig) {
         const declaration = preParsedTsconfig.options.declaration;
@@ -21473,7 +21474,7 @@ function typescript(options) {
             context.info(`tslib version: ${tslibVersion}`);
             if (!semver_30(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                 throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-            context.info(`rollup-plugin-typescript2 version: 0.17.3`);
+            context.info(`rollup-plugin-typescript2 version: 0.18.0`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";
