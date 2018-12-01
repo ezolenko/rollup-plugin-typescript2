@@ -7,8 +7,7 @@
   "jsnext:main": "dist/rollup-plugin-typescript2.es.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "keywords": [
     "rollup-plugin-typescript2",
