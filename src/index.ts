@@ -278,9 +278,19 @@ export default function typescript(options?: Partial<IOptions>)
 					if (!filter(id))
 						return;
 
+					const snapshot = servicesHost.getScriptSnapshot(id);
+					if (!snapshot)
+						return;
+
 					const diagnostics = _.concat(
-						convertDiagnostic("syntax", service.getSyntacticDiagnostics(id)),
-						convertDiagnostic("semantic", service.getSemanticDiagnostics(id)),
+						cache().getSyntacticDiagnostics(id, snapshot, () =>
+						{
+							return service.getSyntacticDiagnostics(id);
+						}),
+						cache().getSemanticDiagnostics(id, snapshot, () =>
+						{
+							return service.getSemanticDiagnostics(id);
+						}),
 					);
 
 					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
