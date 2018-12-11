@@ -21456,7 +21456,6 @@ function typescript(options) {
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
-        typescript: require("typescript"),
         tsconfig: undefined,
         useTsconfigDeclarationDir: false,
         tsconfigOverride: {},
@@ -21464,6 +21463,9 @@ function typescript(options) {
         tsconfigDefaults: {},
         objectHashIgnoreUnknownHack: false,
     });
+    if (!pluginOptions.typescript) {
+        pluginOptions.typescript = require("typescript");
+    }
     setTypescriptModule(pluginOptions.typescript);
     return {
         name: "rpt2",
