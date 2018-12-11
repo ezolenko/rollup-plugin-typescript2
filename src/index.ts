@@ -53,7 +53,6 @@ export default function typescript(options?: Partial<IOptions>)
 			exclude: ["*.d.ts", "**/*.d.ts"],
 			abortOnError: true,
 			rollupCommonJSResolveHack: false,
-			typescript: require("typescript"),
 			tsconfig: undefined,
 			useTsconfigDeclarationDir: false,
 			tsconfigOverride: {},
@@ -61,6 +60,10 @@ export default function typescript(options?: Partial<IOptions>)
 			tsconfigDefaults: {},
 			objectHashIgnoreUnknownHack: false,
 		});
+
+	if (!pluginOptions.typescript) {
+		pluginOptions.typescript = require("typescript");
+	}
 
 	setTypescriptModule(pluginOptions.typescript);
 
