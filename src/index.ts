@@ -270,19 +270,7 @@ export default function typescript(options?: Partial<IOptions>)
 			return undefined;
 		},
 
-		generateBundle(options: IRollupOptions, _bundle: any, isWrite: boolean): void
-		{
-			if (isWrite)
-			{
-				this._onwrite(options);
-			}
-			else
-			{
-				this._ongenerate();
-			}
-		},
-
-		_ongenerate(): void
+		ongenerate(): void
 		{
 			context.debug(() => `generating target ${generateRound + 1}`);
 
@@ -320,7 +308,7 @@ export default function typescript(options?: Partial<IOptions>)
 			generateRound++;
 		},
 
-		_onwrite({ dest, file }: IRollupOptions): void
+		onwrite({ dest, file }: IRollupOptions)
 		{
 			if (parsedConfig.options.declaration)
 			{

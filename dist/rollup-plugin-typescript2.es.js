@@ -21598,15 +21598,7 @@ function typescript(options) {
             }
             return undefined;
         },
-        generateBundle(options, _bundle, isWrite) {
-            if (isWrite) {
-                this._onwrite(options);
-            }
-            else {
-                this._ongenerate();
-            }
-        },
-        _ongenerate() {
+        ongenerate() {
             context.debug(() => `generating target ${generateRound + 1}`);
             if (pluginOptions.check && watchMode && generateRound === 0) {
                 cache().walkTree((id) => {
@@ -21628,7 +21620,7 @@ function typescript(options) {
             cache().done();
             generateRound++;
         },
-        _onwrite({ dest, file }) {
+        onwrite({ dest, file }) {
             if (parsedConfig.options.declaration) {
                 lodash_2(parsedConfig.fileNames, (name) => {
                     const key = normalize$1(name);
