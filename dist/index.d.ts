@@ -9,7 +9,8 @@ export default function typescript(options?: Partial<IOptions>): {
     resolveId(importee: string, importer: string): string | null;
     load(id: string): string | undefined;
     transform(this: IRollupContext, code: string, id: string): IRollupCode | undefined;
-    ongenerate(): void;
-    onwrite({ dest, file }: IRollupOptions): void;
+    generateBundle(options: IRollupOptions, _bundle: any, isWrite: boolean): void;
+    _ongenerate(): void;
+    _onwrite({ dest, file }: IRollupOptions): void;
 };
 //# sourceMappingURL=index.d.ts.map
