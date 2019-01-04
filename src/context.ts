@@ -1,12 +1,6 @@
 
 import * as _ from "lodash";
 
-export interface IRollupContext
-{
-	warn(message: string): void;
-	error(message: string): void;
-}
-
 export interface IContext
 {
 	warn(message: string | (() => string)): void;

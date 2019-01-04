@@ -1,11 +1,12 @@
-import { IContext, IRollupContext, VerbosityLevel } from "./context";
+import { IContext, VerbosityLevel } from "./context";
 import * as _ from "lodash";
+import { PluginContext } from "rollup";
 
 export class RollupContext implements IContext
 {
 	private hasContext: boolean = true;
 
-	constructor(private verbosity: VerbosityLevel, private bail: boolean, private context: IRollupContext, private prefix: string = "")
+	constructor(private verbosity: VerbosityLevel, private bail: boolean, private context: PluginContext, private prefix: string = "")
 	{
 		this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
 	}

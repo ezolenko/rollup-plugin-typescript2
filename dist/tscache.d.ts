@@ -1,16 +1,10 @@
 import { IContext } from "./context";
 import * as tsTypes from "typescript";
 export interface ICode {
-    code?: string;
+    code: string;
     map?: string;
     dts?: tsTypes.OutputFile;
     dtsmap?: tsTypes.OutputFile;
-}
-export interface IRollupCode {
-    code: string | undefined;
-    map: {
-        mappings: string;
-    };
 }
 export interface IDiagnostics {
     flatMessage: string;

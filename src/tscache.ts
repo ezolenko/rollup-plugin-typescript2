@@ -13,16 +13,10 @@ import { NoCache } from "./nocache";
 
 export interface ICode
 {
-	code?: string;
+	code: string;
 	map?: string;
 	dts?: tsTypes.OutputFile;
 	dtsmap?: tsTypes.OutputFile;
-}
-
-export interface IRollupCode
-{
-	code: string | undefined;
-	map: { mappings: string };
 }
 
 interface INodeLabel
@@ -48,7 +42,7 @@ interface ITypeSnapshot
 
 export function convertEmitOutput(output: tsTypes.EmitOutput): ICode
 {
-	const out: ICode = { };
+	const out: ICode = { code: "" };
 
 	output.outputFiles.forEach((e) =>
 	{

@@ -34,13 +34,13 @@ export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[],
 		const type = diagnostic.type + " ";
 
 		if (pretty)
-			print.call(context, [`${diagnostic.formatted}`]);
+			print.call(context, `${diagnostic.formatted}`);
 		else
 		{
 			if (diagnostic.fileLine !== undefined)
-				print.call(context, [`${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
+				print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`);
 			else
-				print.call(context, [`${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`]);
+				print.call(context, `${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`);
 		}
 	});
 }

@@ -1,12 +1,11 @@
 import { RollupContext } from "./rollupcontext";
-import { ConsoleContext, IRollupContext, VerbosityLevel } from "./context";
+import { ConsoleContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, IRollupCode, convertEmitOutput } from "./tscache";
+import { TsCache, convertDiagnostic, convertEmitOutput } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";
 import * as _ from "lodash";
-import { IRollupOptions } from "./irollup-options";
 import { IOptions } from "./ioptions";
 import { Partial } from "./partial";
 import { parseTsConfig } from "./parse-tsconfig";
@@ -17,14 +16,16 @@ import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 
-export default function typescript(options?: Partial<IOptions>)
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription } from "rollup";
+
+const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 {
 	// tslint:disable-next-line:no-var-requires
 	const createFilter = require("rollup-pluginutils").createFilter;
 	// tslint:enable-next-line:no-var-requires
 	let watchMode = false;
 	let generateRound = 0;
-	let rollupOptions: IRollupOptions;
+	let rollupOptions: InputOptions;
 	let context: ConsoleContext;
 	let filter: any;
 	let parsedConfig: tsTypes.ParsedCommandLine;
@@ -67,11 +68,11 @@ export default function typescript(options?: Partial<IOptions>)
 
 	setTypescriptModule(pluginOptions.typescript);
 
-	return {
+	const self = {
 
 		name: "rpt2",
 
-		options(config: IRollupOptions)
+		options(config: InputOptions)
 		{
 			rollupOptions = {... config};
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
@@ -177,15 +178,15 @@ export default function typescript(options?: Partial<IOptions>)
 			return null;
 		},
 
-		load(id: string): string | undefined
+		load(id: string)
 		{
 			if (id === "\0" + TSLIB)
 				return tslibSource;
 
-			return undefined;
+			return null;
 		},
 
-		transform(this: IRollupContext, code: string, id: string): IRollupCode | undefined
+		transform(this: PluginContext, code: string, id: string): TransformSourceDescription | void
 		{
 			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
 
@@ -255,7 +256,7 @@ export default function typescript(options?: Partial<IOptions>)
 					context.debug(() => `${blue("generated declarations")} for '${key}'`);
 				}
 
-				const transformResult = { code: result.code, map: { mappings: "" } };
+				const transformResult: TransformSourceDescription = { code: result.code, map: { mappings: "" } };
 
 				if (result.map)
 				{
@@ -270,7 +271,19 @@ export default function typescript(options?: Partial<IOptions>)
 			return undefined;
 		},
 
-		ongenerate(): void
+		generateBundle(bundleOptions: OutputOptions, _bundle: any, isWrite: boolean): void
+		{
+			if (isWrite)
+			{
+				self._onwrite(bundleOptions);
+			}
+			else
+			{
+				self._ongenerate();
+			}
+		},
+
+		_ongenerate(): void
 		{
 			context.debug(() => `generating target ${generateRound + 1}`);
 
@@ -308,7 +321,7 @@ export default function typescript(options?: Partial<IOptions>)
 			generateRound++;
 		},
 
-		onwrite({ dest, file }: IRollupOptions)
+		_onwrite({ file }: OutputOptions): void
 		{
 			if (parsedConfig.options.declaration)
 			{
@@ -324,7 +337,7 @@ export default function typescript(options?: Partial<IOptions>)
 						declarations[key] = { type: out.dts, map: out.dtsmap };
 				});
 
-				const bundleFile = file ? file : dest; // rollup 0.48+ has 'file' https://github.com/rollup/rollup/issues/1479
+				const bundleFile = file;
 
 				const writeDeclaration = (key: string, extension: string, entry?: tsTypes.OutputFile) =>
 				{
@@ -362,4 +375,8 @@ export default function typescript(options?: Partial<IOptions>)
 			}
 		},
 	};
-}
+
+	return self;
+};
+
+export default typescript;
