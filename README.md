@@ -58,7 +58,7 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 
 #### rollup-plugin-node-resolve
 
-Must be before this plugin in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)
+Must be before rollup-plugin-typescript2 in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)
 
 #### rollup-plugin-commonjs
 
