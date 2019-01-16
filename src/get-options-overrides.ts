@@ -5,7 +5,7 @@ import * as _ from "lodash";
 
 export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
 {
-	const overrides = {
+	const overrides: tsTypes.CompilerOptions = {
 		noEmitHelpers: false,
 		importHelpers: true,
 		noResolve: false,
@@ -18,16 +18,19 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 
 	if (preParsedTsconfig)
 	{
+		if (preParsedTsconfig.options.module === undefined)
+			overrides.module = tsModule.ModuleKind.ES2015;
+
 		const declaration = preParsedTsconfig.options.declaration;
 		if (!declaration)
-			(overrides as any).declarationDir = null;
+			overrides.declarationDir = undefined;
 		if (declaration && !useTsconfigDeclarationDir)
-			(overrides as any).declarationDir = process.cwd();
+			overrides.declarationDir = process.cwd();
 
 		// unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
 		const sourceMap = preParsedTsconfig.options.sourceMap;
 		if (!sourceMap)
-			(overrides as any).sourceRoot = null;
+			overrides.sourceRoot = undefined;
 	}
 
 	return overrides;

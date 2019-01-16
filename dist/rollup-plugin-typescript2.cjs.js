@@ -24957,38 +24957,25 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         allowNonTsExtensions: true,
     };
     if (preParsedTsconfig) {
+        if (preParsedTsconfig.options.module === undefined)
+            overrides.module = tsModule.ModuleKind.ES2015;
         const declaration = preParsedTsconfig.options.declaration;
         if (!declaration)
-            overrides.declarationDir = null;
+            overrides.declarationDir = undefined;
         if (declaration && !useTsconfigDeclarationDir)
             overrides.declarationDir = process.cwd();
         // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
         const sourceMap = preParsedTsconfig.options.sourceMap;
         if (!sourceMap)
-            overrides.sourceRoot = null;
+            overrides.sourceRoot = undefined;
     }
     return overrides;
 }
 
 function checkTsConfig(parsedConfig) {
     const module = parsedConfig.options.module;
-    switch (module) {
-        case tsModule.ModuleKind.ES2015:
-        case tsModule.ModuleKind.ESNext:
-            break;
-        case undefined:
-            throw new Error(`Incompatible tsconfig option. Missing module option. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
-        default:
-            throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
-    }
-}
-
-function getOptionsDefaults() {
-    return {
-        compilerOptions: {
-            module: "ES2015",
-        },
-    };
+    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ESNext)
+        throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
 }
 
 function parseTsConfig(context, pluginOptions) {
@@ -25015,7 +25002,7 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     const mergedConfig = {};
-    lodash_14(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodash_14(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);

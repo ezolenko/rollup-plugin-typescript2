@@ -1,5 +1,5 @@
 {
-	 "extends": "./tsconfig.base",
+	"extends": "./tsconfig.base",
 	"compilerOptions": {
 		"target": "es6",
 		"noImplicitAny": true,

@@ -8,7 +8,6 @@ import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
 import * as _ from "lodash";
 import { checkTsConfig } from "./check-tsconfig";
-import { getOptionsDefaults } from "./get-option-defaults";
 
 export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTypes.ParsedCommandLine
 {
@@ -43,7 +42,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 	}
 
 	const mergedConfig = {};
-	_.merge(mergedConfig, getOptionsDefaults(), pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+	_.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
 
 	const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
 	const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
