@@ -200,7 +200,9 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			// getting compiled file from cache or from ts
 			const result = cache().getCompiled(id, snapshot, () =>
 			{
+				servicesHost.setRollupContext(this);
 				const output = service.getEmitOutput(id);
+				servicesHost.setRollupContext(undefined);
 
 				if (output.emitSkipped)
 				{

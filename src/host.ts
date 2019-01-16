@@ -4,6 +4,7 @@ import { existsSync } from "fs";
 import * as _ from "lodash";
 import { normalize } from "./normalize";
 import { TransformerFactoryCreator } from "./ioptions";
+import { PluginContext } from "rollup";
 
 export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 {
@@ -12,6 +13,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	private versions: { [fileName: string]: number } = {};
 	private service?: tsTypes.LanguageService;
 	private fileNames: Set<string>;
+	private context?: PluginContext;
 
 	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[])
 	{
@@ -22,6 +24,11 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	{
 		this.snapshots = {};
 		this.versions = {};
+	}
+
+	public setRollupContext(context?: PluginContext)
+	{
+		this.context = context;
 	}
 
 	public setLanguageService(service: tsTypes.LanguageService)
@@ -140,5 +147,31 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		}
 
 		return transformer;
+	}
+
+	public resolveModuleNames(moduleNames: string[], containingFile: string, _reusedNames?: string[], _redirectedReference?: tsTypes.ResolvedProjectReference): Array<(tsTypes.ResolvedModule | undefined)>
+	{
+		const resolvedModules: Array<(tsTypes.ResolvedModule | undefined)> = [];
+		for (const moduleName of moduleNames)
+		{
+			const result = tsModule.resolveModuleName(moduleName, containingFile, this.getCompilationSettings(), this);
+			if (result.resolvedModule)
+				resolvedModules.push(result.resolvedModule);
+			else
+			{
+				if (this.context)
+				{
+					const path = this.context.resolveId(moduleName, containingFile);
+					this.context.warn(`resolving ${moduleName} from ${containingFile}, result: ${path}`);
+					if (_.isString(path))
+						resolvedModules.push({resolvedFileName : path});
+					else
+						resolvedModules.push(undefined);
+				}
+				else
+					resolvedModules.push(undefined);
+			}
+		}
+		return resolvedModules;
 	}
 }

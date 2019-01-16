@@ -17119,6 +17119,7 @@ var lodash_13 = lodash.assign;
 var lodash_14 = lodash.merge;
 var lodash_15 = lodash.flatMap;
 var lodash_16 = lodash.chain;
+var lodash_17 = lodash.isString;
 
 var VerbosityLevel;
 (function (VerbosityLevel) {
@@ -17221,6 +17222,9 @@ class LanguageServiceHost {
         this.snapshots = {};
         this.versions = {};
     }
+    setRollupContext(context) {
+        this.context = context;
+    }
     setLanguageService(service) {
         this.service = service;
     }
@@ -17295,6 +17299,27 @@ class LanguageServiceHost {
                 transformer.after = lodash_10(transformer.after, factory.after);
         }
         return transformer;
+    }
+    resolveModuleNames(moduleNames, containingFile, _reusedNames, _redirectedReference) {
+        const resolvedModules = [];
+        for (const moduleName of moduleNames) {
+            const result = tsModule.resolveModuleName(moduleName, containingFile, this.getCompilationSettings(), this);
+            if (result.resolvedModule)
+                resolvedModules.push(result.resolvedModule);
+            else {
+                if (this.context) {
+                    const path = this.context.resolveId(moduleName, containingFile);
+                    this.context.warn(`resolving ${moduleName} from ${containingFile}, result: ${path}`);
+                    if (lodash_17(path))
+                        resolvedModules.push({ resolvedFileName: path });
+                    else
+                        resolvedModules.push(undefined);
+                }
+                else
+                    resolvedModules.push(undefined);
+            }
+        }
+        return resolvedModules;
     }
 }
 
@@ -26561,7 +26586,9 @@ const typescript = (options) => {
             const snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
             const result = cache().getCompiled(id, snapshot, () => {
+                servicesHost.setRollupContext(this);
                 const output = service.getEmitOutput(id);
+                servicesHost.setRollupContext(undefined);
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
