@@ -1,14 +1,13 @@
 {
   "name": "rollup-plugin-typescript2",
-  "version": "0.19.1",
+  "version": "0.19.2",
   "description": "Seamless integration between Rollup and TypeScript. Now with errors.",
   "main": "dist/rollup-plugin-typescript2.cjs.js",
   "module": "dist/rollup-plugin-typescript2.es.js",
   "jsnext:main": "dist/rollup-plugin-typescript2.es.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist",
-    "src"
+    "dist"
   ],
   "keywords": [
     "rollup-plugin-typescript2",
@@ -36,7 +35,7 @@
     "tslib": "1.9.3"
   },
   "peerDependencies": {
-    "rollup": ">=1.0.0",
+    "rollup": ">=0.68.0",
     "typescript": ">=2.4.0"
   },
   "devDependencies": {
@@ -55,7 +54,7 @@
     "@types/semver": "5.5.0",
     "rimraf": "2.6.3",
     "rollup": "0.68.0",
-    "rollup-plugin-typescript2": "0.18.1",
+    "rollup-plugin-typescript2": "0.19.1",
     "rollup-plugin-node-resolve": "4.0.0",
     "rollup-plugin-commonjs": "9.2.0",
     "rollup-plugin-re": "1.0.7",
