@@ -1,12 +1,11 @@
 import * as path from "path";
 import * as tsTypes from "typescript";
-import { tsModule } from "./tsproxy";
 
 export class FormatHost implements tsTypes.FormatDiagnosticsHost
 {
 	public getCurrentDirectory(): string
 	{
-		return tsModule.sys.getCurrentDirectory();
+		return tsTypes.sys.getCurrentDirectory();
 	}
 
 	public getCanonicalFileName(fileName: string): string
@@ -16,7 +15,7 @@ export class FormatHost implements tsTypes.FormatDiagnosticsHost
 
 	public getNewLine(): string
 	{
-		return tsModule.sys.newLine;
+		return tsTypes.sys.newLine;
 	}
 }
 
