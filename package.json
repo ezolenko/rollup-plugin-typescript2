@@ -10,6 +10,7 @@
 		"dist"
 	],
 	"jest": {
+		"restoreMocks": true,
 		"transform": {
 			"^.+\\.ts?$": "ts-jest"
 		},
