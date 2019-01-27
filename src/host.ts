@@ -1,18 +1,17 @@
-import { tsModule } from "./tsproxy";
-import * as tsTypes from "typescript";
+import * as tsModules from "typescript";
 import * as _ from "lodash";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { TransformerFactoryCreator } from "./ioptions";
 
-export class LanguageServiceHost implements tsTypes.LanguageServiceHost
+export class LanguageServiceHost implements tsModules.LanguageServiceHost
 {
 	private cwd: string;
-	private snapshots: { [fileName: string]: tsTypes.IScriptSnapshot } = {};
+	private snapshots: { [fileName: string]: tsModules.IScriptSnapshot } = {};
 	private versions: { [fileName: string]: number } = {};
-	private service?: tsTypes.LanguageService;
+	private service?: tsModules.LanguageService;
 	private fileNames: Set<string>;
 
-	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[], cwd: string)
+	constructor(private parsedConfig: tsModules.ParsedCommandLine, private transformers: TransformerFactoryCreator[], cwd: string)
 	{
 		this.fileNames = new Set(parsedConfig.fileNames);
 		this.cwd = cwd;
@@ -24,33 +23,33 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		this.versions = {};
 	}
 
-	public setLanguageService(service: tsTypes.LanguageService)
+	public setLanguageService(service: tsModules.LanguageService)
 	{
 		this.service = service;
 	}
 
-	public setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot
+	public setSnapshot(fileName: string, data: string): tsModules.IScriptSnapshot
 	{
 		fileName = normalize(fileName);
 
-		const snapshot = tsModule.ScriptSnapshot.fromString(data);
+		const snapshot = tsModules.ScriptSnapshot.fromString(data);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 		this.fileNames.add(fileName);
 		return snapshot;
 	}
 
-	public getScriptSnapshot(fileName: string): tsTypes.IScriptSnapshot | undefined
+	public getScriptSnapshot(fileName: string): tsModules.IScriptSnapshot | undefined
 	{
 		fileName = normalize(fileName);
 
 		if (_.has(this.snapshots, fileName))
 			return this.snapshots[fileName];
 
-		const source = tsModule.sys.readFile(fileName);
+		const source = tsModules.sys.readFile(fileName);
 		if (source)
 		{
-			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
+			this.snapshots[fileName] = tsModules.ScriptSnapshot.fromString(source);
 			this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 			return this.snapshots[fileName];
 		}
@@ -75,34 +74,34 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		return Array.from(this.fileNames.values());
 	}
 
-	public getCompilationSettings(): tsTypes.CompilerOptions
+	public getCompilationSettings(): tsModules.CompilerOptions
 	{
 		return this.parsedConfig.options;
 	}
 
-	public getDefaultLibFileName(opts: tsTypes.CompilerOptions)
+	public getDefaultLibFileName(opts: tsModules.CompilerOptions)
 	{
-		return tsModule.getDefaultLibFilePath(opts);
+		return tsModules.getDefaultLibFilePath(opts);
 	}
 
 	public useCaseSensitiveFileNames(): boolean
 	{
-		return tsModule.sys.useCaseSensitiveFileNames;
+		return tsModules.sys.useCaseSensitiveFileNames;
 	}
 
 	public readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[]
 	{
-		return tsModule.sys.readDirectory(path, extensions, exclude, include);
+		return tsModules.sys.readDirectory(path, extensions, exclude, include);
 	}
 
 	public readFile(path: string, encoding?: string): string | undefined
 	{
-		return tsModule.sys.readFile(path, encoding);
+		return tsModules.sys.readFile(path, encoding);
 	}
 
 	public fileExists(path: string): boolean
 	{
-		return tsModule.sys.fileExists(path);
+		return tsModules.sys.fileExists(path);
 	}
 
 	public getTypeRootsVersion(): number
@@ -112,20 +111,20 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 	public directoryExists(directoryName: string): boolean
 	{
-		return tsModule.sys.directoryExists(directoryName);
+		return tsModules.sys.directoryExists(directoryName);
 	}
 
 	public getDirectories(directoryName: string): string[]
 	{
-		return tsModule.sys.getDirectories(directoryName);
+		return tsModules.sys.getDirectories(directoryName);
 	}
 
-	public getCustomTransformers(): tsTypes.CustomTransformers | undefined
+	public getCustomTransformers(): tsModules.CustomTransformers | undefined
 	{
 		if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
 			return undefined;
 
-		const transformer: tsTypes.CustomTransformers =
+		const transformer: tsModules.CustomTransformers =
 		{
 			before: [],
 			after: [],

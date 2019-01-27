@@ -74,6 +74,7 @@
     "url": "https://github.com/ezolenko/rollup-plugin-typescript2/issues"
   },
   "jest": {
+    "restoreMocks": true,
     "transform": {
       "^.+\\.ts?$": "ts-jest"
     },
