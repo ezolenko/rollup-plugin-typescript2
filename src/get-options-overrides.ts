@@ -1,4 +1,3 @@
-import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { IOptions } from "./ioptions";
 import * as _ from "lodash";
@@ -12,14 +11,14 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		noEmit: false,
 		inlineSourceMap: false,
 		outDir: `${cacheRoot}/placeholder`, // need an outdir that is different from source or tsconfig parsing trips up. https://github.com/Microsoft/TypeScript/issues/24715
-		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
+		moduleResolution: tsTypes.ModuleResolutionKind.NodeJs,
 		allowNonTsExtensions: true,
 	};
 
 	if (preParsedTsconfig)
 	{
 		if (preParsedTsconfig.options.module === undefined)
-			overrides.module = tsModule.ModuleKind.ES2015;
+			overrides.module = tsTypes.ModuleKind.ES2015;
 
 		const declaration = preParsedTsconfig.options.declaration;
 		if (!declaration)

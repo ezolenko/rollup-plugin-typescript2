@@ -11,7 +11,6 @@ export class RollingCache<DataType> implements ICache<DataType>
 {
 	private oldCacheRoot: string;
 	private newCacheRoot: string;
-
 	private rolled: boolean = false;
 
 	/**
@@ -22,7 +21,6 @@ export class RollingCache<DataType> implements ICache<DataType>
 	{
 		this.oldCacheRoot = `${this.cacheRoot}/cache`;
 		this.newCacheRoot = `${this.cacheRoot}/cache_`;
-
 		emptyDirSync(this.newCacheRoot);
 	}
 

@@ -6,3 +6,6 @@
 /.idea
 /build-self
 /build
+*.swp
+*.swo
+coverage
