@@ -273,13 +273,10 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 		generateBundle(bundleOptions: OutputOptions, _bundle: any, isWrite: boolean): void
 		{
+			self._ongenerate();
 			if (isWrite)
 			{
 				self._onwrite(bundleOptions);
-			}
-			else
-			{
-				self._ongenerate();
 			}
 		},
 

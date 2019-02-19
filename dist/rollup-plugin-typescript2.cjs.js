@@ -26596,11 +26596,9 @@ const typescript = (options) => {
             return undefined;
         },
         generateBundle(bundleOptions, _bundle, isWrite) {
+            self._ongenerate();
             if (isWrite) {
                 self._onwrite(bundleOptions);
-            }
-            else {
-                self._ongenerate();
             }
         },
         _ongenerate() {
