@@ -24975,35 +24975,31 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
     }
     return overrides;
 }
+function expandIncludeWithDirs(include, dirs) {
+    return lodash_16(dirs)
+        .flatMap((root) => {
+        if (include instanceof Array)
+            return include.map((x) => path.join(root, x));
+        else
+            return path.join(root, include);
+    })
+        .uniq()
+        .value();
+}
 function createFilter(context, pluginOptions, parsedConfig) {
+    let included = pluginOptions.include;
+    let excluded = pluginOptions.exclude;
     if (parsedConfig.options.rootDirs) {
-        const included = lodash_16(parsedConfig.options.rootDirs)
-            .flatMap((root) => {
-            if (pluginOptions.include instanceof Array)
-                return pluginOptions.include.map((include) => path.join(root, include));
-            else
-                return path.join(root, pluginOptions.include);
-        })
-            .uniq()
-            .value();
-        const excluded = lodash_16(parsedConfig.options.rootDirs)
-            .flatMap((root) => {
-            if (pluginOptions.exclude instanceof Array)
-                return pluginOptions.exclude.map((exclude) => path.join(root, exclude));
-            else
-                return path.join(root, pluginOptions.exclude);
-        })
-            .uniq()
-            .value();
-        context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
-        context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-        return createRollupFilter(included, excluded);
+        included = expandIncludeWithDirs(included, parsedConfig.options.rootDirs);
+        excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
     }
-    else {
-        context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
-        context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
-        return createRollupFilter(pluginOptions.include, pluginOptions.exclude);
+    if (parsedConfig.projectReferences) {
+        included = lodash_10(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
+        excluded = lodash_10(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
     }
+    context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+    context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
+    return createRollupFilter(included, excluded);
 }
 
 function checkTsConfig(parsedConfig) {

@@ -41,42 +41,39 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 	return overrides;
 }
 
+function expandIncludeWithDirs(include: string | string[], dirs: string[])
+{
+	return _
+		.chain(dirs)
+		.flatMap((root) =>
+		{
+			if (include instanceof Array)
+				return include.map((x) => join(root, x));
+			else
+				return join(root, include);
+		})
+		.uniq()
+		.value();
+}
+
 export function createFilter(context: IContext, pluginOptions: IOptions, parsedConfig: tsTypes.ParsedCommandLine)
 {
+	let included = pluginOptions.include;
+	let excluded = pluginOptions.exclude;
+
 	if (parsedConfig.options.rootDirs)
 	{
-		const included = _
-			.chain(parsedConfig.options.rootDirs)
-			.flatMap((root) =>
-			{
-				if (pluginOptions.include instanceof Array)
-					return pluginOptions.include.map((include) => join(root, include));
-				else
-					return join(root, pluginOptions.include);
-			})
-			.uniq()
-			.value();
-
-		const excluded = _
-			.chain(parsedConfig.options.rootDirs)
-			.flatMap((root) =>
-			{
-				if (pluginOptions.exclude instanceof Array)
-					return pluginOptions.exclude.map((exclude) => join(root, exclude));
-				else
-					return join(root, pluginOptions.exclude);
-			})
-			.uniq()
-			.value();
-
-		context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
-		context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-		return createRollupFilter(included, excluded);
+		included = expandIncludeWithDirs(included, parsedConfig.options.rootDirs);
+		excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
 	}
-	else
+
+	if (parsedConfig.projectReferences)
 	{
-		context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
-		context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
-		return createRollupFilter(pluginOptions.include, pluginOptions.exclude);
+		included = _.concat(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
+		excluded = _.concat(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
 	}
+
+	context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+	context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
+	return createRollupFilter(included, excluded);
 }
