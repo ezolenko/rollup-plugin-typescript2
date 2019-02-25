@@ -17,12 +17,10 @@ import { normalize } from "./normalize";
 import { satisfies } from "semver";
 
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
+import { createFilter } from "./get-options-overrides";
 
 const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 {
-	// tslint:disable-next-line:no-var-requires
-	const createFilter = require("rollup-pluginutils").createFilter;
-	// tslint:enable-next-line:no-var-requires
 	let watchMode = false;
 	let generateRound = 0;
 	let rollupOptions: InputOptions;
@@ -96,42 +94,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			parsedConfig = parseTsConfig(context, pluginOptions);
 
-			if (parsedConfig.options.rootDirs)
-			{
-				const included = _
-					.chain(parsedConfig.options.rootDirs)
-					.flatMap((root) =>
-					{
-						if (pluginOptions.include instanceof Array)
-							return pluginOptions.include.map((include) => join(root, include));
-						else
-							return join(root, pluginOptions.include);
-					})
-					.uniq()
-					.value();
-
-				const excluded = _
-					.chain(parsedConfig.options.rootDirs)
-					.flatMap((root) =>
-					{
-						if (pluginOptions.exclude instanceof Array)
-							return pluginOptions.exclude.map((exclude) => join(root, exclude));
-						else
-							return join(root, pluginOptions.exclude);
-					})
-					.uniq()
-					.value();
-
-				filter = createFilter(included, excluded);
-				context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
-				context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-			}
-			else
-			{
-				filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-				context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
-				context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
-			}
+			filter = createFilter(context, pluginOptions, parsedConfig);
 
 			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
 

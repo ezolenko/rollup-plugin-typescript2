@@ -4,7 +4,7 @@ import crypto from 'crypto';
 import { emptyDirSync, readJsonSync, writeJsonSync, ensureFileSync, removeSync, pathExistsSync, readdirSync as readdirSync$1, statSync } from 'fs-extra';
 import util from 'util';
 import os from 'os';
-import { normalize as normalize$1, dirname, join, isAbsolute, relative } from 'path';
+import { normalize as normalize$1, join, dirname, isAbsolute, relative } from 'path';
 import { sync } from 'resolve';
 
 var commonjsGlobal = typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -24943,6 +24943,8 @@ function printDiagnostics(context, diagnostics, pretty) {
     });
 }
 
+// tslint:disable-next-line:no-var-requires
+const createRollupFilter = require("rollup-pluginutils").createFilter;
 function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
     const overrides = {
         noEmitHelpers: false,
@@ -24968,6 +24970,36 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
             overrides.sourceRoot = undefined;
     }
     return overrides;
+}
+function createFilter(context, pluginOptions, parsedConfig) {
+    if (parsedConfig.options.rootDirs) {
+        const included = lodash_16(parsedConfig.options.rootDirs)
+            .flatMap((root) => {
+            if (pluginOptions.include instanceof Array)
+                return pluginOptions.include.map((include) => join(root, include));
+            else
+                return join(root, pluginOptions.include);
+        })
+            .uniq()
+            .value();
+        const excluded = lodash_16(parsedConfig.options.rootDirs)
+            .flatMap((root) => {
+            if (pluginOptions.exclude instanceof Array)
+                return pluginOptions.exclude.map((exclude) => join(root, exclude));
+            else
+                return join(root, pluginOptions.exclude);
+        })
+            .uniq()
+            .value();
+        context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+        context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
+        return createRollupFilter(included, excluded);
+    }
+    else {
+        context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
+        context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
+        return createRollupFilter(pluginOptions.include, pluginOptions.exclude);
+    }
 }
 
 function checkTsConfig(parsedConfig) {
@@ -26422,9 +26454,6 @@ var semver_38 = semver.intersects;
 var semver_39 = semver.coerce;
 
 const typescript = (options) => {
-    // tslint:disable-next-line:no-var-requires
-    const createFilter = require("rollup-pluginutils").createFilter;
-    // tslint:enable-next-line:no-var-requires
     let watchMode = false;
     let generateRound = 0;
     let rollupOptions;
@@ -26480,34 +26509,7 @@ const typescript = (options) => {
             if (watchMode)
                 context.info(`running in watch mode`);
             parsedConfig = parseTsConfig(context, pluginOptions);
-            if (parsedConfig.options.rootDirs) {
-                const included = lodash_16(parsedConfig.options.rootDirs)
-                    .flatMap((root) => {
-                    if (pluginOptions.include instanceof Array)
-                        return pluginOptions.include.map((include) => join(root, include));
-                    else
-                        return join(root, pluginOptions.include);
-                })
-                    .uniq()
-                    .value();
-                const excluded = lodash_16(parsedConfig.options.rootDirs)
-                    .flatMap((root) => {
-                    if (pluginOptions.exclude instanceof Array)
-                        return pluginOptions.exclude.map((exclude) => join(root, exclude));
-                    else
-                        return join(root, pluginOptions.exclude);
-                })
-                    .uniq()
-                    .value();
-                filter = createFilter(included, excluded);
-                context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
-                context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-            }
-            else {
-                filter = createFilter(pluginOptions.include, pluginOptions.exclude);
-                context.debug(() => `included:\n'${JSON.stringify(pluginOptions.include, undefined, 4)}'`);
-                context.debug(() => `excluded:\n'${JSON.stringify(pluginOptions.exclude, undefined, 4)}'`);
-            }
+            filter = createFilter(context, pluginOptions, parsedConfig);
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
             servicesHost.setLanguageService(service);
