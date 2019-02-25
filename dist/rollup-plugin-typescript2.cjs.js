@@ -26473,6 +26473,8 @@ const typescript = (options) => {
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             context.info(`typescript version: ${tsModule.version}`);
             context.info(`tslib version: ${tslibVersion}`);
+            if (this.meta)
+                context.info(`rollup version: ${this.meta.rollupVersion}`);
             if (!semver_30(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                 throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
             context.info(`rollup-plugin-typescript2 version: 0.19.4`);

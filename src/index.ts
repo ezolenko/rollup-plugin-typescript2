@@ -16,7 +16,7 @@ import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription } from "rollup";
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
 
 const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 {
@@ -72,13 +72,15 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 		name: "rpt2",
 
-		options(config: InputOptions)
+		options(this: MinimalPluginContext, config: InputOptions)
 		{
 			rollupOptions = {... config};
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
 			context.info(`typescript version: ${tsModule.version}`);
 			context.info(`tslib version: ${tslibVersion}`);
+			if (this.meta)
+				context.info(`rollup version: ${this.meta.rollupVersion}`);
 
 			if (!satisfies(tsModule.version, "$TS_VERSION_RANGE", { includePrerelease : true } as any))
 				throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '$TS_VERSION_RANGE'`);
