@@ -26625,7 +26625,7 @@ const typescript = (options) => {
             cache().done();
             generateRound++;
         },
-        _onwrite({ file }) {
+        _onwrite({ file, dir }) {
             if (parsedConfig.options.declaration) {
                 lodash_2(parsedConfig.fileNames, (name) => {
                     const key = normalize(name);
@@ -26638,6 +26638,7 @@ const typescript = (options) => {
                         declarations[key] = { type: out.dts, map: out.dtsmap };
                 });
                 const bundleFile = file;
+                const outputDir = dir;
                 const writeDeclaration = (key, extension, entry) => {
                     if (!entry)
                         return;
@@ -26647,11 +26648,11 @@ const typescript = (options) => {
                     let writeToPath;
                     // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
                     // use the path provided by Typescript's LanguageService.
-                    if (!bundleFile || pluginOptions.useTsconfigDeclarationDir)
+                    if ((!bundleFile && !outputDir) || pluginOptions.useTsconfigDeclarationDir)
                         writeToPath = fileName;
                     else {
                         // Otherwise, take the directory name from the path and make sure it is absolute.
-                        const destDirname = path.dirname(bundleFile);
+                        const destDirname = bundleFile ? path.dirname(bundleFile) : outputDir;
                         const destDirectory = path.isAbsolute(destDirname) ? destDirname : path.join(process.cwd(), destDirname);
                         writeToPath = path.join(destDirectory, path.relative(process.cwd(), fileName));
                     }
