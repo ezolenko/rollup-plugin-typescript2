@@ -319,7 +319,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 					else
 					{
 						// Otherwise, take the directory name from the path and make sure it is absolute.
-						const destDirname = bundleFile ? dirname(bundleFile) : <string>outputDir;
+						const destDirname = bundleFile ? dirname(bundleFile) : outputDir as string;
 						const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
 						writeToPath = join(destDirectory, relative(process.cwd(), fileName));
 					}
