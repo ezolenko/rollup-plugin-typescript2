@@ -115,7 +115,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				return "\0" + TSLIB;
 
 			if (!importer)
-				return null;
+				return false;
 
 			importer = importer.split("\\").join("/");
 
@@ -128,7 +128,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 					cache().setDependency(result.resolvedModule.resolvedFileName, importer);
 
 				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
-					return null;
+					return false;
 
 				const resolved = pluginOptions.rollupCommonJSResolveHack
 					? resolve.sync(result.resolvedModule.resolvedFileName)
@@ -140,7 +140,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				return resolved;
 			}
 
-			return null;
+			return false;
 		},
 
 		load(id: string)

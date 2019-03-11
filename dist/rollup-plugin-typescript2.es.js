@@ -26498,7 +26498,7 @@ const typescript = (options) => {
                 context.info(`rollup version: ${this.meta.rollupVersion}`);
             if (!semver_30(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                 throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-            context.info(`rollup-plugin-typescript2 version: 0.19.4`);
+            context.info(`rollup-plugin-typescript2 version: 0.20.0`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";
@@ -26519,7 +26519,7 @@ const typescript = (options) => {
             if (importee === TSLIB)
                 return "\0" + TSLIB;
             if (!importer)
-                return null;
+                return false;
             importer = importer.split("\\").join("/");
             // TODO: use module resolution cache
             const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
@@ -26527,7 +26527,7 @@ const typescript = (options) => {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (lodash_6(result.resolvedModule.resolvedFileName, ".d.ts"))
-                    return null;
+                    return false;
                 const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
@@ -26535,7 +26535,7 @@ const typescript = (options) => {
                 context.debug(() => `    to '${resolved}'`);
                 return resolved;
             }
-            return null;
+            return false;
         },
         load(id) {
             if (id === "\0" + TSLIB)
