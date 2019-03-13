@@ -26519,7 +26519,7 @@ const typescript = (options) => {
             if (importee === TSLIB)
                 return "\0" + TSLIB;
             if (!importer)
-                return false;
+                return;
             importer = importer.split("\\").join("/");
             // TODO: use module resolution cache
             const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
@@ -26527,7 +26527,7 @@ const typescript = (options) => {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
                 if (lodash_6(result.resolvedModule.resolvedFileName, ".d.ts"))
-                    return false;
+                    return;
                 const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
@@ -26535,7 +26535,7 @@ const typescript = (options) => {
                 context.debug(() => `    to '${resolved}'`);
                 return resolved;
             }
-            return false;
+            return;
         },
         load(id) {
             if (id === "\0" + TSLIB)
