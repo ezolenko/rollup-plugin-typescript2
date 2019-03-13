@@ -28,7 +28,7 @@ yarn add rollup-plugin-typescript2 typescript --dev
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
-	entry: './main.ts',
+	input: './main.ts',
 
 	plugins: [
 		typescript(/*{ plugin options }*/)
@@ -138,7 +138,7 @@ See `objectHashIgnoreUnknownHack` below.
 * `objectHashIgnoreUnknownHack`: false
 
 	The plugin uses rollup config as part of cache key. `object-hash` is used to generate a hash, but it can't hash certain elements at the moment. Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed. Only enable this if you need it (`Error: Unknown object type "asyncfunction"` for example) and make sure to run with `clean: true` once in a while and definitely before a release. (See [#105](https://github.com/ezolenko/rollup-plugin-typescript2/issues/105))
-	
+
 * `useTsconfigDeclarationDir`: false
 
 	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
