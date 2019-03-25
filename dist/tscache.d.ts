@@ -5,6 +5,7 @@ export interface ICode {
     map?: string;
     dts?: tsTypes.OutputFile;
     dtsmap?: tsTypes.OutputFile;
+    references?: string[];
 }
 export interface IDiagnostics {
     flatMessage: string;
@@ -14,7 +15,8 @@ export interface IDiagnostics {
     code: number;
     type: string;
 }
-export declare function convertEmitOutput(output: tsTypes.EmitOutput): ICode;
+export declare function convertEmitOutput(output: tsTypes.EmitOutput, references?: string[]): ICode;
+export declare function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnapshot | undefined, options: tsTypes.CompilerOptions): string[];
 export declare function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[];
 export declare class TsCache {
     private noCache;

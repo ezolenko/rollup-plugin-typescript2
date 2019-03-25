@@ -24,7 +24,7 @@
   "scripts": {
     "prebuild": "rimraf dist/*",
     "build": "rollup -c",
-    "watch": "rollup -c -w rollup.config.self.js",
+    "watch": "rollup -c rollup.config.self.js -w ",
     "build-self": "rollup -c rollup.config.self.js",
     "lint": "tslint -c ./tslint.json src/*.ts ./*.js"
   },
@@ -56,7 +56,7 @@
     "rollup-plugin-commonjs": "9.2.1",
     "rollup-plugin-node-resolve": "4.0.1",
     "rollup-plugin-re": "1.0.7",
-    "rollup-plugin-typescript2": "0.19.3",
+    "rollup-plugin-typescript2": "0.20.1",
     "rollup-watch": "4.3.1",
     "semver": "5.6.0",
     "tslint": "5.13.1",

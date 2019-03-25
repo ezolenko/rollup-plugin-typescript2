@@ -1,7 +1,7 @@
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, convertEmitOutput } from "./tscache";
+import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as resolve from "resolve";
@@ -11,7 +11,7 @@ import { Partial } from "./partial";
 import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, tslibSource, tslibVersion } from "./tslib";
-import { blue, red, yellow } from "colors/safe";
+import { blue, red, yellow, green } from "colors/safe";
 import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
@@ -27,6 +27,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 	let context: ConsoleContext;
 	let filter: any;
 	let parsedConfig: tsTypes.ParsedCommandLine;
+	let tsConfigPath: string | undefined;
 	let servicesHost: LanguageServiceHost;
 	let service: tsTypes.LanguageService;
 	let noErrors = true;
@@ -75,24 +76,27 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			rollupOptions = {... config};
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
-			context.info(`typescript version: ${tsModule.version}`);
-			context.info(`tslib version: ${tslibVersion}`);
-			if (this.meta)
-				context.info(`rollup version: ${this.meta.rollupVersion}`);
-
-			if (!satisfies(tsModule.version, "$TS_VERSION_RANGE", { includePrerelease : true } as any))
-				throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '$TS_VERSION_RANGE'`);
-
-			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
-			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
-			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
-
 			watchMode = process.env.ROLLUP_WATCH === "true";
+			({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
 
-			if (watchMode)
-				context.info(`running in watch mode`);
+			if (generateRound === 0)
+			{
+				context.info(`typescript version: ${tsModule.version}`);
+				context.info(`tslib version: ${tslibVersion}`);
+				if (this.meta)
+					context.info(`rollup version: ${this.meta.rollupVersion}`);
 
-			parsedConfig = parseTsConfig(context, pluginOptions);
+				if (!satisfies(tsModule.version, "$TS_VERSION_RANGE", { includePrerelease : true } as any))
+					throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '$TS_VERSION_RANGE'`);
+
+				context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
+				context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
+				context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
+				context.debug(() => `tsconfig path: ${tsConfigPath}`);
+
+				if (watchMode)
+					context.info(`running in watch mode`);
+			}
 
 			filter = createFilter(context, pluginOptions, parsedConfig);
 
@@ -109,7 +113,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				cache().clean();
 		},
 
-		resolveId(importee: string, importer: string)
+		resolveId(this: PluginContext, importee: string, importer: string)
 		{
 			if (importee === TSLIB)
 				return "\0" + TSLIB;
@@ -190,7 +194,8 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 						this.error(red(`failed to transpile '${id}'`));
 				}
 
-				return convertEmitOutput(output);
+				const references = getAllReferences(id, servicesHost.getScriptSnapshot(id), parsedConfig.options);
+				return convertEmitOutput(output, references);
 			});
 
 			if (pluginOptions.check)
@@ -214,6 +219,14 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			if (result)
 			{
+				if (watchMode && this.addWatchFile && result.references)
+				{
+					if (tsConfigPath)
+						this.addWatchFile(tsConfigPath);
+					result.references.map(this.addWatchFile, this);
+					context.debug(() => `${green("    watching")}: ${result.references!.join("\nrpt2:               ")}`);
+				}
+
 				if (result.dts)
 				{
 					const key = normalize(id);

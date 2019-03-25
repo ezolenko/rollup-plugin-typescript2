@@ -1,5 +1,4 @@
 import { tsModule } from "./tsproxy";
-import * as tsTypes from "typescript";
 import { IContext } from "./context";
 import { dirname } from "path";
 import { printDiagnostics } from "./print-diagnostics";
@@ -9,7 +8,7 @@ import { IOptions } from "./ioptions";
 import * as _ from "lodash";
 import { checkTsConfig } from "./check-tsconfig";
 
-export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTypes.ParsedCommandLine
+export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 {
 	const fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
 
@@ -54,5 +53,5 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions): tsTyp
 	context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
 	context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
 
-	return parsedTsConfig;
+	return { parsedTsConfig, fileName };
 }

@@ -17,6 +17,7 @@ export interface ICode
 	map?: string;
 	dts?: tsTypes.OutputFile;
 	dtsmap?: tsTypes.OutputFile;
+	references?: string[];
 }
 
 interface INodeLabel
@@ -40,9 +41,9 @@ interface ITypeSnapshot
 	snapshot: tsTypes.IScriptSnapshot | undefined;
 }
 
-export function convertEmitOutput(output: tsTypes.EmitOutput): ICode
+export function convertEmitOutput(output: tsTypes.EmitOutput, references?: string[]): ICode
 {
-	const out: ICode = { code: "" };
+	const out: ICode = { code: "", references };
 
 	output.outputFiles.forEach((e) =>
 	{
@@ -57,6 +58,20 @@ export function convertEmitOutput(output: tsTypes.EmitOutput): ICode
 	});
 
 	return out;
+}
+
+export function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnapshot | undefined, options: tsTypes.CompilerOptions)
+{
+	if (!snapshot)
+		return [];
+
+	const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
+
+	return _.compact(_.concat(info.referencedFiles, info.importedFiles).map((reference) =>
+	{
+		const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
+		return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
+	}));
 }
 
 export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[]
@@ -84,7 +99,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 
 export class TsCache
 {
-	private cacheVersion = "8";
+	private cacheVersion = "9";
 	private cachePrefix = "rpt2_";
 	private dependencyTree: Graph;
 	private ambientTypes: ITypeSnapshot[];

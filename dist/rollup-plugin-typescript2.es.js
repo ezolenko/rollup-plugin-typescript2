@@ -17104,22 +17104,23 @@ var lodash = createCommonjsModule(function (module, exports) {
   }
 }.call(commonjsGlobal));
 });
-var lodash_1 = lodash.get;
-var lodash_2 = lodash.each;
-var lodash_3 = lodash.isEqual;
-var lodash_4 = lodash.some;
-var lodash_5 = lodash.filter;
-var lodash_6 = lodash.endsWith;
-var lodash_7 = lodash.map;
-var lodash_8 = lodash.has;
-var lodash_9 = lodash.isFunction;
-var lodash_10 = lodash.concat;
-var lodash_11 = lodash.find;
-var lodash_12 = lodash.defaults;
-var lodash_13 = lodash.assign;
-var lodash_14 = lodash.merge;
-var lodash_15 = lodash.flatMap;
-var lodash_16 = lodash.chain;
+var lodash_1 = lodash.compact;
+var lodash_2 = lodash.get;
+var lodash_3 = lodash.each;
+var lodash_4 = lodash.isEqual;
+var lodash_5 = lodash.some;
+var lodash_6 = lodash.filter;
+var lodash_7 = lodash.endsWith;
+var lodash_8 = lodash.map;
+var lodash_9 = lodash.has;
+var lodash_10 = lodash.isFunction;
+var lodash_11 = lodash.concat;
+var lodash_12 = lodash.find;
+var lodash_13 = lodash.defaults;
+var lodash_14 = lodash.assign;
+var lodash_15 = lodash.merge;
+var lodash_16 = lodash.flatMap;
+var lodash_17 = lodash.chain;
 
 var VerbosityLevel;
 (function (VerbosityLevel) {
@@ -17136,22 +17137,22 @@ class ConsoleContext {
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
     }
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
     }
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log(`${this.prefix}${lodash_9(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
     }
 }
 
@@ -17162,12 +17163,12 @@ class RollupContext {
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
-        this.hasContext = lodash_9(this.context.warn) && lodash_9(this.context.error);
+        this.hasContext = lodash_10(this.context.warn) && lodash_10(this.context.error);
     }
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        const text = lodash_9(message) ? message() : message;
+        const text = lodash_10(message) ? message() : message;
         if (this.hasContext)
             this.context.warn(`${text}`);
         else
@@ -17176,7 +17177,7 @@ class RollupContext {
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        const text = lodash_9(message) ? message() : message;
+        const text = lodash_10(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
                 this.context.error(`${text}`);
@@ -17189,13 +17190,13 @@ class RollupContext {
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        const text = lodash_9(message) ? message() : message;
+        const text = lodash_10(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        const text = lodash_9(message) ? message() : message;
+        const text = lodash_10(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
 }
@@ -17235,7 +17236,7 @@ class LanguageServiceHost {
     }
     getScriptSnapshot(fileName) {
         fileName = normalize(fileName);
-        if (lodash_8(this.snapshots, fileName))
+        if (lodash_9(this.snapshots, fileName))
             return this.snapshots[fileName];
         if (existsSync(fileName)) {
             this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
@@ -17291,9 +17292,9 @@ class LanguageServiceHost {
         for (const creator of this.transformers) {
             const factory = creator(this.service);
             if (factory.before)
-                transformer.before = lodash_10(transformer.before, factory.before);
+                transformer.before = lodash_11(transformer.before, factory.before);
             if (factory.after)
-                transformer.after = lodash_10(transformer.after, factory.after);
+                transformer.after = lodash_11(transformer.after, factory.after);
         }
         return transformer;
     }
@@ -23953,7 +23954,7 @@ class RollingCache {
             return false;
         if (!existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return lodash_3(readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return lodash_4(readdirSync(this.oldCacheRoot).sort(), names.sort());
     }
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
@@ -24691,22 +24692,31 @@ class NoCache {
     }
 }
 
-function convertEmitOutput(output) {
-    const out = { code: "" };
+function convertEmitOutput(output, references) {
+    const out = { code: "", references };
     output.outputFiles.forEach((e) => {
-        if (lodash_6(e.name, ".d.ts"))
+        if (lodash_7(e.name, ".d.ts"))
             out.dts = e;
-        else if (lodash_6(e.name, ".d.ts.map"))
+        else if (lodash_7(e.name, ".d.ts.map"))
             out.dtsmap = e;
-        else if (lodash_6(e.name, ".map"))
+        else if (lodash_7(e.name, ".map"))
             out.map = e.text;
         else
             out.code = e.text;
     });
     return out;
 }
+function getAllReferences(importer, snapshot, options) {
+    if (!snapshot)
+        return [];
+    const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
+    return lodash_1(lodash_11(info.referencedFiles, info.importedFiles).map((reference) => {
+        const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
+        return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
+    }));
+}
 function convertDiagnostic(type, data) {
-    return lodash_7(data, (diagnostic) => {
+    return lodash_8(data, (diagnostic) => {
         const entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
@@ -24729,7 +24739,7 @@ class TsCache {
         this.options = options;
         this.rollupConfig = rollupConfig;
         this.context = context;
-        this.cacheVersion = "8";
+        this.cacheVersion = "9";
         this.cachePrefix = "rpt2_";
         this.ambientTypesDirty = false;
         this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
@@ -24745,10 +24755,10 @@ class TsCache {
         }
         this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        const automaticTypes = lodash_7(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+        const automaticTypes = lodash_8(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
             .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
             .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
-        this.ambientTypes = lodash_5(rootFilenames, (file) => lodash_6(file, ".d.ts"))
+        this.ambientTypes = lodash_6(rootFilenames, (file) => lodash_7(file, ".d.ts"))
             .concat(automaticTypes)
             .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
         this.init();
@@ -24779,11 +24789,11 @@ class TsCache {
     walkTree(cb) {
         const acyclic = graphlib_3.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_2(graphlib_3.topsort(this.dependencyTree), (id) => cb(id));
+            lodash_3(graphlib_3.topsort(this.dependencyTree), (id) => cb(id));
             return;
         }
         this.context.info(safe_4("import tree has cycles"));
-        lodash_2(this.dependencyTree.nodes(), (id) => cb(id));
+        lodash_3(this.dependencyTree.nodes(), (id) => cb(id));
     }
     done() {
         this.context.info(safe_5("rolling caches"));
@@ -24829,7 +24839,7 @@ class TsCache {
             return;
         }
         this.context.debug(safe_5("Ambient types:"));
-        const typeNames = lodash_5(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+        const typeNames = lodash_6(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
             .map((snapshot) => {
             this.context.debug(`    ${snapshot.id}`);
             return this.makeName(snapshot.id, snapshot.snapshot);
@@ -24838,7 +24848,7 @@ class TsCache {
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
             this.context.info(safe_4("ambient types changed, redoing all semantic diagnostics"));
-        lodash_2(typeNames, (name) => this.typesCache.touch(name));
+        lodash_3(typeNames, (name) => this.typesCache.touch(name));
     }
     getDiagnostics(type, cache, id, snapshot, check) {
         if (this.noCache) {
@@ -24892,7 +24902,7 @@ class TsCache {
         if (this.ambientTypesDirty)
             return true;
         const dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
-        return lodash_4(dependencies, (dependency, node) => {
+        return lodash_5(dependencies, (dependency, node) => {
             if (!node || dependency.distance === Infinity)
                 return false;
             const l = this.dependencyTree.node(node);
@@ -24909,7 +24919,7 @@ class TsCache {
 }
 
 function printDiagnostics(context, diagnostics, pretty) {
-    lodash_2(diagnostics, (diagnostic) => {
+    lodash_3(diagnostics, (diagnostic) => {
         let print;
         let color;
         let category;
@@ -24972,7 +24982,7 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
     return overrides;
 }
 function expandIncludeWithDirs(include, dirs) {
-    return lodash_16(dirs)
+    return lodash_17(dirs)
         .flatMap((root) => {
         if (include instanceof Array)
             return include.map((x) => join(root, x));
@@ -24990,8 +25000,8 @@ function createFilter(context, pluginOptions, parsedConfig) {
         excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
     }
     if (parsedConfig.projectReferences) {
-        included = lodash_10(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
-        excluded = lodash_10(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
+        included = lodash_11(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
+        excluded = lodash_11(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
     }
     context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
     context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
@@ -25018,7 +25028,7 @@ function parseTsConfig(context, pluginOptions) {
         if (text === undefined)
             throw new Error(`failed to read '${fileName}'`);
         const result = tsModule.parseConfigFileTextToJson(fileName, text);
-        pretty = lodash_1(result.config, "pretty", pretty);
+        pretty = lodash_2(result.config, "pretty", pretty);
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
             throw new Error(`failed to parse '${fileName}'`);
@@ -25028,7 +25038,7 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     const mergedConfig = {};
-    lodash_14(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodash_15(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
@@ -25036,7 +25046,7 @@ function parseTsConfig(context, pluginOptions) {
     printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
     context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
     context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
-    return parsedTsConfig;
+    return { parsedTsConfig, fileName };
 }
 
 // The injected id for helpers.
@@ -26456,6 +26466,7 @@ const typescript = (options) => {
     let context;
     let filter;
     let parsedConfig;
+    let tsConfigPath;
     let servicesHost;
     let service;
     let noErrors = true;
@@ -26467,7 +26478,7 @@ const typescript = (options) => {
         return _cache;
     };
     const pluginOptions = Object.assign({}, options);
-    lodash_12(pluginOptions, {
+    lodash_13(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -26492,19 +26503,22 @@ const typescript = (options) => {
         options(config) {
             rollupOptions = Object.assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
-            context.info(`typescript version: ${tsModule.version}`);
-            context.info(`tslib version: ${tslibVersion}`);
-            if (this.meta)
-                context.info(`rollup version: ${this.meta.rollupVersion}`);
-            if (!semver_30(tsModule.version, ">=2.4.0", { includePrerelease: true }))
-                throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-            context.info(`rollup-plugin-typescript2 version: 0.20.2`);
-            context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
-            context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             watchMode = process.env.ROLLUP_WATCH === "true";
-            if (watchMode)
-                context.info(`running in watch mode`);
-            parsedConfig = parseTsConfig(context, pluginOptions);
+            ({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
+            if (generateRound === 0) {
+                context.info(`typescript version: ${tsModule.version}`);
+                context.info(`tslib version: ${tslibVersion}`);
+                if (this.meta)
+                    context.info(`rollup version: ${this.meta.rollupVersion}`);
+                if (!semver_30(tsModule.version, ">=2.4.0", { includePrerelease: true }))
+                    throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
+                context.info(`rollup-plugin-typescript2 version: 0.20.2`);
+                context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
+                context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
+                context.debug(() => `tsconfig path: ${tsConfigPath}`);
+                if (watchMode)
+                    context.info(`running in watch mode`);
+            }
             filter = createFilter(context, pluginOptions, parsedConfig);
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
@@ -26526,7 +26540,7 @@ const typescript = (options) => {
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (lodash_6(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (lodash_7(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return;
                 const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? sync(result.resolvedModule.resolvedFileName)
@@ -26554,7 +26568,7 @@ const typescript = (options) => {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    const diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -26562,13 +26576,14 @@ const typescript = (options) => {
                     printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (lodash_9(this.error))
+                    if (lodash_10(this.error))
                         this.error(safe_3(`failed to transpile '${id}'`));
                 }
-                return convertEmitOutput(output);
+                const references = getAllReferences(id, servicesHost.getScriptSnapshot(id), parsedConfig.options);
+                return convertEmitOutput(output, references);
             });
             if (pluginOptions.check) {
-                const diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
                     return service.getSyntacticDiagnostics(id);
                 }), cache().getSemanticDiagnostics(id, snapshot, () => {
                     return service.getSemanticDiagnostics(id);
@@ -26578,6 +26593,12 @@ const typescript = (options) => {
                 printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
             }
             if (result) {
+                if (watchMode && this.addWatchFile && result.references) {
+                    if (tsConfigPath)
+                        this.addWatchFile(tsConfigPath);
+                    result.references.map(this.addWatchFile, this);
+                    context.debug(() => `${safe_1("    watching")}: ${result.references.join("\nrpt2:               ")}`);
+                }
                 if (result.dts) {
                     const key = normalize(id);
                     declarations[key] = { type: result.dts, map: result.dtsmap };
@@ -26608,7 +26629,7 @@ const typescript = (options) => {
                     const snapshot = servicesHost.getScriptSnapshot(id);
                     if (!snapshot)
                         return;
-                    const diagnostics = lodash_10(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -26623,9 +26644,9 @@ const typescript = (options) => {
         },
         _onwrite({ file, dir }) {
             if (parsedConfig.options.declaration) {
-                lodash_2(parsedConfig.fileNames, (name) => {
+                lodash_3(parsedConfig.fileNames, (name) => {
                     const key = normalize(name);
-                    if (lodash_8(declarations, key) || !filter(key))
+                    if (lodash_9(declarations, key) || !filter(key))
                         return;
                     context.debug(() => `generating missed declarations for '${key}'`);
                     const output = service.getEmitOutput(key, true);
@@ -26656,7 +26677,7 @@ const typescript = (options) => {
                     // Write the declaration file to disk.
                     tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
                 };
-                lodash_2(declarations, ({ type, map }, key) => {
+                lodash_3(declarations, ({ type, map }, key) => {
                     writeDeclaration(key, ".d.ts", type);
                     writeDeclaration(key, ".d.ts.map", map);
                 });
