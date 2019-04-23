@@ -76,9 +76,9 @@ test("LanguageServiceHost", done => {
 		"rollup-plugin-typescript2/node_modules/typescript/lib/lib.d.ts"
 	);
 	if (process.platform === "win32") {
-		expect(host.useCaseSensitiveFileNames()).toBeFalsy();
-	} else {
 		expect(host.useCaseSensitiveFileNames()).toBeTruthy();
+	} else {
+		expect(host.useCaseSensitiveFileNames()).toBeFalsy();
 	}
 	expect(host.getTypeRootsVersion()).toEqual(0);
 	expect(host.directoryExists("no-it-does-not")).toBeFalsy();
