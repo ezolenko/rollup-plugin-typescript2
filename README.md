@@ -68,6 +68,27 @@ See explanation for `rollupCommonJSResolveHack` option below.
 
 See `objectHashIgnoreUnknownHack` below.
 
+#### rollup-plugin-babel
+
+This plugin transpiles code, but doesn't change file extension. Babel plugin, even though it claims it processes all files, only looks at code with those extensions by default: `.js,.jsx,.es6,.es,.mjs`. To workaround add `ts` and `tsx` to the list of babel extensions.
+
+```js
+...
+import { DEFAULT_EXTENSIONS } from '@babel/core';
+...
+	babel({
+		extensions: [
+			...DEFAULT_EXTENSIONS,
+			'ts',
+			'tsx'
+		],
+		runtimeHelpers: true
+	}),
+...
+```
+
+See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
+
 ### Plugin options
 
 * `tsconfigDefaults`: `{}`
