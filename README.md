@@ -80,8 +80,7 @@ import { DEFAULT_EXTENSIONS } from '@babel/core';
 			...DEFAULT_EXTENSIONS,
 			'ts',
 			'tsx'
-		],
-		runtimeHelpers: true
+		]
 	}),
 ...
 ```
