@@ -24950,9 +24950,9 @@ function printDiagnostics(context, diagnostics, pretty) {
             print.call(context, `${diagnostic.formatted}`);
         else {
             if (diagnostic.fileLine !== undefined)
-                print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`);
+                print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
             else
-                print.call(context, `${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`);
+                print.call(context, `${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
         }
     });
 }
