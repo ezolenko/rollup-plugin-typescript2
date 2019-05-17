@@ -38,9 +38,9 @@ export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[],
 		else
 		{
 			if (diagnostic.fileLine !== undefined)
-				print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`);
+				print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
 			else
-				print.call(context, `${type}${category} TS${diagnostic.code} ${color(diagnostic.flatMessage)}`);
+				print.call(context, `${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
 		}
 	});
 }
