@@ -1,6 +1,5 @@
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
-import { existsSync } from "fs";
 import * as _ from "lodash";
 import { normalize } from "./normalize";
 import { TransformerFactoryCreator } from "./ioptions";
@@ -47,9 +46,10 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		if (_.has(this.snapshots, fileName))
 			return this.snapshots[fileName];
 
-		if (existsSync(fileName))
+		const source = tsModule.sys.readFile(fileName);
+		if (source)
 		{
-			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName)!);
+			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
 			this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 			return this.snapshots[fileName];
 		}

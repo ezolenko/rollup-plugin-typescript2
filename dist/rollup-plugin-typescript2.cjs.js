@@ -3,9 +3,9 @@
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var fs = require('fs');
 var crypto = _interopDefault(require('crypto'));
 var fsExtra = require('fs-extra');
+var fs = require('fs');
 var util = _interopDefault(require('util'));
 var os = _interopDefault(require('os'));
 var path = require('path');
@@ -17242,8 +17242,9 @@ class LanguageServiceHost {
         fileName = normalize(fileName);
         if (lodash_9(this.snapshots, fileName))
             return this.snapshots[fileName];
-        if (fs.existsSync(fileName)) {
-            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
+        const source = tsModule.sys.readFile(fileName);
+        if (source) {
+            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
             this.versions[fileName] = (this.versions[fileName] || 0) + 1;
             return this.snapshots[fileName];
         }

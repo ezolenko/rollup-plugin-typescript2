@@ -1,7 +1,7 @@
 /* eslint-disable */
-import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import crypto from 'crypto';
 import { emptyDirSync, readJsonSync, writeJsonSync, ensureFileSync, removeSync, pathExistsSync, readdirSync as readdirSync$1, statSync } from 'fs-extra';
+import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import util from 'util';
 import os from 'os';
 import { normalize as normalize$1, join, dirname, isAbsolute, relative } from 'path';
@@ -17238,8 +17238,9 @@ class LanguageServiceHost {
         fileName = normalize(fileName);
         if (lodash_9(this.snapshots, fileName))
             return this.snapshots[fileName];
-        if (existsSync(fileName)) {
-            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(tsModule.sys.readFile(fileName));
+        const source = tsModule.sys.readFile(fileName);
+        if (source) {
+            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
             this.versions[fileName] = (this.versions[fileName] || 0) + 1;
             return this.snapshots[fileName];
         }
