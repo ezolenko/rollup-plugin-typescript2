@@ -233,4 +233,4 @@ Fastest way to test changes is to do a self build, the plugin is part of its own
 
 If `build-self` breaks at some point, fix the problem and restart from `build` step (a known good copy).
 
-This repo badly needs unittests though.
+This repo badly needs unittests and integration tests with various scenarios and expected outcomes though.
