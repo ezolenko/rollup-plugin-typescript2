@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-typescript2",
-  "version": "0.21.2",
+  "version": "0.21.3",
   "description": "Seamless integration between Rollup and TypeScript. Now with errors.",
   "main": "dist/rollup-plugin-typescript2.cjs.js",
   "module": "dist/rollup-plugin-typescript2.es.js",
@@ -56,7 +56,7 @@
     "rollup-plugin-commonjs": "9.3.4",
     "rollup-plugin-node-resolve": "4.2.3",
     "rollup-plugin-re": "1.0.7",
-    "rollup-plugin-typescript2": "0.21.0",
+    "rollup-plugin-typescript2": "0.21.2",
     "rollup-watch": "4.3.1",
     "semver": "6.0.0",
     "tslint": "5.16.0",
