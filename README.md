@@ -78,8 +78,8 @@ import { DEFAULT_EXTENSIONS } from '@babel/core';
 	babel({
 		extensions: [
 			...DEFAULT_EXTENSIONS,
-			'ts',
-			'tsx'
+			'.ts',
+			'.tsx'
 		]
 	}),
 ...
