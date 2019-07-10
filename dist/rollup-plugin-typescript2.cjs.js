@@ -28,7 +28,7 @@ var lodash = createCommonjsModule(function (module, exports) {
   var undefined$1;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.11';
+  var VERSION = '4.17.14';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
@@ -438,7 +438,7 @@ var lodash = createCommonjsModule(function (module, exports) {
   var root = freeGlobal || freeSelf || Function('return this')();
 
   /** Detect free variable `exports`. */
-  var freeExports = exports && !exports.nodeType && exports;
+  var freeExports =  exports && !exports.nodeType && exports;
 
   /** Detect free variable `module`. */
   var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
@@ -2687,16 +2687,10 @@ var lodash = createCommonjsModule(function (module, exports) {
         value.forEach(function(subValue) {
           result.add(baseClone(subValue, bitmask, customizer, subValue, value, stack));
         });
-
-        return result;
-      }
-
-      if (isMap(value)) {
+      } else if (isMap(value)) {
         value.forEach(function(subValue, key) {
           result.set(key, baseClone(subValue, bitmask, customizer, key, value, stack));
         });
-
-        return result;
       }
 
       var keysFunc = isFull
@@ -3620,8 +3614,8 @@ var lodash = createCommonjsModule(function (module, exports) {
         return;
       }
       baseFor(source, function(srcValue, key) {
+        stack || (stack = new Stack);
         if (isObject(srcValue)) {
-          stack || (stack = new Stack);
           baseMergeDeep(object, source, key, srcIndex, baseMerge, customizer, stack);
         }
         else {
@@ -5438,7 +5432,7 @@ var lodash = createCommonjsModule(function (module, exports) {
       return function(number, precision) {
         number = toNumber(number);
         precision = precision == null ? 0 : nativeMin(toInteger(precision), 292);
-        if (precision) {
+        if (precision && nativeIsFinite(number)) {
           // Shift with exponential notation to avoid floating-point issues.
           // See [MDN](https://mdn.io/round#Examples) for more details.
           var pair = (toString(number) + 'e').split('e'),
@@ -6621,7 +6615,7 @@ var lodash = createCommonjsModule(function (module, exports) {
     }
 
     /**
-     * Gets the value at `key`, unless `key` is "__proto__".
+     * Gets the value at `key`, unless `key` is "__proto__" or "constructor".
      *
      * @private
      * @param {Object} object The object to query.
@@ -6629,6 +6623,10 @@ var lodash = createCommonjsModule(function (module, exports) {
      * @returns {*} Returns the property value.
      */
     function safeGet(object, key) {
+      if (key === 'constructor' && typeof object[key] === 'function') {
+        return;
+      }
+
       if (key == '__proto__') {
         return;
       }
@@ -10429,6 +10427,7 @@ var lodash = createCommonjsModule(function (module, exports) {
           }
           if (maxing) {
             // Handle invocations in a tight loop.
+            clearTimeout(timerId);
             timerId = setTimeout(timerExpired, wait);
             return invokeFunc(lastCallTime);
           }
@@ -14815,9 +14814,12 @@ var lodash = createCommonjsModule(function (module, exports) {
       , 'g');
 
       // Use a sourceURL for easier debugging.
+      // The sourceURL gets injected into the source that's eval-ed, so be careful
+      // with lookup (in case of e.g. prototype pollution), and strip newlines if any.
+      // A newline wouldn't be a valid sourceURL anyway, and it'd enable code injection.
       var sourceURL = '//# sourceURL=' +
-        ('sourceURL' in options
-          ? options.sourceURL
+        (hasOwnProperty.call(options, 'sourceURL')
+          ? (options.sourceURL + '').replace(/[\r\n]/g, ' ')
           : ('lodash.templateSources[' + (++templateCounter) + ']')
         ) + '\n';
 
@@ -14850,7 +14852,9 @@ var lodash = createCommonjsModule(function (module, exports) {
 
       // If `variable` is not specified wrap a with-statement around the generated
       // code to add the data object to the top of the scope chain.
-      var variable = options.variable;
+      // Like with sourceURL, we take care to not check the option's prototype,
+      // as this configuration is a code injection vector.
+      var variable = hasOwnProperty.call(options, 'variable') && options.variable;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
@@ -17055,10 +17059,11 @@ var lodash = createCommonjsModule(function (module, exports) {
     baseForOwn(LazyWrapper.prototype, function(func, methodName) {
       var lodashFunc = lodash[methodName];
       if (lodashFunc) {
-        var key = (lodashFunc.name + ''),
-            names = realNames[key] || (realNames[key] = []);
-
-        names.push({ 'name': methodName, 'func': lodashFunc });
+        var key = lodashFunc.name + '';
+        if (!hasOwnProperty.call(realNames, key)) {
+          realNames[key] = [];
+        }
+        realNames[key].push({ 'name': methodName, 'func': lodashFunc });
       }
     });
 
@@ -18470,7 +18475,7 @@ var stubFalse_1 = stubFalse;
 
 var isBuffer_1 = createCommonjsModule(function (module, exports) {
 /** Detect free variable `exports`. */
-var freeExports = exports && !exports.nodeType && exports;
+var freeExports =  exports && !exports.nodeType && exports;
 
 /** Detect free variable `module`. */
 var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
@@ -18642,7 +18647,7 @@ var _baseUnary = baseUnary;
 
 var _nodeUtil = createCommonjsModule(function (module, exports) {
 /** Detect free variable `exports`. */
-var freeExports = exports && !exports.nodeType && exports;
+var freeExports =  exports && !exports.nodeType && exports;
 
 /** Detect free variable `module`. */
 var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
@@ -18983,7 +18988,7 @@ var _baseAssignIn = baseAssignIn;
 
 var _cloneBuffer = createCommonjsModule(function (module, exports) {
 /** Detect free variable `exports`. */
-var freeExports = exports && !exports.nodeType && exports;
+var freeExports =  exports && !exports.nodeType && exports;
 
 /** Detect free variable `module`. */
 var freeModule = freeExports && 'object' == 'object' && module && !module.nodeType && module;
@@ -19735,16 +19740,10 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
     value.forEach(function(subValue) {
       result.add(baseClone(subValue, bitmask, customizer, subValue, value, stack));
     });
-
-    return result;
-  }
-
-  if (isMap_1(value)) {
+  } else if (isMap_1(value)) {
     value.forEach(function(subValue, key) {
       result.set(key, baseClone(subValue, bitmask, customizer, key, value, stack));
     });
-
-    return result;
   }
 
   var keysFunc = isFull
@@ -21243,7 +21242,7 @@ var _baseIteratee = baseIteratee;
  */
 function filter(collection, predicate) {
   var func = isArray_1(collection) ? _arrayFilter : _baseFilter;
-  return func(collection, _baseIteratee(predicate, 3));
+  return func(collection, _baseIteratee(predicate));
 }
 
 var filter_1 = filter;
@@ -21457,7 +21456,7 @@ var _baseMap = baseMap;
  */
 function map(collection, iteratee) {
   var func = isArray_1(collection) ? _arrayMap : _baseMap;
-  return func(collection, _baseIteratee(iteratee, 3));
+  return func(collection, _baseIteratee(iteratee));
 }
 
 var map_1 = map;
@@ -21554,7 +21553,7 @@ function reduce(collection, iteratee, accumulator) {
   var func = isArray_1(collection) ? _arrayReduce : _baseReduce,
       initAccum = arguments.length < 3;
 
-  return func(collection, _baseIteratee(iteratee, 4), accumulator, initAccum, _baseEach);
+  return func(collection, _baseIteratee(iteratee), accumulator, initAccum, _baseEach);
 }
 
 var reduce_1 = reduce;
@@ -21759,7 +21758,7 @@ function transform(object, iteratee, accumulator) {
   var isArr = isArray_1(object),
       isArrLike = isArr || isBuffer_1(object) || isTypedArray_1(object);
 
-  iteratee = _baseIteratee(iteratee, 4);
+  iteratee = _baseIteratee(iteratee);
   if (accumulator == null) {
     var Ctor = object && object.constructor;
     if (isArrLike) {
@@ -23850,7 +23849,7 @@ function typeHasher(options, writeTo, context){
       return this.dispatch(new Uint8Array(arr));
     },
     _url: function(url) {
-      return write('url:' + url.toString(), 'utf8');
+      return write('url:' + url.toString());
     },
     _map: function(map) {
       write('map:');
@@ -25233,11 +25232,13 @@ src[XRANGELOOSE] = '^' + src[GTLT] + '\\s*' + src[XRANGEPLAINLOOSE] + '$';
 // Coercion.
 // Extract anything that could conceivably be a part of a valid semver
 var COERCE = R++;
-src[COERCE] = '(?:^|[^\\d])' +
+src[COERCE] = '(^|[^\\d])' +
               '(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '})' +
               '(?:\\.(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +
               '(?:\\.(\\d{1,' + MAX_SAFE_COMPONENT_LENGTH + '}))?' +
               '(?:$|[^\\d])';
+var COERCERTL = R++;
+re[COERCERTL] = new RegExp(src[COERCE], 'g');
 
 // Tilde ranges.
 // Meaning is "reasonably at or greater than"
@@ -25498,6 +25499,30 @@ SemVer.prototype.comparePre = function (other) {
   } while (++i)
 };
 
+SemVer.prototype.compareBuild = function (other) {
+  if (!(other instanceof SemVer)) {
+    other = new SemVer(other, this.options);
+  }
+
+  var i = 0;
+  do {
+    var a = this.build[i];
+    var b = other.build[i];
+    debug('prerelease compare', i, a, b);
+    if (a === undefined && b === undefined) {
+      return 0
+    } else if (b === undefined) {
+      return 1
+    } else if (a === undefined) {
+      return -1
+    } else if (a === b) {
+      continue
+    } else {
+      return compareIdentifiers(a, b)
+    }
+  } while (++i)
+};
+
 // preminor will bump the version up to the next minor release, and immediately
 // down to pre-release. premajor and prepatch work the same way.
 SemVer.prototype.inc = function (release, identifier) {
@@ -25692,6 +25717,13 @@ function compareLoose (a, b) {
   return compare(a, b, true)
 }
 
+exports.compareBuild = compareBuild;
+function compareBuild (a, b, loose) {
+  var versionA = new SemVer(a, loose);
+  var versionB = new SemVer(b, loose);
+  return versionA.compare(versionB) || versionA.compareBuild(versionB)
+}
+
 exports.rcompare = rcompare;
 function rcompare (a, b, loose) {
   return compare(b, a, loose)
@@ -25700,14 +25732,14 @@ function rcompare (a, b, loose) {
 exports.sort = sort;
 function sort (list, loose) {
   return list.sort(function (a, b) {
-    return exports.compare(a, b, loose)
+    return exports.compareBuild(a, b, loose)
   })
 }
 
 exports.rsort = rsort;
 function rsort (list, loose) {
   return list.sort(function (a, b) {
-    return exports.rcompare(a, b, loose)
+    return exports.compareBuild(b, a, loose)
   })
 }
 
@@ -25827,7 +25859,7 @@ Comparator.prototype.parse = function (comp) {
     throw new TypeError('Invalid comparator: ' + comp)
   }
 
-  this.operator = m[1];
+  this.operator = m[1] !== undefined ? m[1] : '';
   if (this.operator === '=') {
     this.operator = '';
   }
@@ -25847,12 +25879,16 @@ Comparator.prototype.toString = function () {
 Comparator.prototype.test = function (version) {
   debug('Comparator.test', version, this.options.loose);
 
-  if (this.semver === ANY) {
+  if (this.semver === ANY || version === ANY) {
     return true
   }
 
   if (typeof version === 'string') {
-    version = new SemVer(version, this.options);
+    try {
+      version = new SemVer(version, this.options);
+    } catch (er) {
+      return false
+    }
   }
 
   return cmp(version, this.operator, this.semver, this.options)
@@ -25873,9 +25909,15 @@ Comparator.prototype.intersects = function (comp, options) {
   var rangeTmp;
 
   if (this.operator === '') {
+    if (this.value === '') {
+      return true
+    }
     rangeTmp = new Range(comp.value, options);
     return satisfies(this.value, rangeTmp, options)
   } else if (comp.operator === '') {
+    if (comp.value === '') {
+      return true
+    }
     rangeTmp = new Range(this.value, options);
     return satisfies(comp.semver, rangeTmp, options)
   }
@@ -26196,10 +26238,14 @@ function replaceXRange (comp, options) {
       gtlt = '';
     }
 
+    // if we're including prereleases in the match, then we need
+    // to fix this to -0, the lowest possible prerelease value
+    pr = options.includePrerelease ? '-0' : '';
+
     if (xM) {
       if (gtlt === '>' || gtlt === '<') {
         // nothing is allowed
-        ret = '<0.0.0';
+        ret = '<0.0.0-0';
       } else {
         // nothing is forbidden
         ret = '*';
@@ -26236,11 +26282,12 @@ function replaceXRange (comp, options) {
         }
       }
 
-      ret = gtlt + M + '.' + m + '.' + p;
+      ret = gtlt + M + '.' + m + '.' + p + pr;
     } else if (xm) {
-      ret = '>=' + M + '.0.0 <' + (+M + 1) + '.0.0';
+      ret = '>=' + M + '.0.0' + pr + ' <' + (+M + 1) + '.0.0' + pr;
     } else if (xp) {
-      ret = '>=' + M + '.' + m + '.0 <' + M + '.' + (+m + 1) + '.0';
+      ret = '>=' + M + '.' + m + '.0' + pr +
+        ' <' + M + '.' + (+m + 1) + '.0' + pr;
     }
 
     debug('xRange return', ret);
@@ -26297,7 +26344,11 @@ Range.prototype.test = function (version) {
   }
 
   if (typeof version === 'string') {
-    version = new SemVer(version, this.options);
+    try {
+      version = new SemVer(version, this.options);
+    } catch (er) {
+      return false
+    }
   }
 
   for (var i = 0; i < this.set.length; i++) {
@@ -26559,24 +26610,54 @@ function intersects (r1, r2, options) {
 }
 
 exports.coerce = coerce;
-function coerce (version) {
+function coerce (version, options) {
   if (version instanceof SemVer) {
     return version
+  }
+
+  if (typeof version === 'number') {
+    version = String(version);
   }
 
   if (typeof version !== 'string') {
     return null
   }
 
-  var match = version.match(re[COERCE]);
+  options = options || {};
 
-  if (match == null) {
+  var match = null;
+  if (!options.rtl) {
+    match = version.match(re[COERCE]);
+  } else {
+    // Find the right-most coercible string that does not share
+    // a terminus with a more left-ward coercible string.
+    // Eg, '1.2.3.4' wants to coerce '2.3.4', not '3.4' or '4'
+    //
+    // Walk through the string checking with a /g regexp
+    // Manually set the index so as to pick up overlapping matches.
+    // Stop when we get a match that ends at the string end, since no
+    // coercible string can be more right-ward without the same terminus.
+    var next;
+    while ((next = re[COERCERTL].exec(version)) &&
+      (!match || match.index + match[0].length !== version.length)
+    ) {
+      if (!match ||
+          next.index + next[0].length !== match.index + match[0].length) {
+        match = next;
+      }
+      re[COERCERTL].lastIndex = next.index + next[1].length + next[2].length;
+    }
+    // leave it in a clean state
+    re[COERCERTL].lastIndex = -1;
+  }
+
+  if (match === null) {
     return null
   }
 
-  return parse(match[1] +
-    '.' + (match[2] || '0') +
-    '.' + (match[3] || '0'))
+  return parse(match[2] +
+    '.' + (match[3] || '0') +
+    '.' + (match[4] || '0'), options)
 }
 });
 var semver_1 = semver.SEMVER_SPEC_VERSION;
@@ -26595,30 +26676,31 @@ var semver_13 = semver.minor;
 var semver_14 = semver.patch;
 var semver_15 = semver.compare;
 var semver_16 = semver.compareLoose;
-var semver_17 = semver.rcompare;
-var semver_18 = semver.sort;
-var semver_19 = semver.rsort;
-var semver_20 = semver.gt;
-var semver_21 = semver.lt;
-var semver_22 = semver.eq;
-var semver_23 = semver.neq;
-var semver_24 = semver.gte;
-var semver_25 = semver.lte;
-var semver_26 = semver.cmp;
-var semver_27 = semver.Comparator;
-var semver_28 = semver.Range;
-var semver_29 = semver.toComparators;
-var semver_30 = semver.satisfies;
-var semver_31 = semver.maxSatisfying;
-var semver_32 = semver.minSatisfying;
-var semver_33 = semver.minVersion;
-var semver_34 = semver.validRange;
-var semver_35 = semver.ltr;
-var semver_36 = semver.gtr;
-var semver_37 = semver.outside;
-var semver_38 = semver.prerelease;
-var semver_39 = semver.intersects;
-var semver_40 = semver.coerce;
+var semver_17 = semver.compareBuild;
+var semver_18 = semver.rcompare;
+var semver_19 = semver.sort;
+var semver_20 = semver.rsort;
+var semver_21 = semver.gt;
+var semver_22 = semver.lt;
+var semver_23 = semver.eq;
+var semver_24 = semver.neq;
+var semver_25 = semver.gte;
+var semver_26 = semver.lte;
+var semver_27 = semver.cmp;
+var semver_28 = semver.Comparator;
+var semver_29 = semver.Range;
+var semver_30 = semver.toComparators;
+var semver_31 = semver.satisfies;
+var semver_32 = semver.maxSatisfying;
+var semver_33 = semver.minSatisfying;
+var semver_34 = semver.minVersion;
+var semver_35 = semver.validRange;
+var semver_36 = semver.ltr;
+var semver_37 = semver.gtr;
+var semver_38 = semver.outside;
+var semver_39 = semver.prerelease;
+var semver_40 = semver.intersects;
+var semver_41 = semver.coerce;
 
 const typescript = (options) => {
     let watchMode = false;
@@ -26671,7 +26753,7 @@ const typescript = (options) => {
                 context.info(`tslib version: ${tslibVersion}`);
                 if (this.meta)
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
-                if (!semver_30(tsModule.version, ">=2.4.0", { includePrerelease: true }))
+                if (!semver_31(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
                 context.info(`rollup-plugin-typescript2 version: 0.21.3`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
@@ -26689,6 +26771,7 @@ const typescript = (options) => {
                 printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
             if (pluginOptions.clean)
                 cache().clean();
+            return config;
         },
         resolveId(importee, importer) {
             if (importee === TSLIB)

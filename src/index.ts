@@ -111,9 +111,11 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			if (pluginOptions.clean)
 				cache().clean();
+
+			return config;
 		},
 
-		resolveId(this: PluginContext, importee: string, importer: string)
+		resolveId(this: PluginContext, importee: string, importer: string | undefined)
 		{
 			if (importee === TSLIB)
 				return "\0" + TSLIB;
@@ -155,7 +157,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			return null;
 		},
 
-		transform(this: PluginContext, code: string, id: string): TransformSourceDescription | void
+		transform(this: PluginContext, code: string, id: string): TransformSourceDescription | undefined
 		{
 			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
 
