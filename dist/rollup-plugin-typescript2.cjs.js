@@ -26773,6 +26773,10 @@ const typescript = (options) => {
                 cache().clean();
             return config;
         },
+        watchChange(id) {
+            const key = normalize(id);
+            delete declarations[key];
+        },
         resolveId(importee, importer) {
             if (importee === TSLIB)
                 return "\0" + TSLIB;
@@ -26789,7 +26793,7 @@ const typescript = (options) => {
                 const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(() => `${safe_5("resolving")} '${importee}'`);
+                context.debug(() => `${safe_5("resolving")} '${importee}' imported by '${importer}'`);
                 context.debug(() => `    to '${resolved}'`);
                 return resolved;
             }

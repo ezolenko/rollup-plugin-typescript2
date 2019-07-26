@@ -115,6 +115,12 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			return config;
 		},
 
+		watchChange(id: string)
+		{
+			const key = normalize(id);
+			delete declarations[key];
+		},
+
 		resolveId(this: PluginContext, importee: string, importer: string | undefined)
 		{
 			if (importee === TSLIB)
@@ -140,7 +146,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 					? resolve.sync(result.resolvedModule.resolvedFileName)
 					: result.resolvedModule.resolvedFileName;
 
-				context.debug(() => `${blue("resolving")} '${importee}'`);
+				context.debug(() => `${blue("resolving")} '${importee}' imported by '${importer}'`);
 				context.debug(() => `    to '${resolved}'`);
 
 				return resolved;
