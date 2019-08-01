@@ -26710,6 +26710,7 @@ const typescript = (options) => {
     let service;
     let noErrors = true;
     const declarations = {};
+    const allImportedFiles = new Set();
     let _cache;
     const cache = () => {
         if (!_cache)
@@ -26804,6 +26805,7 @@ const typescript = (options) => {
             generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
             if (!filter(id))
                 return undefined;
+            allImportedFiles.add(normalize(id));
             const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
             const snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
@@ -26837,6 +26839,8 @@ const typescript = (options) => {
                 printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
             }
             if (result) {
+                if (result.references)
+                    result.references.map(normalize).map(allImportedFiles.add, allImportedFiles);
                 if (watchMode && this.addWatchFile && result.references) {
                     if (tsConfigPath)
                         this.addWatchFile(tsConfigPath);
@@ -26887,45 +26891,49 @@ const typescript = (options) => {
             generateRound++;
         },
         _onwrite({ file, dir }) {
-            if (parsedConfig.options.declaration) {
-                lodash_3(parsedConfig.fileNames, (name) => {
-                    const key = normalize(name);
-                    if (lodash_9(declarations, key) || !filter(key))
-                        return;
-                    context.debug(() => `generating missed declarations for '${key}'`);
-                    const output = service.getEmitOutput(key, true);
-                    const out = convertEmitOutput(output);
-                    if (out.dts)
-                        declarations[key] = { type: out.dts, map: out.dtsmap };
-                });
-                const bundleFile = file;
-                const outputDir = dir;
-                const writeDeclaration = (key, extension, entry) => {
-                    if (!entry)
-                        return;
-                    let fileName = entry.name;
-                    if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
-                        fileName = fileName.split("?", 1) + extension;
-                    let writeToPath;
-                    // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-                    // use the path provided by Typescript's LanguageService.
-                    if ((!bundleFile && !outputDir) || pluginOptions.useTsconfigDeclarationDir)
-                        writeToPath = fileName;
-                    else {
-                        // Otherwise, take the directory name from the path and make sure it is absolute.
-                        const destDirname = bundleFile ? dirname(bundleFile) : outputDir;
-                        const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
-                        writeToPath = join(destDirectory, relative(process.cwd(), fileName));
-                    }
-                    context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
-                    // Write the declaration file to disk.
-                    tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
-                };
-                lodash_3(declarations, ({ type, map }, key) => {
-                    writeDeclaration(key, ".d.ts", type);
-                    writeDeclaration(key, ".d.ts.map", map);
-                });
-            }
+            if (!parsedConfig.options.declaration)
+                return;
+            lodash_3(parsedConfig.fileNames, (name) => {
+                const key = normalize(name);
+                if (lodash_9(declarations, key))
+                    return;
+                if (!allImportedFiles.has(key)) {
+                    context.debug(() => `skipping declarations for unused '${key}'`);
+                    return;
+                }
+                context.debug(() => `generating missed declarations for '${key}'`);
+                const output = service.getEmitOutput(key, true);
+                const out = convertEmitOutput(output);
+                if (out.dts)
+                    declarations[key] = { type: out.dts, map: out.dtsmap };
+            });
+            const bundleFile = file;
+            const outputDir = dir;
+            const writeDeclaration = (key, extension, entry) => {
+                if (!entry)
+                    return;
+                let fileName = entry.name;
+                if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
+                    fileName = fileName.split("?", 1) + extension;
+                let writeToPath;
+                // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+                // use the path provided by Typescript's LanguageService.
+                if ((!bundleFile && !outputDir) || pluginOptions.useTsconfigDeclarationDir)
+                    writeToPath = fileName;
+                else {
+                    // Otherwise, take the directory name from the path and make sure it is absolute.
+                    const destDirname = bundleFile ? dirname(bundleFile) : outputDir;
+                    const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+                    writeToPath = join(destDirectory, relative(process.cwd(), fileName));
+                }
+                context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
+                // Write the declaration file to disk.
+                tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
+            };
+            lodash_3(declarations, ({ type, map }, key) => {
+                writeDeclaration(key, ".d.ts", type);
+                writeDeclaration(key, ".d.ts.map", map);
+            });
         },
     };
     return self;
