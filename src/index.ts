@@ -130,7 +130,11 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			if (!importer)
 				return;
 
-			importer = importer.split("\\").join("/");
+			importer = normalize(importer);
+
+			// avoiding trying to resolve ids for things imported from files unrelated to this plugin
+			if (!allImportedFiles.has(importer))
+				return;
 
 			// TODO: use module resolution cache
 			const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
