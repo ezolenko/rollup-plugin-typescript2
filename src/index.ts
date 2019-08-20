@@ -49,7 +49,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			check: true,
 			verbosity: VerbosityLevel.Warning,
 			clean: false,
-			cacheRoot: `${process.cwd()}/.rpt2_cache`,
+			cacheRoot: `${process.cwd()}/node_modules/.cache`,
 			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 			exclude: ["*.d.ts", "**/*.d.ts"],
 			abortOnError: true,
