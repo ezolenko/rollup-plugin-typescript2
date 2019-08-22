@@ -1,6 +1,6 @@
 export interface IContext {
-    warn(message: string | (() => string)): void;
-    error(message: string | (() => string)): void;
+    warn(message: string | (() => string), lastMessage?: boolean): void;
+    error(message: string | (() => string), lastMessage?: boolean): void;
     info(message: string | (() => string)): void;
     debug(message: string | (() => string)): void;
 }

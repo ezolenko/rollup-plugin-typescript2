@@ -6,34 +6,39 @@ export class RollupContext implements IContext
 {
 	private hasContext: boolean = true;
 
-	constructor(private verbosity: VerbosityLevel, private bail: boolean, private context: PluginContext, private prefix: string = "")
+	constructor(private options: { verbosity: VerbosityLevel, abortOnError: boolean, abortOnWarning: boolean, continueAfterFirstError: boolean}, private context: PluginContext, private prefix: string = "")
 	{
 		this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
 	}
 
-	public warn(message: string | (() => string)): void
+	public warn(message: string | (() => string), lastMessage?: boolean): void
 	{
-		if (this.verbosity < VerbosityLevel.Warning)
-			return;
-
-		const text = _.isFunction(message) ? message() : message;
-
-		if (this.hasContext)
-			this.context.warn(`${text}`);
-		else
-			console.log(`${this.prefix}${text}`);
-	}
-
-	public error(message: string | (() => string)): void
-	{
-		if (this.verbosity < VerbosityLevel.Error)
+		if (this.options.verbosity < VerbosityLevel.Warning)
 			return;
 
 		const text = _.isFunction(message) ? message() : message;
 
 		if (this.hasContext)
 		{
-			if (this.bail)
+			if (this.options.abortOnWarning && (!this.options.continueAfterFirstError || lastMessage))
+				this.context.error(`${text}`);
+			else
+				this.context.warn(`${text}`);
+		}
+		else
+			console.log(`${this.prefix}${text}`);
+	}
+
+	public error(message: string | (() => string), lastMessage?: boolean): void
+	{
+		if (this.options.verbosity < VerbosityLevel.Error)
+			return;
+
+		const text = _.isFunction(message) ? message() : message;
+
+		if (this.hasContext)
+		{
+			if (this.options.abortOnError && (!this.options.continueAfterFirstError || lastMessage))
 				this.context.error(`${text}`);
 			else
 				this.context.warn(`${text}`);
@@ -44,7 +49,7 @@ export class RollupContext implements IContext
 
 	public info(message: string | (() => string)): void
 	{
-		if (this.verbosity < VerbosityLevel.Info)
+		if (this.options.verbosity < VerbosityLevel.Info)
 			return;
 
 		const text = _.isFunction(message) ? message() : message;
@@ -54,7 +59,7 @@ export class RollupContext implements IContext
 
 	public debug(message: string | (() => string)): void
 	{
-		if (this.verbosity < VerbosityLevel.Debug)
+		if (this.options.verbosity < VerbosityLevel.Debug)
 			return;
 
 		const text = _.isFunction(message) ? message() : message;

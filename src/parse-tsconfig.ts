@@ -8,7 +8,7 @@ import { IOptions } from "./ioptions";
 import * as _ from "lodash";
 import { checkTsConfig } from "./check-tsconfig";
 
-export function parseTsConfig(context: IContext, pluginOptions: IOptions)
+export function parseTsConfig(context: IContext, pluginOptions: IOptions, buildStatus: { error: boolean, warning: boolean })
 {
 	const fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
 
@@ -20,6 +20,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 	let baseDir = process.cwd();
 	let configFileName;
 	let pretty = false;
+
 	if (fileName)
 	{
 		const text = tsModule.sys.readFile(fileName);
@@ -31,7 +32,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 
 		if (result.error !== undefined)
 		{
-			printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
+			printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty, buildStatus);
 			throw new Error(`failed to parse '${fileName}'`);
 		}
 
@@ -48,7 +49,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 	const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
 
 	checkTsConfig(parsedTsConfig);
-	printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
+	printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty, buildStatus);
 
 	context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
 	context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);

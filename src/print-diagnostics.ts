@@ -4,7 +4,7 @@ import { IContext } from "./context";
 import { IDiagnostics } from "./tscache";
 import * as _ from "lodash";
 
-export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[], pretty: boolean): void
+export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[], pretty: boolean, buildStatus: { error: boolean, warning: boolean }): void
 {
 	_.each(diagnostics, (diagnostic) =>
 	{
@@ -22,12 +22,14 @@ export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[],
 				print = context.error;
 				color = red;
 				category = "error";
+				buildStatus.error = true;
 				break;
 			case tsModule.DiagnosticCategory.Warning:
 			default:
 				print = context.warn;
 				color = yellow;
 				category = "warning";
+				buildStatus.warning = true;
 				break;
 		}
 

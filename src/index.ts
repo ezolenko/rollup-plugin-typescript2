@@ -16,7 +16,7 @@ import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext, OutputBundle } from "rollup";
 import { createFilter } from "./get-options-overrides";
 
 const typescript: PluginImpl<Partial<IOptions>> = (options) =>
@@ -30,7 +30,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 	let tsConfigPath: string | undefined;
 	let servicesHost: LanguageServiceHost;
 	let service: tsTypes.LanguageService;
-	let noErrors = true;
+	const buildStatus = { error: false, warning: false };
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
 	const allImportedFiles = new Set();
 
@@ -53,6 +53,8 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 			exclude: ["*.d.ts", "**/*.d.ts"],
 			abortOnError: true,
+			abortOnWarning: true,
+			continueAfterFirstError: false,
 			rollupCommonJSResolveHack: false,
 			tsconfig: undefined,
 			useTsconfigDeclarationDir: false,
@@ -78,7 +80,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
 
 			watchMode = process.env.ROLLUP_WATCH === "true";
-			({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
+			({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions, buildStatus));
 
 			if (generateRound === 0)
 			{
@@ -108,7 +110,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			// printing compiler option errors
 			if (pluginOptions.check)
-				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
+				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true, buildStatus);
 
 			if (pluginOptions.clean)
 				cache().clean();
@@ -177,7 +179,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			allImportedFiles.add(normalize(id));
 
-			const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
+			const contextWrapper = new RollupContext(pluginOptions, this, "rpt2: ");
 
 			const snapshot = servicesHost.setSnapshot(id, code);
 
@@ -188,8 +190,6 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 				if (output.emitSkipped)
 				{
-					noErrors = false;
-
 					// always checking on fatal errors, even if options.check is set to false
 					const diagnostics = _.concat(
 						cache().getSyntacticDiagnostics(id, snapshot, () =>
@@ -201,7 +201,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 							return service.getSemanticDiagnostics(id);
 						}),
 					);
-					printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
+					printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true, buildStatus);
 
 					// since no output was generated, aborting compilation
 					cache().done();
@@ -226,10 +226,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 					}),
 				);
 
-				if (diagnostics.length > 0)
-					noErrors = false;
-
-				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
+				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true, buildStatus);
 			}
 
 			if (result)
@@ -267,7 +264,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			return undefined;
 		},
 
-		generateBundle(bundleOptions: OutputOptions, _bundle: any, isWrite: boolean): void
+		generateBundle(bundleOptions: OutputOptions, _bundle: OutputBundle, isWrite: boolean): void
 		{
 			self._ongenerate();
 			if (isWrite)
@@ -302,12 +299,9 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 						}),
 					);
 
-					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
+					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true, buildStatus);
 				});
 			}
-
-			if (!watchMode && !noErrors)
-				context.info(yellow("there were errors or warnings."));
 
 			cache().done();
 
@@ -373,6 +367,15 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				writeDeclaration(key, ".d.ts", type);
 				writeDeclaration(key, ".d.ts.map", map);
 			});
+		},
+
+		buildEnd(this: PluginContext, _err?: Error): void
+		{
+			const contextWrapper = new RollupContext(pluginOptions, this, "rpt2: ");
+			if (buildStatus.error)
+				contextWrapper.error(red("there were errors in typescript build."), true);
+			else if (buildStatus.warning)
+				contextWrapper.warn(yellow("there were warnings in typescript build."), true);
 		},
 	};
 

@@ -13,6 +13,8 @@ export interface IOptions {
     clean: boolean;
     cacheRoot: string;
     abortOnError: boolean;
+    abortOnWarning: boolean;
+    continueAfterFirstError: boolean;
     rollupCommonJSResolveHack: boolean;
     tsconfig?: string;
     useTsconfigDeclarationDir: boolean;

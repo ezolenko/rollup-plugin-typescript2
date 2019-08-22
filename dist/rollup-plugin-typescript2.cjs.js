@@ -17166,29 +17166,32 @@ class ConsoleContext {
 }
 
 class RollupContext {
-    constructor(verbosity, bail, context, prefix = "") {
-        this.verbosity = verbosity;
-        this.bail = bail;
+    constructor(options, context, prefix = "") {
+        this.options = options;
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
         this.hasContext = lodash_10(this.context.warn) && lodash_10(this.context.error);
     }
-    warn(message) {
-        if (this.verbosity < VerbosityLevel.Warning)
-            return;
-        const text = lodash_10(message) ? message() : message;
-        if (this.hasContext)
-            this.context.warn(`${text}`);
-        else
-            console.log(`${this.prefix}${text}`);
-    }
-    error(message) {
-        if (this.verbosity < VerbosityLevel.Error)
+    warn(message, lastMessage) {
+        if (this.options.verbosity < VerbosityLevel.Warning)
             return;
         const text = lodash_10(message) ? message() : message;
         if (this.hasContext) {
-            if (this.bail)
+            if (this.options.abortOnWarning && (!this.options.continueAfterFirstError || lastMessage))
+                this.context.error(`${text}`);
+            else
+                this.context.warn(`${text}`);
+        }
+        else
+            console.log(`${this.prefix}${text}`);
+    }
+    error(message, lastMessage) {
+        if (this.options.verbosity < VerbosityLevel.Error)
+            return;
+        const text = lodash_10(message) ? message() : message;
+        if (this.hasContext) {
+            if (this.options.abortOnError && (!this.options.continueAfterFirstError || lastMessage))
                 this.context.error(`${text}`);
             else
                 this.context.warn(`${text}`);
@@ -17197,13 +17200,13 @@ class RollupContext {
             console.log(`${this.prefix}${text}`);
     }
     info(message) {
-        if (this.verbosity < VerbosityLevel.Info)
+        if (this.options.verbosity < VerbosityLevel.Info)
             return;
         const text = lodash_10(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
     debug(message) {
-        if (this.verbosity < VerbosityLevel.Debug)
+        if (this.options.verbosity < VerbosityLevel.Debug)
             return;
         const text = lodash_10(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
@@ -24922,7 +24925,7 @@ class TsCache {
     }
 }
 
-function printDiagnostics(context, diagnostics, pretty) {
+function printDiagnostics(context, diagnostics, pretty, buildStatus) {
     lodash_3(diagnostics, (diagnostic) => {
         let print;
         let color;
@@ -24937,12 +24940,14 @@ function printDiagnostics(context, diagnostics, pretty) {
                 print = context.error;
                 color = safe_3;
                 category = "error";
+                buildStatus.error = true;
                 break;
             case tsModule.DiagnosticCategory.Warning:
             default:
                 print = context.warn;
                 color = safe_4;
                 category = "warning";
+                buildStatus.warning = true;
                 break;
         }
         const type = diagnostic.type + " ";
@@ -25018,7 +25023,7 @@ function checkTsConfig(parsedConfig) {
         throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
 }
 
-function parseTsConfig(context, pluginOptions) {
+function parseTsConfig(context, pluginOptions, buildStatus) {
     const fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
     // if the value was provided, but no file, fail hard
     if (pluginOptions.tsconfig !== undefined && !fileName)
@@ -25034,7 +25039,7 @@ function parseTsConfig(context, pluginOptions) {
         const result = tsModule.parseConfigFileTextToJson(fileName, text);
         pretty = lodash_2(result.config, "pretty", pretty);
         if (result.error !== undefined) {
-            printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
+            printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty, buildStatus);
             throw new Error(`failed to parse '${fileName}'`);
         }
         loadedConfig = result.config;
@@ -25047,7 +25052,7 @@ function parseTsConfig(context, pluginOptions) {
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     checkTsConfig(parsedTsConfig);
-    printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
+    printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty, buildStatus);
     context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
     context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
     return { parsedTsConfig, fileName };
@@ -26712,7 +26717,7 @@ const typescript = (options) => {
     let tsConfigPath;
     let servicesHost;
     let service;
-    let noErrors = true;
+    const buildStatus = { error: false, warning: false };
     const declarations = {};
     const allImportedFiles = new Set();
     let _cache;
@@ -26730,6 +26735,8 @@ const typescript = (options) => {
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
+        abortOnWarning: true,
+        continueAfterFirstError: false,
         rollupCommonJSResolveHack: false,
         tsconfig: undefined,
         useTsconfigDeclarationDir: false,
@@ -26748,7 +26755,7 @@ const typescript = (options) => {
             rollupOptions = Object.assign({}, config);
             context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
             watchMode = process.env.ROLLUP_WATCH === "true";
-            ({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
+            ({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions, buildStatus));
             if (generateRound === 0) {
                 context.info(`typescript version: ${tsModule.version}`);
                 context.info(`tslib version: ${tslibVersion}`);
@@ -26769,7 +26776,7 @@ const typescript = (options) => {
             servicesHost.setLanguageService(service);
             // printing compiler option errors
             if (pluginOptions.check)
-                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
+                printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true, buildStatus);
             if (pluginOptions.clean)
                 cache().clean();
             return config;
@@ -26813,20 +26820,19 @@ const typescript = (options) => {
             if (!filter(id))
                 return undefined;
             allImportedFiles.add(normalize(id));
-            const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
+            const contextWrapper = new RollupContext(pluginOptions, this, "rpt2: ");
             const snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
             const result = cache().getCompiled(id, snapshot, () => {
                 const output = service.getEmitOutput(id);
                 if (output.emitSkipped) {
-                    noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
                     const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
                     }));
-                    printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
+                    printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true, buildStatus);
                     // since no output was generated, aborting compilation
                     cache().done();
                     if (lodash_10(this.error))
@@ -26841,9 +26847,7 @@ const typescript = (options) => {
                 }), cache().getSemanticDiagnostics(id, snapshot, () => {
                     return service.getSemanticDiagnostics(id);
                 }));
-                if (diagnostics.length > 0)
-                    noErrors = false;
-                printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
+                printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true, buildStatus);
             }
             if (result) {
                 if (result.references)
@@ -26889,11 +26893,9 @@ const typescript = (options) => {
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
                     }));
-                    printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
+                    printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true, buildStatus);
                 });
             }
-            if (!watchMode && !noErrors)
-                context.info(safe_4("there were errors or warnings."));
             cache().done();
             generateRound++;
         },
@@ -26941,6 +26943,13 @@ const typescript = (options) => {
                 writeDeclaration(key, ".d.ts", type);
                 writeDeclaration(key, ".d.ts.map", map);
             });
+        },
+        buildEnd(_err) {
+            const contextWrapper = new RollupContext(pluginOptions, this, "rpt2: ");
+            if (buildStatus.error)
+                contextWrapper.error(safe_3("there were errors in typescript build."), true);
+            else if (buildStatus.warning)
+                contextWrapper.warn(safe_4("there were warnings in typescript build."), true);
         },
     };
     return self;
