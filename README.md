@@ -134,9 +134,9 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 	Set to true for clean build (wipes out cache on every build).
 
-* `cacheRoot`: `./.rts2_cache`
+* `cacheRoot`: `node_modules/.cache/rollup-plugin-typescript2`
 
-	Path to cache. Defaults to a folder in the current directory. Can be safely moved out with something like `${require('temp-dir')}/.rpt2_cache`, but watch out for multiple concurrent builds of the same repo.
+	Path to cache. Defaults to a folder in node_modules.
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
