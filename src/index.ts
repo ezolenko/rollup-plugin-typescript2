@@ -15,6 +15,7 @@ import { blue, red, yellow, green } from "colors/safe";
 import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
+import findCacheDir from 'find-cache-dir';
 
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
 import { createFilter } from "./get-options-overrides";
@@ -49,7 +50,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			check: true,
 			verbosity: VerbosityLevel.Warning,
 			clean: false,
-			cacheRoot: `${process.cwd()}/node_modules/.cache`,
+			cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
 			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 			exclude: ["*.d.ts", "**/*.d.ts"],
 			abortOnError: true,

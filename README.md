@@ -134,7 +134,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 	Set to true for clean build (wipes out cache on every build).
 
-* `cacheRoot`: `./node_modules/.cache`
+* `cacheRoot`: `node_modules/.cache/rollup-plugin-typescript2`
 
 	Path to cache. Defaults to a folder in node_modules.
 
