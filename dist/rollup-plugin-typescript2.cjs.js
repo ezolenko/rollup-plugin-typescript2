@@ -6,9 +6,11 @@ function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'defau
 var crypto = _interopDefault(require('crypto'));
 var fsExtra = require('fs-extra');
 var fs = require('fs');
+var fs__default = _interopDefault(fs);
 var util = _interopDefault(require('util'));
 var os = _interopDefault(require('os'));
 var path = require('path');
+var path__default = _interopDefault(path);
 var resolve = require('resolve');
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -17578,9 +17580,9 @@ var root = _freeGlobal || freeSelf || Function('return this')();
 var _root = root;
 
 /** Built-in value references. */
-var Symbol = _root.Symbol;
+var Symbol$1 = _root.Symbol;
 
-var _Symbol = Symbol;
+var _Symbol = Symbol$1;
 
 /** Used for built-in method references. */
 var objectProto = Object.prototype;
@@ -19247,9 +19249,9 @@ var DataView = _getNative(_root, 'DataView');
 var _DataView = DataView;
 
 /* Built-in method references that are verified to be native. */
-var Promise = _getNative(_root, 'Promise');
+var Promise$1 = _getNative(_root, 'Promise');
 
-var _Promise = Promise;
+var _Promise = Promise$1;
 
 /* Built-in method references that are verified to be native. */
 var Set$1 = _getNative(_root, 'Set');
@@ -26702,6 +26704,518 @@ var semver_39 = semver.prerelease;
 var semver_40 = semver.intersects;
 var semver_41 = semver.coerce;
 
+var commondir = function (basedir, relfiles) {
+    if (relfiles) {
+        var files = relfiles.map(function (r) {
+            return path__default.resolve(basedir, r);
+        });
+    }
+    else {
+        var files = basedir;
+    }
+    
+    var res = files.slice(1).reduce(function (ps, file) {
+        if (!file.match(/^([A-Za-z]:)?\/|\\/)) {
+            throw new Error('relative path without a basedir');
+        }
+        
+        var xs = file.split(/\/+|\\+/);
+        for (
+            var i = 0;
+            ps[i] === xs[i] && i < Math.min(ps.length, xs.length);
+            i++
+        );
+        return ps.slice(0, i);
+    }, files[0].split(/\/+|\\+/));
+    
+    // Windows correctly handles paths with forward-slashes
+    return res.length > 1 ? res.join('/') : '/'
+};
+
+const pTry = (fn, ...arguments_) => new Promise(resolve => {
+	resolve(fn(...arguments_));
+});
+
+var pTry_1 = pTry;
+// TODO: remove this in the next major version
+var default_1 = pTry;
+pTry_1.default = default_1;
+
+const pLimit = concurrency => {
+	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
+		return Promise.reject(new TypeError('Expected `concurrency` to be a number from 1 and up'));
+	}
+
+	const queue = [];
+	let activeCount = 0;
+
+	const next = () => {
+		activeCount--;
+
+		if (queue.length > 0) {
+			queue.shift()();
+		}
+	};
+
+	const run = (fn, resolve, ...args) => {
+		activeCount++;
+
+		const result = pTry_1(fn, ...args);
+
+		resolve(result);
+
+		result.then(next, next);
+	};
+
+	const enqueue = (fn, resolve, ...args) => {
+		if (activeCount < concurrency) {
+			run(fn, resolve, ...args);
+		} else {
+			queue.push(run.bind(null, fn, resolve, ...args));
+		}
+	};
+
+	const generator = (fn, ...args) => new Promise(resolve => enqueue(fn, resolve, ...args));
+	Object.defineProperties(generator, {
+		activeCount: {
+			get: () => activeCount
+		},
+		pendingCount: {
+			get: () => queue.length
+		}
+	});
+
+	return generator;
+};
+
+var pLimit_1 = pLimit;
+var default_1$1 = pLimit;
+pLimit_1.default = default_1$1;
+
+class EndError extends Error {
+	constructor(value) {
+		super();
+		this.value = value;
+	}
+}
+
+// The input can also be a promise, so we await it
+const testElement = async (element, tester) => tester(await element);
+
+// The input can also be a promise, so we `Promise.all()` them both
+const finder = async element => {
+	const values = await Promise.all(element);
+	if (values[1] === true) {
+		throw new EndError(values[0]);
+	}
+
+	return false;
+};
+
+const pLocate = async (iterable, tester, options) => {
+	options = {
+		concurrency: Infinity,
+		preserveOrder: true,
+		...options
+	};
+
+	const limit = pLimit_1(options.concurrency);
+
+	// Start all the promises concurrently with optional limit
+	const items = [...iterable].map(element => [element, limit(testElement, element, tester)]);
+
+	// Check the promises either serially or concurrently
+	const checkLimit = pLimit_1(options.preserveOrder ? 1 : Infinity);
+
+	try {
+		await Promise.all(items.map(element => checkLimit(finder, element)));
+	} catch (error) {
+		if (error instanceof EndError) {
+			return error.value;
+		}
+
+		throw error;
+	}
+};
+
+var pLocate_1 = pLocate;
+// TODO: Remove this for the next major release
+var default_1$2 = pLocate;
+pLocate_1.default = default_1$2;
+
+const {promisify} = util;
+
+
+const fsStat = promisify(fs__default.stat);
+const fsLStat = promisify(fs__default.lstat);
+
+const typeMappings = {
+	directory: 'isDirectory',
+	file: 'isFile'
+};
+
+function checkType({type}) {
+	if (type in typeMappings) {
+		return;
+	}
+
+	throw new Error(`Invalid type specified: ${type}`);
+}
+
+const matchType = (type, stat) => type === undefined || stat[typeMappings[type]]();
+
+var locatePath = async (paths, options) => {
+	options = {
+		cwd: process.cwd(),
+		type: 'file',
+		allowSymlinks: true,
+		...options
+	};
+	checkType(options);
+	const statFn = options.allowSymlinks ? fsStat : fsLStat;
+
+	return pLocate_1(paths, async path_ => {
+		try {
+			const stat = await statFn(path__default.resolve(options.cwd, path_));
+			return matchType(options.type, stat);
+		} catch (_) {
+			return false;
+		}
+	}, options);
+};
+
+var sync = (paths, options) => {
+	options = {
+		cwd: process.cwd(),
+		allowSymlinks: true,
+		type: 'file',
+		...options
+	};
+	checkType(options);
+	const statFn = options.allowSymlinks ? fs__default.statSync : fs__default.lstatSync;
+
+	for (const path_ of paths) {
+		try {
+			const stat = statFn(path__default.resolve(options.cwd, path_));
+
+			if (matchType(options.type, stat)) {
+				return path_;
+			}
+		} catch (_) {
+		}
+	}
+};
+locatePath.sync = sync;
+
+const {promisify: promisify$1} = util;
+
+const pAccess = promisify$1(fs__default.access);
+
+var pathExists = async path => {
+	try {
+		await pAccess(path);
+		return true;
+	} catch (_) {
+		return false;
+	}
+};
+
+var sync$1 = path => {
+	try {
+		fs__default.accessSync(path);
+		return true;
+	} catch (_) {
+		return false;
+	}
+};
+pathExists.sync = sync$1;
+
+var findUp = createCommonjsModule(function (module) {
+
+
+
+
+const stop = Symbol('findUp.stop');
+
+module.exports = async (name, options = {}) => {
+	let directory = path__default.resolve(options.cwd || '');
+	const {root} = path__default.parse(directory);
+	const paths = [].concat(name);
+
+	const runMatcher = async locateOptions => {
+		if (typeof name !== 'function') {
+			return locatePath(paths, locateOptions);
+		}
+
+		const foundPath = await name(locateOptions.cwd);
+		if (typeof foundPath === 'string') {
+			return locatePath([foundPath], locateOptions);
+		}
+
+		return foundPath;
+	};
+
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		// eslint-disable-next-line no-await-in-loop
+		const foundPath = await runMatcher({...options, cwd: directory});
+
+		if (foundPath === stop) {
+			return;
+		}
+
+		if (foundPath) {
+			return path__default.resolve(directory, foundPath);
+		}
+
+		if (directory === root) {
+			return;
+		}
+
+		directory = path__default.dirname(directory);
+	}
+};
+
+module.exports.sync = (name, options = {}) => {
+	let directory = path__default.resolve(options.cwd || '');
+	const {root} = path__default.parse(directory);
+	const paths = [].concat(name);
+
+	const runMatcher = locateOptions => {
+		if (typeof name !== 'function') {
+			return locatePath.sync(paths, locateOptions);
+		}
+
+		const foundPath = name(locateOptions.cwd);
+		if (typeof foundPath === 'string') {
+			return locatePath.sync([foundPath], locateOptions);
+		}
+
+		return foundPath;
+	};
+
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		const foundPath = runMatcher({...options, cwd: directory});
+
+		if (foundPath === stop) {
+			return;
+		}
+
+		if (foundPath) {
+			return path__default.resolve(directory, foundPath);
+		}
+
+		if (directory === root) {
+			return;
+		}
+
+		directory = path__default.dirname(directory);
+	}
+};
+
+module.exports.exists = pathExists;
+
+module.exports.sync.exists = pathExists.sync;
+
+module.exports.stop = stop;
+});
+var findUp_1 = findUp.sync;
+var findUp_2 = findUp.exists;
+var findUp_3 = findUp.stop;
+
+const pkgDir = async cwd => {
+	const filePath = await findUp('package.json', {cwd});
+	return filePath && path__default.dirname(filePath);
+};
+
+var pkgDir_1 = pkgDir;
+// TODO: Remove this for the next major release
+var default_1$3 = pkgDir;
+
+var sync$2 = cwd => {
+	const filePath = findUp.sync('package.json', {cwd});
+	return filePath && path__default.dirname(filePath);
+};
+pkgDir_1.default = default_1$3;
+pkgDir_1.sync = sync$2;
+
+const {promisify: promisify$2} = util;
+
+
+const defaults = {
+	mode: 0o777 & (~process.umask()),
+	fs: fs__default
+};
+
+const useNativeRecursiveOption = semver.satisfies(process.version, '>=10.12.0');
+
+// https://github.com/nodejs/node/issues/8987
+// https://github.com/libuv/libuv/pull/1088
+const checkPath = pth => {
+	if (process.platform === 'win32') {
+		const pathHasInvalidWinCharacters = /[<>:"|?*]/.test(pth.replace(path__default.parse(pth).root, ''));
+
+		if (pathHasInvalidWinCharacters) {
+			const error = new Error(`Path contains invalid characters: ${pth}`);
+			error.code = 'EINVAL';
+			throw error;
+		}
+	}
+};
+
+const permissionError = pth => {
+	// This replicates the exception of `fs.mkdir` with native the
+	// `recusive` option when run on an invalid drive under Windows.
+	const error = new Error(`operation not permitted, mkdir '${pth}'`);
+	error.code = 'EPERM';
+	error.errno = -4048;
+	error.path = pth;
+	error.syscall = 'mkdir';
+	return error;
+};
+
+const makeDir = async (input, options) => {
+	checkPath(input);
+	options = {
+		...defaults,
+		...options
+	};
+
+	const mkdir = promisify$2(options.fs.mkdir);
+	const stat = promisify$2(options.fs.stat);
+
+	if (useNativeRecursiveOption && options.fs.mkdir === fs__default.mkdir) {
+		const pth = path__default.resolve(input);
+
+		await mkdir(pth, {
+			mode: options.mode,
+			recursive: true
+		});
+
+		return pth;
+	}
+
+	const make = async pth => {
+		try {
+			await mkdir(pth, options.mode);
+
+			return pth;
+		} catch (error) {
+			if (error.code === 'EPERM') {
+				throw error;
+			}
+
+			if (error.code === 'ENOENT') {
+				if (path__default.dirname(pth) === pth) {
+					throw permissionError(pth);
+				}
+
+				if (error.message.includes('null bytes')) {
+					throw error;
+				}
+
+				await make(path__default.dirname(pth));
+
+				return make(pth);
+			}
+
+			const stats = await stat(pth);
+			if (!stats.isDirectory()) {
+				throw error;
+			}
+
+			return pth;
+		}
+	};
+
+	return make(path__default.resolve(input));
+};
+
+var makeDir_1 = makeDir;
+
+var sync$3 = (input, options) => {
+	checkPath(input);
+	options = {
+		...defaults,
+		...options
+	};
+
+	if (useNativeRecursiveOption && options.fs.mkdirSync === fs__default.mkdirSync) {
+		const pth = path__default.resolve(input);
+
+		fs__default.mkdirSync(pth, {
+			mode: options.mode,
+			recursive: true
+		});
+
+		return pth;
+	}
+
+	const make = pth => {
+		try {
+			options.fs.mkdirSync(pth, options.mode);
+		} catch (error) {
+			if (error.code === 'EPERM') {
+				throw error;
+			}
+
+			if (error.code === 'ENOENT') {
+				if (path__default.dirname(pth) === pth) {
+					throw permissionError(pth);
+				}
+
+				if (error.message.includes('null bytes')) {
+					throw error;
+				}
+
+				make(path__default.dirname(pth));
+				return make(pth);
+			}
+
+			try {
+				if (!options.fs.statSync(pth).isDirectory()) {
+					throw new Error('The path is not a directory');
+				}
+			} catch (_) {
+				throw error;
+			}
+		}
+
+		return pth;
+	};
+
+	return make(path__default.resolve(input));
+};
+makeDir_1.sync = sync$3;
+
+var findCacheDir = (options = {}) => {
+	const {name} = options;
+	let directory = options.cwd;
+
+	if (options.files) {
+		directory = commondir(directory, options.files);
+	} else {
+		directory = directory || process.cwd();
+	}
+
+	directory = pkgDir_1.sync(directory);
+
+	if (directory) {
+		directory = path__default.join(directory, 'node_modules', '.cache', name);
+
+		if (directory && options.create) {
+			makeDir_1.sync(directory);
+		}
+
+		if (options.thunk) {
+			return (...arguments_) => path__default.join(directory, ...arguments_);
+		}
+	}
+
+	return directory;
+};
+
 const typescript = (options) => {
     let watchMode = false;
     let generateRound = 0;
@@ -26726,7 +27240,7 @@ const typescript = (options) => {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
-        cacheRoot: `${process.cwd()}/.rpt2_cache`,
+        cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
@@ -26756,7 +27270,7 @@ const typescript = (options) => {
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
                 if (!semver_31(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-                context.info(`rollup-plugin-typescript2 version: 0.23.1`);
+                context.info(`rollup-plugin-typescript2 version: 0.24.0`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
