@@ -16,7 +16,6 @@ import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
- 
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
 import { createFilter } from "./get-options-overrides";
 
