@@ -153,6 +153,10 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 * `rollupCommonJSResolveHack`: false
 
 	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in `namedExports` being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with `rollup-plugin-commonjs`.
+	
+	`rollup-plugin-commonjs` fixed this in `10.1.0`, so projects using this option who update to new version will be broken again.
+	
+	This also works around the similar bug affecting code splitting (see [rollup/issues/3094](https://github.com/rollup/rollup/issues/3094)).
 
 * `objectHashIgnoreUnknownHack`: false
 
