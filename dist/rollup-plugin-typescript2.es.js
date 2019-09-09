@@ -25051,6 +25051,7 @@ function parseTsConfig(context, pluginOptions) {
 
 // The injected id for helpers.
 const TSLIB = "tslib";
+const TSLIB_VIRTUAL = "\0tslib.js";
 let tslibSource;
 let tslibVersion;
 try {
@@ -27296,7 +27297,7 @@ const typescript = (options) => {
         },
         resolveId(importee, importer) {
             if (importee === TSLIB)
-                return "\0" + TSLIB;
+                return TSLIB_VIRTUAL;
             if (!importer)
                 return;
             importer = normalize(importer);
@@ -27320,7 +27321,7 @@ const typescript = (options) => {
             return;
         },
         load(id) {
-            if (id === "\0" + TSLIB)
+            if (id === TSLIB_VIRTUAL)
                 return tslibSource;
             return null;
         },
