@@ -10,7 +10,7 @@ import { IOptions } from "./ioptions";
 import { Partial } from "./partial";
 import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
-import { TSLIB, tslibSource, tslibVersion } from "./tslib";
+import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow, green } from "colors/safe";
 import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
@@ -125,7 +125,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 		resolveId(this: PluginContext, importee: string, importer: string | undefined)
 		{
 			if (importee === TSLIB)
-				return "\0" + TSLIB;
+				return TSLIB_VIRTUAL;
 
 			if (!importer)
 				return;
@@ -162,7 +162,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 		load(id: string)
 		{
-			if (id === "\0" + TSLIB)
+			if (id === TSLIB_VIRTUAL)
 				return tslibSource;
 
 			return null;
