@@ -5,6 +5,7 @@ export interface ICustomTransformer
 {
 	before?: tsTypes.TransformerFactory<tsTypes.SourceFile>;
 	after?: tsTypes.TransformerFactory<tsTypes.SourceFile>;
+	afterDeclarations?: tsTypes.TransformerFactory<tsTypes.Bundle | tsTypes.SourceFile>;
 }
 
 export type TransformerFactoryCreator = (ls: tsTypes.LanguageService) => tsTypes.CustomTransformers | ICustomTransformer;

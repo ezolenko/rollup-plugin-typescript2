@@ -17300,6 +17300,7 @@ class LanguageServiceHost {
         const transformer = {
             before: [],
             after: [],
+            afterDeclarations: [],
         };
         for (const creator of this.transformers) {
             const factory = creator(this.service);
@@ -17307,6 +17308,8 @@ class LanguageServiceHost {
                 transformer.before = lodash_11(transformer.before, factory.before);
             if (factory.after)
                 transformer.after = lodash_11(transformer.after, factory.after);
+            if (factory.afterDeclarations)
+                transformer.afterDeclarations = lodash_11(transformer.afterDeclarations, factory.afterDeclarations);
         }
         return transformer;
     }

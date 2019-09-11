@@ -128,6 +128,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		{
 			before: [],
 			after: [],
+			afterDeclarations: [],
 		};
 
 		for (const creator of this.transformers)
@@ -137,6 +138,8 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 				transformer.before = _.concat(transformer.before!, factory.before);
 			if (factory.after)
 				transformer.after = _.concat(transformer.after!, factory.after);
+			if (factory.afterDeclarations)
+				transformer.afterDeclarations = _.concat(transformer.afterDeclarations!, factory.afterDeclarations);
 		}
 
 		return transformer;
