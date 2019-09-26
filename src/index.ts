@@ -82,6 +82,8 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			if (generateRound === 0)
 			{
+				parsedConfig.fileNames.forEach((fileName) => { allImportedFiles.add(fileName); });
+
 				context.info(`typescript version: ${tsModule.version}`);
 				context.info(`tslib version: ${tslibVersion}`);
 				if (this.meta)

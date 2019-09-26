@@ -27270,6 +27270,7 @@ const typescript = (options) => {
             watchMode = process.env.ROLLUP_WATCH === "true";
             ({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
             if (generateRound === 0) {
+                parsedConfig.fileNames.forEach((fileName) => { allImportedFiles.add(fileName); });
                 context.info(`typescript version: ${tsModule.version}`);
                 context.info(`tslib version: ${tslibVersion}`);
                 if (this.meta)
