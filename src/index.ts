@@ -12,7 +12,7 @@ import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow, green } from "colors/safe";
-import { relative } from "path";
+import { dirname, isAbsolute, join, relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
@@ -269,10 +269,13 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			return undefined;
 		},
 
-		generateBundle(this: PluginContext, bundleOptions: OutputOptions): void
+		generateBundle(bundleOptions: OutputOptions, _bundle: any, isWrite: boolean): void
 		{
 			self._ongenerate();
-			self._onwrite.call(this, bundleOptions);
+			if (isWrite)
+			{
+				self._onwrite(bundleOptions);
+			}
 		},
 
 		_ongenerate(): void
@@ -313,7 +316,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			generateRound++;
 		},
 
-		_onwrite(this: PluginContext, _output: OutputOptions): void
+		_onwrite({ file, dir }: OutputOptions): void
 		{
 			if (!parsedConfig.options.declaration)
 				return;
@@ -336,7 +339,10 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 					declarations[key] = { type: out.dts, map: out.dtsmap };
 			});
 
-			const emitDeclaration = (key: string, extension: string, entry?: tsTypes.OutputFile) =>
+			const bundleFile = file;
+			const outputDir = dir;
+
+			const writeDeclaration = (key: string, extension: string, entry?: tsTypes.OutputFile) =>
 			{
 				if (!entry)
 					return;
@@ -345,32 +351,29 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
 					fileName = fileName.split("?", 1) + extension;
 
-				// If 'useTsconfigDeclarationDir' is given in the
-				// plugin options, directly write to the path provided
-				// by Typescript's LanguageService (which may not be
-				// under Rollup's output directory, and thus can't be
-				// emitted as an asset).
-				if (pluginOptions.useTsconfigDeclarationDir)
-				{
-					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${fileName}'`);
-					tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
-				}
+				let writeToPath: string;
+				// If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+				// use the path provided by Typescript's LanguageService.
+				if ((!bundleFile && !outputDir) || pluginOptions.useTsconfigDeclarationDir)
+					writeToPath = fileName;
 				else
-                {
-					const relativePath = relative(process.cwd(), fileName);
-					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
-					this.emitFile({
-						type: "asset",
-						source: entry.text,
-						fileName: relativePath
-					});
+				{
+					// Otherwise, take the directory name from the path and make sure it is absolute.
+					const destDirname = bundleFile ? dirname(bundleFile) : outputDir as string;
+					const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
+					writeToPath = join(destDirectory, relative(process.cwd(), fileName));
 				}
+
+				context.debug(() => `${blue("writing declarations")} for '${key}' to '${writeToPath}'`);
+
+				// Write the declaration file to disk.
+				tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
 			};
 
 			_.each(declarations, ({ type, map }, key) =>
 			{
-				emitDeclaration(key, ".d.ts", type);
-				emitDeclaration(key, ".d.ts.map", map);
+				writeDeclaration(key, ".d.ts", type);
+				writeDeclaration(key, ".d.ts.map", map);
 			});
 		},
 	};
