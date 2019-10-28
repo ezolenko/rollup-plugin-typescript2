@@ -356,13 +356,13 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 					tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
 				}
 				else
-                {
+				{
 					const relativePath = relative(process.cwd(), fileName);
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
 					this.emitFile({
 						type: "asset",
 						source: entry.text,
-						fileName: relativePath
+						fileName: relativePath,
 					});
 				}
 			};
