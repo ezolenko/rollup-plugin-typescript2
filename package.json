@@ -1,6 +1,6 @@
 {
   "name": "rollup-plugin-typescript2",
-  "version": "0.25.1",
+  "version": "0.25.2",
   "description": "Seamless integration between Rollup and TypeScript. Now with errors.",
   "main": "dist/rollup-plugin-typescript2.cjs.js",
   "module": "dist/rollup-plugin-typescript2.es.js",
@@ -23,9 +23,9 @@
   "author": "@ezolenko",
   "scripts": {
     "prebuild": "rimraf dist/*",
-    "build": "rollup -c",
+    "build": "rimraf dist/* && rollup -c",
     "watch": "rollup -c rollup.config.self.js -w ",
-    "build-self": "rollup -c rollup.config.self.js",
+    "build-self": "rimraf dist/* && rollup -c rollup.config.self.js",
     "lint": "tslint -c ./tslint.json src/*.ts ./*.js"
   },
   "dependencies": {
