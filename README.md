@@ -206,7 +206,7 @@ Otherwise the plugin should work in watch mode. Make sure to run a normal build 
 ### Requirements
 
 TypeScript `2.4+`
-Rollup `0.68+`
+Rollup `1.26.0+`
 Node `6.4.0+` (basic es6 support)
 
 ### Reporting bugs
