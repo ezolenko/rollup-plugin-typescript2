@@ -164,9 +164,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `useTsconfigDeclarationDir`: false
 
-	If true, declaration files will be written in the directory given in the tsconfig. If false, the declaration files will be emitted and rollup will place them inside the destination directory given in the Rollup configuration.
-	
-	Set to false if you want other plugins to see type declarations.
+	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
 
 * `typescript`: typescript module installed with the plugin
 

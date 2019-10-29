@@ -27396,9 +27396,11 @@ const typescript = (options) => {
             }
             return undefined;
         },
-        generateBundle(bundleOptions) {
+        generateBundle(bundleOptions, _bundle, isWrite) {
             self._ongenerate();
-            self._onwrite.call(this, bundleOptions);
+            if (isWrite) {
+                self._onwrite(bundleOptions);
+            }
         },
         _ongenerate() {
             context.debug(() => `generating target ${generateRound + 1}`);
@@ -27422,7 +27424,7 @@ const typescript = (options) => {
             cache().done();
             generateRound++;
         },
-        _onwrite(_output) {
+        _onwrite({ file, dir }) {
             if (!parsedConfig.options.declaration)
                 return;
             lodash_3(parsedConfig.fileNames, (name) => {
@@ -27439,34 +27441,32 @@ const typescript = (options) => {
                 if (out.dts)
                     declarations[key] = { type: out.dts, map: out.dtsmap };
             });
-            const emitDeclaration = (key, extension, entry) => {
+            const bundleFile = file;
+            const outputDir = dir;
+            const writeDeclaration = (key, extension, entry) => {
                 if (!entry)
                     return;
                 let fileName = entry.name;
                 if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
                     fileName = fileName.split("?", 1) + extension;
-                // If 'useTsconfigDeclarationDir' is given in the
-                // plugin options, directly write to the path provided
-                // by Typescript's LanguageService (which may not be
-                // under Rollup's output directory, and thus can't be
-                // emitted as an asset).
-                if (pluginOptions.useTsconfigDeclarationDir) {
-                    context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${fileName}'`);
-                    tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
-                }
+                let writeToPath;
+                // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
+                // use the path provided by Typescript's LanguageService.
+                if ((!bundleFile && !outputDir) || pluginOptions.useTsconfigDeclarationDir)
+                    writeToPath = fileName;
                 else {
-                    const relativePath = path.relative(process.cwd(), fileName);
-                    context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${relativePath}'`);
-                    this.emitFile({
-                        type: "asset",
-                        source: entry.text,
-                        fileName: relativePath,
-                    });
+                    // Otherwise, take the directory name from the path and make sure it is absolute.
+                    const destDirname = bundleFile ? path.dirname(bundleFile) : outputDir;
+                    const destDirectory = path.isAbsolute(destDirname) ? destDirname : path.join(process.cwd(), destDirname);
+                    writeToPath = path.join(destDirectory, path.relative(process.cwd(), fileName));
                 }
+                context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
+                // Write the declaration file to disk.
+                tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
             };
             lodash_3(declarations, ({ type, map }, key) => {
-                emitDeclaration(key, ".d.ts", type);
-                emitDeclaration(key, ".d.ts.map", map);
+                writeDeclaration(key, ".d.ts", type);
+                writeDeclaration(key, ".d.ts.map", map);
             });
         },
     };
