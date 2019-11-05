@@ -27454,7 +27454,7 @@ const typescript = (options) => {
                     this.emitFile({
                         type: "asset",
                         source: entry.text,
-                        fileName: relativePath
+                        fileName: relativePath,
                     });
                 }
             };
