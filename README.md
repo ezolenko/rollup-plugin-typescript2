@@ -165,6 +165,8 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 * `useTsconfigDeclarationDir`: false
 
 	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
+	
+	Set to false if any other rollup plugins need access to declaration files.
 
 * `typescript`: typescript module installed with the plugin
 
@@ -206,7 +208,7 @@ Otherwise the plugin should work in watch mode. Make sure to run a normal build 
 ### Requirements
 
 TypeScript `2.4+`
-Rollup `1.26.0+`
+Rollup `1.26.3+`
 Node `6.4.0+` (basic es6 support)
 
 ### Reporting bugs

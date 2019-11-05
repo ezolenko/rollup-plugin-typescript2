@@ -4,7 +4,7 @@ import { emptyDirSync, readJsonSync, writeJsonSync, ensureFileSync, removeSync, 
 import fs, { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 import util from 'util';
 import os from 'os';
-import path__default, { normalize as normalize$1, join, dirname, isAbsolute, relative } from 'path';
+import path__default, { normalize as normalize$1, join, dirname, relative } from 'path';
 import { sync as sync$4 } from 'resolve';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -27390,11 +27390,9 @@ const typescript = (options) => {
             }
             return undefined;
         },
-        generateBundle(bundleOptions, _bundle, isWrite) {
+        generateBundle(bundleOptions) {
             self._ongenerate();
-            if (isWrite) {
-                self._onwrite(bundleOptions);
-            }
+            self._onwrite.call(this, bundleOptions);
         },
         _ongenerate() {
             context.debug(() => `generating target ${generateRound + 1}`);
@@ -27418,7 +27416,7 @@ const typescript = (options) => {
             cache().done();
             generateRound++;
         },
-        _onwrite({ file, dir }) {
+        _onwrite(_output) {
             if (!parsedConfig.options.declaration)
                 return;
             lodash_3(parsedConfig.fileNames, (name) => {
@@ -27435,32 +27433,34 @@ const typescript = (options) => {
                 if (out.dts)
                     declarations[key] = { type: out.dts, map: out.dtsmap };
             });
-            const bundleFile = file;
-            const outputDir = dir;
-            const writeDeclaration = (key, extension, entry) => {
+            const emitDeclaration = (key, extension, entry) => {
                 if (!entry)
                     return;
                 let fileName = entry.name;
                 if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
                     fileName = fileName.split("?", 1) + extension;
-                let writeToPath;
-                // If for some reason no 'dest' property exists or if 'useTsconfigDeclarationDir' is given in the plugin options,
-                // use the path provided by Typescript's LanguageService.
-                if ((!bundleFile && !outputDir) || pluginOptions.useTsconfigDeclarationDir)
-                    writeToPath = fileName;
-                else {
-                    // Otherwise, take the directory name from the path and make sure it is absolute.
-                    const destDirname = bundleFile ? dirname(bundleFile) : outputDir;
-                    const destDirectory = isAbsolute(destDirname) ? destDirname : join(process.cwd(), destDirname);
-                    writeToPath = join(destDirectory, relative(process.cwd(), fileName));
+                // If 'useTsconfigDeclarationDir' is given in the
+                // plugin options, directly write to the path provided
+                // by Typescript's LanguageService (which may not be
+                // under Rollup's output directory, and thus can't be
+                // emitted as an asset).
+                if (pluginOptions.useTsconfigDeclarationDir) {
+                    context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${fileName}'`);
+                    tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
                 }
-                context.debug(() => `${safe_5("writing declarations")} for '${key}' to '${writeToPath}'`);
-                // Write the declaration file to disk.
-                tsModule.sys.writeFile(writeToPath, entry.text, entry.writeByteOrderMark);
+                else {
+                    const relativePath = relative(process.cwd(), fileName);
+                    context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${relativePath}'`);
+                    this.emitFile({
+                        type: "asset",
+                        source: entry.text,
+                        fileName: relativePath,
+                    });
+                }
             };
             lodash_3(declarations, ({ type, map }, key) => {
-                writeDeclaration(key, ".d.ts", type);
-                writeDeclaration(key, ".d.ts.map", map);
+                emitDeclaration(key, ".d.ts", type);
+                emitDeclaration(key, ".d.ts.map", map);
             });
         },
     };
