@@ -41,6 +41,14 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 	return overrides;
 }
 
+function includeToArray(include: string | string[])
+{
+	if (include instanceof Array)
+		return include;
+	else
+		return [ include ];
+}
+
 function expandIncludeWithDirs(include: string | string[], dirs: string[])
 {
 	return _
@@ -58,8 +66,11 @@ function expandIncludeWithDirs(include: string | string[], dirs: string[])
 
 export function createFilter(context: IContext, pluginOptions: IOptions, parsedConfig: tsTypes.ParsedCommandLine)
 {
-	let included = pluginOptions.include;
-	let excluded = pluginOptions.exclude;
+	let included = includeToArray(pluginOptions.include);
+	let excluded = includeToArray(pluginOptions.exclude);
+
+	if (parsedConfig.options.allowJs)
+		included = _.union(included, ["*.js+(|x)", "**/*.js+(|x)"]);
 
 	if (parsedConfig.options.rootDirs)
 	{

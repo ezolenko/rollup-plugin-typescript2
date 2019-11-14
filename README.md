@@ -140,7 +140,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
-	By default passes all .ts files through typescript compiler.
+	By default passes all .ts files through typescript compiler. If `allowJs: true` is set in tsconfig, `"*.js+(|x)", "**/*.js+(|x)"` are added automatically.
 
 * `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
 

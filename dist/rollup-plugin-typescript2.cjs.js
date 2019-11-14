@@ -17115,23 +17115,24 @@ var lodash = createCommonjsModule(function (module, exports) {
   }
 }.call(commonjsGlobal));
 });
-var lodash_1 = lodash.compact;
-var lodash_2 = lodash.get;
-var lodash_3 = lodash.each;
-var lodash_4 = lodash.isEqual;
-var lodash_5 = lodash.some;
-var lodash_6 = lodash.filter;
-var lodash_7 = lodash.endsWith;
-var lodash_8 = lodash.map;
-var lodash_9 = lodash.has;
-var lodash_10 = lodash.isFunction;
-var lodash_11 = lodash.concat;
-var lodash_12 = lodash.find;
-var lodash_13 = lodash.defaults;
-var lodash_14 = lodash.assign;
-var lodash_15 = lodash.merge;
-var lodash_16 = lodash.flatMap;
-var lodash_17 = lodash.chain;
+var lodash_1 = lodash.union;
+var lodash_2 = lodash.compact;
+var lodash_3 = lodash.get;
+var lodash_4 = lodash.each;
+var lodash_5 = lodash.isEqual;
+var lodash_6 = lodash.some;
+var lodash_7 = lodash.filter;
+var lodash_8 = lodash.endsWith;
+var lodash_9 = lodash.map;
+var lodash_10 = lodash.has;
+var lodash_11 = lodash.isFunction;
+var lodash_12 = lodash.concat;
+var lodash_13 = lodash.find;
+var lodash_14 = lodash.defaults;
+var lodash_15 = lodash.assign;
+var lodash_16 = lodash.merge;
+var lodash_17 = lodash.flatMap;
+var lodash_18 = lodash.chain;
 
 var VerbosityLevel;
 (function (VerbosityLevel) {
@@ -17148,22 +17149,22 @@ class ConsoleContext {
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_11(message) ? message() : message}`);
     }
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_11(message) ? message() : message}`);
     }
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_11(message) ? message() : message}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash_11(message) ? message() : message}`);
     }
 }
 
@@ -17174,12 +17175,12 @@ class RollupContext {
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
-        this.hasContext = lodash_10(this.context.warn) && lodash_10(this.context.error);
+        this.hasContext = lodash_11(this.context.warn) && lodash_11(this.context.error);
     }
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash_11(message) ? message() : message;
         if (this.hasContext)
             this.context.warn(`${text}`);
         else
@@ -17188,7 +17189,7 @@ class RollupContext {
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash_11(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
                 this.context.error(`${text}`);
@@ -17201,13 +17202,13 @@ class RollupContext {
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash_11(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash_11(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
 }
@@ -17247,7 +17248,7 @@ class LanguageServiceHost {
     }
     getScriptSnapshot(fileName) {
         fileName = normalize(fileName);
-        if (lodash_9(this.snapshots, fileName))
+        if (lodash_10(this.snapshots, fileName))
             return this.snapshots[fileName];
         const source = tsModule.sys.readFile(fileName);
         if (source) {
@@ -17305,11 +17306,11 @@ class LanguageServiceHost {
         for (const creator of this.transformers) {
             const factory = creator(this.service);
             if (factory.before)
-                transformer.before = lodash_11(transformer.before, factory.before);
+                transformer.before = lodash_12(transformer.before, factory.before);
             if (factory.after)
-                transformer.after = lodash_11(transformer.after, factory.after);
+                transformer.after = lodash_12(transformer.after, factory.after);
             if (factory.afterDeclarations)
-                transformer.afterDeclarations = lodash_11(transformer.afterDeclarations, factory.afterDeclarations);
+                transformer.afterDeclarations = lodash_12(transformer.afterDeclarations, factory.afterDeclarations);
         }
         return transformer;
     }
@@ -23963,7 +23964,7 @@ class RollingCache {
             return false;
         if (!fs.existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return lodash_4(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return lodash_5(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
     }
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
@@ -24704,11 +24705,11 @@ class NoCache {
 function convertEmitOutput(output, references) {
     const out = { code: "", references };
     output.outputFiles.forEach((e) => {
-        if (lodash_7(e.name, ".d.ts"))
+        if (lodash_8(e.name, ".d.ts"))
             out.dts = e;
-        else if (lodash_7(e.name, ".d.ts.map"))
+        else if (lodash_8(e.name, ".d.ts.map"))
             out.dtsmap = e;
-        else if (lodash_7(e.name, ".map"))
+        else if (lodash_8(e.name, ".map"))
             out.map = e.text;
         else
             out.code = e.text;
@@ -24719,13 +24720,13 @@ function getAllReferences(importer, snapshot, options) {
     if (!snapshot)
         return [];
     const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
-    return lodash_1(lodash_11(info.referencedFiles, info.importedFiles).map((reference) => {
+    return lodash_2(lodash_12(info.referencedFiles, info.importedFiles).map((reference) => {
         const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
         return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
     }));
 }
 function convertDiagnostic(type, data) {
-    return lodash_8(data, (diagnostic) => {
+    return lodash_9(data, (diagnostic) => {
         const entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
@@ -24764,10 +24765,10 @@ class TsCache {
         }
         this.dependencyTree = new graphlib_1({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        const automaticTypes = lodash_8(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+        const automaticTypes = lodash_9(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
             .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
             .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
-        this.ambientTypes = lodash_6(rootFilenames, (file) => lodash_7(file, ".d.ts"))
+        this.ambientTypes = lodash_7(rootFilenames, (file) => lodash_8(file, ".d.ts"))
             .concat(automaticTypes)
             .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
         this.init();
@@ -24798,11 +24799,11 @@ class TsCache {
     walkTree(cb) {
         const acyclic = graphlib_3.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_3(graphlib_3.topsort(this.dependencyTree), (id) => cb(id));
+            lodash_4(graphlib_3.topsort(this.dependencyTree), (id) => cb(id));
             return;
         }
         this.context.info(safe_4("import tree has cycles"));
-        lodash_3(this.dependencyTree.nodes(), (id) => cb(id));
+        lodash_4(this.dependencyTree.nodes(), (id) => cb(id));
     }
     done() {
         this.context.info(safe_5("rolling caches"));
@@ -24848,7 +24849,7 @@ class TsCache {
             return;
         }
         this.context.debug(safe_5("Ambient types:"));
-        const typeNames = lodash_6(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+        const typeNames = lodash_7(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
             .map((snapshot) => {
             this.context.debug(`    ${snapshot.id}`);
             return this.makeName(snapshot.id, snapshot.snapshot);
@@ -24857,7 +24858,7 @@ class TsCache {
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
             this.context.info(safe_4("ambient types changed, redoing all semantic diagnostics"));
-        lodash_3(typeNames, (name) => this.typesCache.touch(name));
+        lodash_4(typeNames, (name) => this.typesCache.touch(name));
     }
     getDiagnostics(type, cache, id, snapshot, check) {
         if (this.noCache) {
@@ -24911,7 +24912,7 @@ class TsCache {
         if (this.ambientTypesDirty)
             return true;
         const dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
-        return lodash_5(dependencies, (dependency, node) => {
+        return lodash_6(dependencies, (dependency, node) => {
             if (!node || dependency.distance === Infinity)
                 return false;
             const l = this.dependencyTree.node(node);
@@ -24928,7 +24929,7 @@ class TsCache {
 }
 
 function printDiagnostics(context, diagnostics, pretty) {
-    lodash_3(diagnostics, (diagnostic) => {
+    lodash_4(diagnostics, (diagnostic) => {
         let print;
         let color;
         let category;
@@ -24990,8 +24991,14 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
     }
     return overrides;
 }
+function includeToArray(include) {
+    if (include instanceof Array)
+        return include;
+    else
+        return [include];
+}
 function expandIncludeWithDirs(include, dirs) {
-    return lodash_17(dirs)
+    return lodash_18(dirs)
         .flatMap((root) => {
         if (include instanceof Array)
             return include.map((x) => path.join(root, x));
@@ -25002,15 +25009,17 @@ function expandIncludeWithDirs(include, dirs) {
         .value();
 }
 function createFilter(context, pluginOptions, parsedConfig) {
-    let included = pluginOptions.include;
-    let excluded = pluginOptions.exclude;
+    let included = includeToArray(pluginOptions.include);
+    let excluded = includeToArray(pluginOptions.exclude);
+    if (parsedConfig.options.allowJs)
+        included = lodash_1(included, ["*.js+(|x)", "**/*.js+(|x)"]);
     if (parsedConfig.options.rootDirs) {
         included = expandIncludeWithDirs(included, parsedConfig.options.rootDirs);
         excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
     }
     if (parsedConfig.projectReferences) {
-        included = lodash_11(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
-        excluded = lodash_11(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
+        included = lodash_12(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
+        excluded = lodash_12(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
     }
     context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
     context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
@@ -25037,7 +25046,7 @@ function parseTsConfig(context, pluginOptions) {
         if (text === undefined)
             throw new Error(`failed to read '${fileName}'`);
         const result = tsModule.parseConfigFileTextToJson(fileName, text);
-        pretty = lodash_2(result.config, "pretty", pretty);
+        pretty = lodash_3(result.config, "pretty", pretty);
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
             throw new Error(`failed to parse '${fileName}'`);
@@ -25047,7 +25056,7 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     const mergedConfig = {};
-    lodash_15(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodash_16(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
@@ -27248,7 +27257,7 @@ const typescript = (options) => {
         return _cache;
     };
     const pluginOptions = Object.assign({}, options);
-    lodash_13(pluginOptions, {
+    lodash_14(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -27283,7 +27292,7 @@ const typescript = (options) => {
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
                 if (!semver_32(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-                context.info(`rollup-plugin-typescript2 version: 0.25.3`);
+                context.info(`rollup-plugin-typescript2 version: 0.26.0`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
@@ -27319,7 +27328,7 @@ const typescript = (options) => {
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (lodash_7(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (lodash_8(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return;
                 const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? resolve.sync(result.resolvedModule.resolvedFileName)
@@ -27348,7 +27357,7 @@ const typescript = (options) => {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash_12(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -27356,14 +27365,14 @@ const typescript = (options) => {
                     printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (lodash_10(this.error))
+                    if (lodash_11(this.error))
                         this.error(safe_3(`failed to transpile '${id}'`));
                 }
                 const references = getAllReferences(id, servicesHost.getScriptSnapshot(id), parsedConfig.options);
                 return convertEmitOutput(output, references);
             });
             if (pluginOptions.check) {
-                const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                const diagnostics = lodash_12(cache().getSyntacticDiagnostics(id, snapshot, () => {
                     return service.getSyntacticDiagnostics(id);
                 }), cache().getSemanticDiagnostics(id, snapshot, () => {
                     return service.getSemanticDiagnostics(id);
@@ -27409,7 +27418,7 @@ const typescript = (options) => {
                     const snapshot = servicesHost.getScriptSnapshot(id);
                     if (!snapshot)
                         return;
-                    const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash_12(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -27425,9 +27434,9 @@ const typescript = (options) => {
         _onwrite(_output) {
             if (!parsedConfig.options.declaration)
                 return;
-            lodash_3(parsedConfig.fileNames, (name) => {
+            lodash_4(parsedConfig.fileNames, (name) => {
                 const key = normalize(name);
-                if (lodash_9(declarations, key))
+                if (lodash_10(declarations, key))
                     return;
                 if (!allImportedFiles.has(key)) {
                     context.debug(() => `skipping declarations for unused '${key}'`);
@@ -27464,7 +27473,7 @@ const typescript = (options) => {
                     });
                 }
             };
-            lodash_3(declarations, ({ type, map }, key) => {
+            lodash_4(declarations, ({ type, map }, key) => {
                 emitDeclaration(key, ".d.ts", type);
                 emitDeclaration(key, ".d.ts.map", map);
             });
