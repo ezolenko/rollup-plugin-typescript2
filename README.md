@@ -186,11 +186,10 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 	```js
 	const keysTransformer = require('ts-transformer-keys/transformer').default;
-	const transformer = (service) =>
-	{
+	const transformer = (service) => ({
   		before: [ keysTransformer(service.getProgram()) ],
   		after: []
-	};
+	});
 
 	// ...
 	plugins: [
