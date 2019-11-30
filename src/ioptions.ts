@@ -12,6 +12,7 @@ export type TransformerFactoryCreator = (ls: tsTypes.LanguageService) => tsTypes
 
 export interface IOptions
 {
+	cwd: string;
 	include: string|string[];
 	exclude: string|string[];
 	check: boolean;

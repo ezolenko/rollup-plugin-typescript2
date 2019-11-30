@@ -10,14 +10,14 @@ import { checkTsConfig } from "./check-tsconfig";
 
 export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 {
-	const fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
+	const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
 
 	// if the value was provided, but no file, fail hard
 	if (pluginOptions.tsconfig !== undefined && !fileName)
 		throw new Error(`failed to open '${fileName}'`);
 
 	let loadedConfig: any = {};
-	let baseDir = process.cwd();
+	let baseDir = pluginOptions.cwd;
 	let configFileName;
 	let pretty = false;
 	if (fileName)

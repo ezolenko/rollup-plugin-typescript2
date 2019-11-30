@@ -93,6 +93,10 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 ### Plugin options
 
+* `cwd`: `string`
+
+    The current work directory, default `process.cwd()`.
+
 * `tsconfigDefaults`: `{}`
 
 	The object passed as `tsconfigDefaults` will be merged with loaded `tsconfig.json`. Final config passed to typescript will be the result of values in `tsconfigDefaults` replaced by values in loaded `tsconfig.json`, replaced by values in `tsconfigOverride` and then replaced by hard `compilerOptions` overrides on top of that (see above).

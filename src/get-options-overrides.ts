@@ -8,7 +8,7 @@ import { IContext } from "./context";
 // tslint:disable-next-line:no-var-requires
 const createRollupFilter = require("rollup-pluginutils").createFilter;
 
-export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
+export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
 {
 	const overrides: tsTypes.CompilerOptions = {
 		noEmitHelpers: false,
@@ -30,7 +30,7 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		if (!declaration)
 			overrides.declarationDir = undefined;
 		if (declaration && !useTsconfigDeclarationDir)
-			overrides.declarationDir = process.cwd();
+			overrides.declarationDir = cwd;
 
 		// unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
 		const sourceMap = preParsedTsconfig.options.sourceMap;
