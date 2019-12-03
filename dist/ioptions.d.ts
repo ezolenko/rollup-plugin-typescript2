@@ -7,6 +7,7 @@ export interface ICustomTransformer {
 }
 export declare type TransformerFactoryCreator = (ls: tsTypes.LanguageService) => tsTypes.CustomTransformers | ICustomTransformer;
 export interface IOptions {
+    cwd: string;
     include: string | string[];
     exclude: string | string[];
     check: boolean;

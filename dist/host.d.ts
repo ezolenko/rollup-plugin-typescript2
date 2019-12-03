@@ -8,7 +8,7 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     private versions;
     private service?;
     private fileNames;
-    constructor(parsedConfig: tsTypes.ParsedCommandLine, transformers: TransformerFactoryCreator[]);
+    constructor(parsedConfig: tsTypes.ParsedCommandLine, transformers: TransformerFactoryCreator[], cwd: string);
     reset(): void;
     setLanguageService(service: tsTypes.LanguageService): void;
     setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot;

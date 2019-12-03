@@ -359,7 +359,6 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				else
 {
 					const relativePath = relative(pluginOptions.cwd, fileName);
-					console.log('>>> DEBUG2', pluginOptions.cwd, relativePath, fileName);
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
 					this.emitFile({
 						type: "asset",
@@ -369,7 +368,6 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				}
 			};
 
-			console.log('>>> DEBUG', 'declarations', declarations);
 			_.each(declarations, ({ type, map }, key) =>
 			{
 				emitDeclaration(key, ".d.ts", type);

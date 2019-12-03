@@ -17216,13 +17216,13 @@ function normalize(fileName) {
 }
 
 class LanguageServiceHost {
-    constructor(parsedConfig, transformers) {
+    constructor(parsedConfig, transformers, cwd) {
         this.parsedConfig = parsedConfig;
         this.transformers = transformers;
-        this.cwd = process.cwd();
         this.snapshots = {};
         this.versions = {};
         this.fileNames = new Set(parsedConfig.fileNames);
+        this.cwd = cwd;
     }
     reset() {
         this.snapshots = {};
@@ -24958,7 +24958,7 @@ function printDiagnostics(context, diagnostics, pretty) {
 
 // tslint:disable-next-line:no-var-requires
 const createRollupFilter = require("rollup-pluginutils").createFilter;
-function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
+function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }, preParsedTsconfig) {
     const overrides = {
         noEmitHelpers: false,
         importHelpers: true,
@@ -24976,7 +24976,7 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         if (!declaration)
             overrides.declarationDir = undefined;
         if (declaration && !useTsconfigDeclarationDir)
-            overrides.declarationDir = process.cwd();
+            overrides.declarationDir = cwd;
         // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
         const sourceMap = preParsedTsconfig.options.sourceMap;
         if (!sourceMap)
@@ -25018,12 +25018,12 @@ function checkTsConfig(parsedConfig) {
 }
 
 function parseTsConfig(context, pluginOptions) {
-    const fileName = tsModule.findConfigFile(process.cwd(), tsModule.sys.fileExists, pluginOptions.tsconfig);
+    const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
     // if the value was provided, but no file, fail hard
     if (pluginOptions.tsconfig !== undefined && !fileName)
         throw new Error(`failed to open '${fileName}'`);
     let loadedConfig = {};
-    let baseDir = process.cwd();
+    let baseDir = pluginOptions.cwd;
     let configFileName;
     let pretty = false;
     if (fileName) {
@@ -27257,6 +27257,7 @@ const typescript = (options) => {
         transformers: [],
         tsconfigDefaults: {},
         objectHashIgnoreUnknownHack: false,
+        cwd: process.cwd(),
     });
     if (!pluginOptions.typescript) {
         pluginOptions.typescript = require("typescript");
@@ -27285,7 +27286,7 @@ const typescript = (options) => {
                     context.info(`running in watch mode`);
             }
             filter = createFilter(context, pluginOptions, parsedConfig);
-            servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
+            servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
             service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
             servicesHost.setLanguageService(service);
             // printing compiler option errors
@@ -27449,7 +27450,7 @@ const typescript = (options) => {
                     tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
                 }
                 else {
-                    const relativePath = relative(process.cwd(), fileName);
+                    const relativePath = relative(pluginOptions.cwd, fileName);
                     context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${relativePath}'`);
                     this.emitFile({
                         type: "asset",
