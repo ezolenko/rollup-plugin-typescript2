@@ -6,15 +6,16 @@ import { TransformerFactoryCreator } from "./ioptions";
 
 export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 {
-	private cwd = process.cwd();
+	private cwd: string;
 	private snapshots: { [fileName: string]: tsTypes.IScriptSnapshot } = {};
 	private versions: { [fileName: string]: number } = {};
 	private service?: tsTypes.LanguageService;
 	private fileNames: Set<string>;
 
-	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[])
+	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[], cwd: string)
 	{
 		this.fileNames = new Set(parsedConfig.fileNames);
+		this.cwd = cwd;
 	}
 
 	public reset()

@@ -60,6 +60,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 			transformers: [],
 			tsconfigDefaults: {},
 			objectHashIgnoreUnknownHack: false,
+			cwd: process.cwd(),
 		});
 
 	if (!pluginOptions.typescript) {
@@ -103,7 +104,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 
 			filter = createFilter(context, pluginOptions, parsedConfig);
 
-			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers);
+			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
 
 			service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
 			servicesHost.setLanguageService(service);
@@ -357,7 +358,8 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				}
 				else
 {
-					const relativePath = relative(process.cwd(), fileName);
+					const relativePath = relative(pluginOptions.cwd, fileName);
+					console.log('>>> DEBUG2', pluginOptions.cwd, relativePath, fileName);
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
 					this.emitFile({
 						type: "asset",
@@ -367,6 +369,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				}
 			};
 
+			console.log('>>> DEBUG', 'declarations', declarations);
 			_.each(declarations, ({ type, map }, key) =>
 			{
 				emitDeclaration(key, ".d.ts", type);
