@@ -28955,7 +28955,7 @@ const typescript = (options) => {
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
-                if (!pluginOptions.objectHashIgnoreUnknownHack)
+                if (pluginOptions.objectHashIgnoreUnknownHack)
                     context.warn(() => `${safe_4("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
                 if (watchMode)
                     context.info(`running in watch mode`);
