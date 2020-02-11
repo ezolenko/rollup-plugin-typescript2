@@ -98,6 +98,9 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 				context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 				context.debug(() => `tsconfig path: ${tsConfigPath}`);
 
+				if (!pluginOptions.objectHashIgnoreUnknownHack)
+					context.warn(() => `${yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
+
 				if (watchMode)
 					context.info(`running in watch mode`);
 			}
