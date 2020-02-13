@@ -67,10 +67,6 @@ Must be before rollup-plugin-typescript2 in the plugin list, especially when `br
 
 See explanation for `rollupCommonJSResolveHack` option below.
 
-#### plugins using async/await
-
-See `objectHashIgnoreUnknownHack` below.
-
 #### rollup-plugin-babel
 
 This plugin transpiles code, but doesn't change file extension. Babel plugin, even though it claims it processes all files, only looks at code with those extensions by default: `.js,.jsx,.es6,.es,.mjs`. To workaround add `ts` and `tsx` to the list of babel extensions.
@@ -168,7 +164,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `objectHashIgnoreUnknownHack`: false
 
-	The plugin uses rollup config as part of cache key. `object-hash` is used to generate a hash, but it can't hash certain elements at the moment. Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed. Only enable this if you need it and make sure to run with `clean: true` once in a while and definitely before a release. (See [#105](https://github.com/ezolenko/rollup-plugin-typescript2/issues/105) and [#203](https://github.com/ezolenko/rollup-plugin-typescript2/pull/203))
+	The plugin uses rollup config as part of cache key. `object-hash` is used to generate a hash, but it can have trouble with some uncommon types of elements. Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed. Only enable this if you need it (`Error: Unknown object type "xxx"` for example) and make sure to run with `clean: true` once in a while and definitely before a release. (See [#105](https://github.com/ezolenko/rollup-plugin-typescript2/issues/105) and [#203](https://github.com/ezolenko/rollup-plugin-typescript2/pull/203))
 
 * `useTsconfigDeclarationDir`: false
 
