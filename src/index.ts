@@ -19,6 +19,8 @@ import findCacheDir from "find-cache-dir";
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
 import { createFilter } from "./get-options-overrides";
 
+export { IOptions }
+
 const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 {
 	let watchMode = false;
