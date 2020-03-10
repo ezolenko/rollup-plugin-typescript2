@@ -19,9 +19,11 @@ import findCacheDir from "find-cache-dir";
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
 import { createFilter } from "./get-options-overrides";
 
-export { IOptions }
+type RPT2Options = Partial<IOptions>;
 
-const typescript: PluginImpl<Partial<IOptions>> = (options) =>
+export { RPT2Options }
+
+const typescript: PluginImpl<RPT2Options> = (options) =>
 {
 	let watchMode = false;
 	let generateRound = 0;
@@ -34,7 +36,7 @@ const typescript: PluginImpl<Partial<IOptions>> = (options) =>
 	let service: tsTypes.LanguageService;
 	let noErrors = true;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
-	const allImportedFiles = new Set();
+	const allImportedFiles = new Set<string>();
 
 	let _cache: TsCache;
 	const cache = (): TsCache =>
