@@ -29,10 +29,10 @@
     "lint": "tslint -c ./tslint.json src/*.ts ./*.js"
   },
   "dependencies": {
+    "@rollup/pluginutils": "^3.0.8",
     "find-cache-dir": "^3.2.0",
     "fs-extra": "8.1.0",
     "resolve": "1.15.1",
-    "rollup-pluginutils": "2.8.2",
     "tslib": "1.10.0"
   },
   "peerDependencies": {
