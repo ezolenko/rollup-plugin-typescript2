@@ -12,6 +12,7 @@ var os = _interopDefault(require('os'));
 var path = require('path');
 var path__default = _interopDefault(path);
 var resolve = require('resolve');
+var pluginutils = require('@rollup/pluginutils');
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -24998,8 +24999,6 @@ function printDiagnostics(context, diagnostics, pretty) {
     });
 }
 
-// tslint:disable-next-line:no-var-requires
-const createRollupFilter = require("rollup-pluginutils").createFilter;
 function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }, preParsedTsconfig) {
     const overrides = {
         noEmitHelpers: false,
@@ -25050,7 +25049,7 @@ function createFilter(context, pluginOptions, parsedConfig) {
     }
     context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
     context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-    return createRollupFilter(included, excluded);
+    return pluginutils.createFilter(included, excluded);
 }
 
 function checkTsConfig(parsedConfig) {

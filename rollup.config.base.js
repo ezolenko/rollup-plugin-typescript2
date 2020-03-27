@@ -18,6 +18,7 @@ export default {
 		"util",
 		"assert",
 		"os",
+		"@rollup/pluginutils",
 	],
 
 	plugins: [

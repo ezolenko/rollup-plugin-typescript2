@@ -1,12 +1,10 @@
+import { createFilter as createRollupFilter} from "@rollup/pluginutils";
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { IOptions } from "./ioptions";
 import * as _ from "lodash";
 import { join } from "path";
 import { IContext } from "./context";
-
-// tslint:disable-next-line:no-var-requires
-const createRollupFilter = require("rollup-pluginutils").createFilter;
 
 export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
 {
