@@ -16,7 +16,7 @@ import { relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformSourceDescription, MinimalPluginContext } from "rollup";
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, MinimalPluginContext, TransformResult } from "rollup";
 import { createFilter } from "./get-options-overrides";
 
 type RPT2Options = Partial<IOptions>;
@@ -178,7 +178,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			return null;
 		},
 
-		transform(this: PluginContext, code: string, id: string): TransformSourceDescription | undefined
+		transform(this: PluginContext, code: string, id: string): TransformResult
 		{
 			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
 
@@ -262,7 +262,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					context.debug(() => `${blue("generated declarations")} for '${key}'`);
 				}
 
-				const transformResult: TransformSourceDescription = { code: result.code, map: { mappings: "" } };
+				const transformResult: TransformResult = { code: result.code, map: { mappings: "" } };
 
 				if (result.map)
 				{
