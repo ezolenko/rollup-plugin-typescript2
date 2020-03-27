@@ -1,5 +1,5 @@
-import resolve from "rollup-plugin-node-resolve";
-import commonjs from "rollup-plugin-commonjs";
+import resolve from "@rollup/plugin-node-resolve";
+import commonjs from "@rollup/plugin-commonjs";
 import replace from "rollup-plugin-re";
 
 const pkg = require("./package.json");
@@ -30,7 +30,7 @@ export default {
 				"$TS_VERSION_RANGE": pkg.peerDependencies.typescript,
 			},
 		}),
-		resolve({ jsnext: true, preferBuiltins: true }),
+		resolve({ jsnext: true, preferBuiltins: true, }),
 		commonjs
 		({
 			include: "node_modules/**",
