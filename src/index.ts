@@ -16,7 +16,7 @@ import { relative } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, MinimalPluginContext, TransformResult } from "rollup";
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, Plugin } from "rollup";
 import { createFilter } from "./get-options-overrides";
 
 type RPT2Options = Partial<IOptions>;
@@ -73,11 +73,11 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 	setTypescriptModule(pluginOptions.typescript);
 
-	const self = {
+	const self: Plugin & { _ongenerate: Function, _onwrite: Function } = {
 
 		name: "rpt2",
 
-		options(this: MinimalPluginContext, config: InputOptions)
+		options(config)
 		{
 			rollupOptions = {... config};
 			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
@@ -126,13 +126,13 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			return config;
 		},
 
-		watchChange(id: string)
+		watchChange(id)
 		{
 			const key = normalize(id);
 			delete declarations[key];
 		},
 
-		resolveId(this: PluginContext, importee: string, importer: string | undefined)
+		resolveId(importee, importer)
 		{
 			if (importee === TSLIB)
 				return TSLIB_VIRTUAL;
@@ -170,7 +170,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			return;
 		},
 
-		load(id: string)
+		load(id)
 		{
 			if (id === TSLIB_VIRTUAL)
 				return tslibSource;
@@ -178,7 +178,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			return null;
 		},
 
-		transform(this: PluginContext, code: string, id: string): TransformResult
+		transform(code, id)
 		{
 			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
 
@@ -277,7 +277,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			return undefined;
 		},
 
-		generateBundle(this: PluginContext, bundleOptions: OutputOptions): void
+		generateBundle(bundleOptions)
 		{
 			self._ongenerate();
 			self._onwrite.call(this, bundleOptions);
