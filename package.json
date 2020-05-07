@@ -33,7 +33,7 @@
     "find-cache-dir": "^3.3.1",
     "fs-extra": "8.1.0",
     "resolve": "1.15.1",
-    "tslib": "1.11.1"
+    "tslib": "1.11.2"
   },
   "peerDependencies": {
     "rollup": ">=1.26.3",
