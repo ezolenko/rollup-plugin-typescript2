@@ -34,12 +34,6 @@ export default {
 		commonjs
 		({
 			include: "node_modules/**",
-			namedExports:
-			{
-				"colors/safe": [ "green", "white", "red", "yellow", "blue" ],
-				"lodash": [ "compact", "get", "each", "isEqual", "some", "filter", "endsWith", "map", "has", "isFunction", "concat", "find", "defaults", "assign", "merge", "flatMap", "chain" ],
-			//	"fs-extra": [ "renameSync", "removeSync", "ensureFileSync", "writeJsonSync", "readJsonSync", "existsSync", "readdirSync", "emptyDirSync" ],
-			},
 		}),
 	],
 
@@ -49,18 +43,21 @@ export default {
 			file: pkg.main,
 			sourcemap: true,
 			banner: "/* eslint-disable */",
+			exports: "auto",
 		},
 		{
 			format: "es",
 			file: pkg.module,
 			sourcemap: true,
 			banner: "/* eslint-disable */",
+			exports: "auto",
 		},
 		{
 			format: "es",
 			file: "build-self/" + pkg.module,
 			sourcemap: true,
 			banner: "/* eslint-disable */",
+			exports: "auto",
 		},
 	],
 };

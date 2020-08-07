@@ -10,12 +10,18 @@ import { createFilter as createFilter$1 } from '@rollup/pluginutils';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-function commonjsRequire () {
-	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
+function createCommonjsModule(fn, basedir, module) {
+	return module = {
+	  path: basedir,
+	  exports: {},
+	  require: function (path, base) {
+      return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
+    }
+	}, fn(module, module.exports), module.exports;
 }
 
-function createCommonjsModule(fn, module) {
-	return module = { exports: {} }, fn(module, module.exports), module.exports;
+function commonjsRequire () {
+	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
 }
 
 var lodash = createCommonjsModule(function (module, exports) {
@@ -25,7 +31,7 @@ var lodash = createCommonjsModule(function (module, exports) {
   var undefined$1;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.15';
+  var VERSION = '4.17.19';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
@@ -3732,8 +3738,21 @@ var lodash = createCommonjsModule(function (module, exports) {
      * @returns {Array} Returns the new sorted array.
      */
     function baseOrderBy(collection, iteratees, orders) {
+      if (iteratees.length) {
+        iteratees = arrayMap(iteratees, function(iteratee) {
+          if (isArray(iteratee)) {
+            return function(value) {
+              return baseGet(value, iteratee.length === 1 ? iteratee[0] : iteratee);
+            }
+          }
+          return iteratee;
+        });
+      } else {
+        iteratees = [identity];
+      }
+
       var index = -1;
-      iteratees = arrayMap(iteratees.length ? iteratees : [identity], baseUnary(getIteratee()));
+      iteratees = arrayMap(iteratees, baseUnary(getIteratee()));
 
       var result = baseMap(collection, function(value, key, collection) {
         var criteria = arrayMap(iteratees, function(iteratee) {
@@ -3990,6 +4009,10 @@ var lodash = createCommonjsModule(function (module, exports) {
         var key = toKey(path[index]),
             newValue = value;
 
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          return object;
+        }
+
         if (index != lastIndex) {
           var objValue = nested[key];
           newValue = customizer ? customizer(objValue, key, nested) : undefined$1;
@@ -4142,11 +4165,14 @@ var lodash = createCommonjsModule(function (module, exports) {
      *  into `array`.
      */
     function baseSortedIndexBy(array, value, iteratee, retHighest) {
-      value = iteratee(value);
-
       var low = 0,
-          high = array == null ? 0 : array.length,
-          valIsNaN = value !== value,
+          high = array == null ? 0 : array.length;
+      if (high === 0) {
+        return 0;
+      }
+
+      value = iteratee(value);
+      var valIsNaN = value !== value,
           valIsNull = value === null,
           valIsSymbol = isSymbol(value),
           valIsUndefined = value === undefined$1;
@@ -5631,10 +5657,11 @@ var lodash = createCommonjsModule(function (module, exports) {
       if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
         return false;
       }
-      // Assume cyclic values are equal.
-      var stacked = stack.get(array);
-      if (stacked && stack.get(other)) {
-        return stacked == other;
+      // Check that cyclic values are equal.
+      var arrStacked = stack.get(array);
+      var othStacked = stack.get(other);
+      if (arrStacked && othStacked) {
+        return arrStacked == other && othStacked == array;
       }
       var index = -1,
           result = true,
@@ -5796,10 +5823,11 @@ var lodash = createCommonjsModule(function (module, exports) {
           return false;
         }
       }
-      // Assume cyclic values are equal.
-      var stacked = stack.get(object);
-      if (stacked && stack.get(other)) {
-        return stacked == other;
+      // Check that cyclic values are equal.
+      var objStacked = stack.get(object);
+      var othStacked = stack.get(other);
+      if (objStacked && othStacked) {
+        return objStacked == other && othStacked == object;
       }
       var result = true;
       stack.set(object, other);
@@ -9180,6 +9208,10 @@ var lodash = createCommonjsModule(function (module, exports) {
      * // The `_.property` iteratee shorthand.
      * _.filter(users, 'active');
      * // => objects for ['barney']
+     *
+     * // Combining several predicates using `_.overEvery` or `_.overSome`.
+     * _.filter(users, _.overSome([{ 'age': 36 }, ['age', 40]]));
+     * // => objects for ['fred', 'barney']
      */
     function filter(collection, predicate) {
       var func = isArray(collection) ? arrayFilter : baseFilter;
@@ -9929,15 +9961,15 @@ var lodash = createCommonjsModule(function (module, exports) {
      * var users = [
      *   { 'user': 'fred',   'age': 48 },
      *   { 'user': 'barney', 'age': 36 },
-     *   { 'user': 'fred',   'age': 40 },
+     *   { 'user': 'fred',   'age': 30 },
      *   { 'user': 'barney', 'age': 34 }
      * ];
      *
      * _.sortBy(users, [function(o) { return o.user; }]);
-     * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 40]]
+     * // => objects for [['barney', 36], ['barney', 34], ['fred', 48], ['fred', 30]]
      *
      * _.sortBy(users, ['user', 'age']);
-     * // => objects for [['barney', 34], ['barney', 36], ['fred', 40], ['fred', 48]]
+     * // => objects for [['barney', 34], ['barney', 36], ['fred', 30], ['fred', 48]]
      */
     var sortBy = baseRest(function(collection, iteratees) {
       if (collection == null) {
@@ -14812,11 +14844,11 @@ var lodash = createCommonjsModule(function (module, exports) {
 
       // Use a sourceURL for easier debugging.
       // The sourceURL gets injected into the source that's eval-ed, so be careful
-      // with lookup (in case of e.g. prototype pollution), and strip newlines if any.
-      // A newline wouldn't be a valid sourceURL anyway, and it'd enable code injection.
+      // to normalize all kinds of whitespace, so e.g. newlines (and unicode versions of it) can't sneak in
+      // and escape the comment, thus injecting code that gets evaled.
       var sourceURL = '//# sourceURL=' +
         (hasOwnProperty.call(options, 'sourceURL')
-          ? (options.sourceURL + '').replace(/[\r\n]/g, ' ')
+          ? (options.sourceURL + '').replace(/\s/g, ' ')
           : ('lodash.templateSources[' + (++templateCounter) + ']')
         ) + '\n';
 
@@ -14849,8 +14881,6 @@ var lodash = createCommonjsModule(function (module, exports) {
 
       // If `variable` is not specified wrap a with-statement around the generated
       // code to add the data object to the top of the scope chain.
-      // Like with sourceURL, we take care to not check the option's prototype,
-      // as this configuration is a code injection vector.
       var variable = hasOwnProperty.call(options, 'variable') && options.variable;
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
@@ -15557,6 +15587,9 @@ var lodash = createCommonjsModule(function (module, exports) {
      * values against any array or object value, respectively. See `_.isEqual`
      * for a list of supported value comparisons.
      *
+     * **Note:** Multiple values can be checked by combining several matchers
+     * using `_.overSome`
+     *
      * @static
      * @memberOf _
      * @since 3.0.0
@@ -15572,6 +15605,10 @@ var lodash = createCommonjsModule(function (module, exports) {
      *
      * _.filter(objects, _.matches({ 'a': 4, 'c': 6 }));
      * // => [{ 'a': 4, 'b': 5, 'c': 6 }]
+     *
+     * // Checking for several possible values
+     * _.filter(users, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
+     * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matches(source) {
       return baseMatches(baseClone(source, CLONE_DEEP_FLAG));
@@ -15585,6 +15622,9 @@ var lodash = createCommonjsModule(function (module, exports) {
      * **Note:** Partial comparisons will match empty array and empty object
      * `srcValue` values against any array or object value, respectively. See
      * `_.isEqual` for a list of supported value comparisons.
+     *
+     * **Note:** Multiple values can be checked by combining several matchers
+     * using `_.overSome`
      *
      * @static
      * @memberOf _
@@ -15602,6 +15642,10 @@ var lodash = createCommonjsModule(function (module, exports) {
      *
      * _.find(objects, _.matchesProperty('a', 4));
      * // => { 'a': 4, 'b': 5, 'c': 6 }
+     *
+     * // Checking for several possible values
+     * _.filter(users, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
+     * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matchesProperty(path, srcValue) {
       return baseMatchesProperty(path, baseClone(srcValue, CLONE_DEEP_FLAG));
@@ -15825,6 +15869,10 @@ var lodash = createCommonjsModule(function (module, exports) {
      * Creates a function that checks if **all** of the `predicates` return
      * truthy when invoked with the arguments it receives.
      *
+     * Following shorthands are possible for providing predicates.
+     * Pass an `Object` and it will be used as an parameter for `_.matches` to create the predicate.
+     * Pass an `Array` of parameters for `_.matchesProperty` and the predicate will be created using them.
+     *
      * @static
      * @memberOf _
      * @since 4.0.0
@@ -15851,6 +15899,10 @@ var lodash = createCommonjsModule(function (module, exports) {
      * Creates a function that checks if **any** of the `predicates` return
      * truthy when invoked with the arguments it receives.
      *
+     * Following shorthands are possible for providing predicates.
+     * Pass an `Object` and it will be used as an parameter for `_.matches` to create the predicate.
+     * Pass an `Array` of parameters for `_.matchesProperty` and the predicate will be created using them.
+     *
      * @static
      * @memberOf _
      * @since 4.0.0
@@ -15870,6 +15922,9 @@ var lodash = createCommonjsModule(function (module, exports) {
      *
      * func(NaN);
      * // => false
+     *
+     * var matchesFunc = _.overSome([{ 'a': 1 }, { 'a': 2 }])
+     * var matchesPropertyFunc = _.overSome([['a', 1], ['a', 2]])
      */
     var overSome = createOver(arraySome);
 
@@ -17110,23 +17165,6 @@ var lodash = createCommonjsModule(function (module, exports) {
   }
 }.call(commonjsGlobal));
 });
-var lodash_1 = lodash.compact;
-var lodash_2 = lodash.get;
-var lodash_3 = lodash.each;
-var lodash_4 = lodash.isEqual;
-var lodash_5 = lodash.some;
-var lodash_6 = lodash.filter;
-var lodash_7 = lodash.endsWith;
-var lodash_8 = lodash.map;
-var lodash_9 = lodash.has;
-var lodash_10 = lodash.isFunction;
-var lodash_11 = lodash.concat;
-var lodash_12 = lodash.find;
-var lodash_13 = lodash.defaults;
-var lodash_14 = lodash.assign;
-var lodash_15 = lodash.merge;
-var lodash_16 = lodash.flatMap;
-var lodash_17 = lodash.chain;
 
 var VerbosityLevel;
 (function (VerbosityLevel) {
@@ -17143,22 +17181,22 @@ class ConsoleContext {
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
     }
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
     }
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log(`${this.prefix}${lodash_10(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
     }
 }
 
@@ -17169,12 +17207,12 @@ class RollupContext {
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
-        this.hasContext = lodash_10(this.context.warn) && lodash_10(this.context.error);
+        this.hasContext = lodash.isFunction(this.context.warn) && lodash.isFunction(this.context.error);
     }
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash.isFunction(message) ? message() : message;
         if (this.hasContext)
             this.context.warn(`${text}`);
         else
@@ -17183,7 +17221,7 @@ class RollupContext {
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash.isFunction(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
                 this.context.error(`${text}`);
@@ -17196,13 +17234,13 @@ class RollupContext {
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash.isFunction(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        const text = lodash_10(message) ? message() : message;
+        const text = lodash.isFunction(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
 }
@@ -17242,7 +17280,7 @@ class LanguageServiceHost {
     }
     getScriptSnapshot(fileName) {
         fileName = normalize(fileName);
-        if (lodash_9(this.snapshots, fileName))
+        if (lodash.has(this.snapshots, fileName))
             return this.snapshots[fileName];
         const source = tsModule.sys.readFile(fileName);
         if (source) {
@@ -17300,11 +17338,11 @@ class LanguageServiceHost {
         for (const creator of this.transformers) {
             const factory = creator(this.service);
             if (factory.before)
-                transformer.before = lodash_11(transformer.before, factory.before);
+                transformer.before = lodash.concat(transformer.before, factory.before);
             if (factory.after)
-                transformer.after = lodash_11(transformer.after, factory.after);
+                transformer.after = lodash.concat(transformer.after, factory.after);
             if (factory.afterDeclarations)
-                transformer.afterDeclarations = lodash_11(transformer.afterDeclarations, factory.afterDeclarations);
+                transformer.afterDeclarations = lodash.concat(transformer.afterDeclarations, factory.afterDeclarations);
         }
         return transformer;
     }
@@ -22326,7 +22364,7 @@ if (!lodash$1) {
   lodash$1 = window._;
 }
 
-var lodash_1$1 = lodash$1;
+var lodash_1 = lodash$1;
 
 var graph = Graph;
 
@@ -22345,18 +22383,18 @@ var EDGE_KEY_DELIM = "\x01";
 //    we're going to get to a performant hashtable in JavaScript.
 
 function Graph(opts) {
-  this._isDirected = lodash_1$1.has(opts, "directed") ? opts.directed : true;
-  this._isMultigraph = lodash_1$1.has(opts, "multigraph") ? opts.multigraph : false;
-  this._isCompound = lodash_1$1.has(opts, "compound") ? opts.compound : false;
+  this._isDirected = lodash_1.has(opts, "directed") ? opts.directed : true;
+  this._isMultigraph = lodash_1.has(opts, "multigraph") ? opts.multigraph : false;
+  this._isCompound = lodash_1.has(opts, "compound") ? opts.compound : false;
 
   // Label for the graph itself
   this._label = undefined;
 
   // Defaults to be set when creating a new node
-  this._defaultNodeLabelFn = lodash_1$1.constant(undefined);
+  this._defaultNodeLabelFn = lodash_1.constant(undefined);
 
   // Defaults to be set when creating a new edge
-  this._defaultEdgeLabelFn = lodash_1$1.constant(undefined);
+  this._defaultEdgeLabelFn = lodash_1.constant(undefined);
 
   // v -> label
   this._nodes = {};
@@ -22423,8 +22461,8 @@ Graph.prototype.graph = function() {
 /* === Node functions ========== */
 
 Graph.prototype.setDefaultNodeLabel = function(newDefault) {
-  if (!lodash_1$1.isFunction(newDefault)) {
-    newDefault = lodash_1$1.constant(newDefault);
+  if (!lodash_1.isFunction(newDefault)) {
+    newDefault = lodash_1.constant(newDefault);
   }
   this._defaultNodeLabelFn = newDefault;
   return this;
@@ -22435,27 +22473,27 @@ Graph.prototype.nodeCount = function() {
 };
 
 Graph.prototype.nodes = function() {
-  return lodash_1$1.keys(this._nodes);
+  return lodash_1.keys(this._nodes);
 };
 
 Graph.prototype.sources = function() {
   var self = this;
-  return lodash_1$1.filter(this.nodes(), function(v) {
-    return lodash_1$1.isEmpty(self._in[v]);
+  return lodash_1.filter(this.nodes(), function(v) {
+    return lodash_1.isEmpty(self._in[v]);
   });
 };
 
 Graph.prototype.sinks = function() {
   var self = this;
-  return lodash_1$1.filter(this.nodes(), function(v) {
-    return lodash_1$1.isEmpty(self._out[v]);
+  return lodash_1.filter(this.nodes(), function(v) {
+    return lodash_1.isEmpty(self._out[v]);
   });
 };
 
 Graph.prototype.setNodes = function(vs, value) {
   var args = arguments;
   var self = this;
-  lodash_1$1.each(vs, function(v) {
+  lodash_1.each(vs, function(v) {
     if (args.length > 1) {
       self.setNode(v, value);
     } else {
@@ -22466,7 +22504,7 @@ Graph.prototype.setNodes = function(vs, value) {
 };
 
 Graph.prototype.setNode = function(v, value) {
-  if (lodash_1$1.has(this._nodes, v)) {
+  if (lodash_1.has(this._nodes, v)) {
     if (arguments.length > 1) {
       this._nodes[v] = value;
     }
@@ -22492,26 +22530,26 @@ Graph.prototype.node = function(v) {
 };
 
 Graph.prototype.hasNode = function(v) {
-  return lodash_1$1.has(this._nodes, v);
+  return lodash_1.has(this._nodes, v);
 };
 
 Graph.prototype.removeNode =  function(v) {
   var self = this;
-  if (lodash_1$1.has(this._nodes, v)) {
+  if (lodash_1.has(this._nodes, v)) {
     var removeEdge = function(e) { self.removeEdge(self._edgeObjs[e]); };
     delete this._nodes[v];
     if (this._isCompound) {
       this._removeFromParentsChildList(v);
       delete this._parent[v];
-      lodash_1$1.each(this.children(v), function(child) {
+      lodash_1.each(this.children(v), function(child) {
         self.setParent(child);
       });
       delete this._children[v];
     }
-    lodash_1$1.each(lodash_1$1.keys(this._in[v]), removeEdge);
+    lodash_1.each(lodash_1.keys(this._in[v]), removeEdge);
     delete this._in[v];
     delete this._preds[v];
-    lodash_1$1.each(lodash_1$1.keys(this._out[v]), removeEdge);
+    lodash_1.each(lodash_1.keys(this._out[v]), removeEdge);
     delete this._out[v];
     delete this._sucs[v];
     --this._nodeCount;
@@ -22524,13 +22562,13 @@ Graph.prototype.setParent = function(v, parent) {
     throw new Error("Cannot set parent in a non-compound graph");
   }
 
-  if (lodash_1$1.isUndefined(parent)) {
+  if (lodash_1.isUndefined(parent)) {
     parent = GRAPH_NODE;
   } else {
     // Coerce parent to string
     parent += "";
     for (var ancestor = parent;
-      !lodash_1$1.isUndefined(ancestor);
+      !lodash_1.isUndefined(ancestor);
       ancestor = this.parent(ancestor)) {
       if (ancestor === v) {
         throw new Error("Setting " + parent+ " as parent of " + v +
@@ -22562,14 +22600,14 @@ Graph.prototype.parent = function(v) {
 };
 
 Graph.prototype.children = function(v) {
-  if (lodash_1$1.isUndefined(v)) {
+  if (lodash_1.isUndefined(v)) {
     v = GRAPH_NODE;
   }
 
   if (this._isCompound) {
     var children = this._children[v];
     if (children) {
-      return lodash_1$1.keys(children);
+      return lodash_1.keys(children);
     }
   } else if (v === GRAPH_NODE) {
     return this.nodes();
@@ -22581,21 +22619,21 @@ Graph.prototype.children = function(v) {
 Graph.prototype.predecessors = function(v) {
   var predsV = this._preds[v];
   if (predsV) {
-    return lodash_1$1.keys(predsV);
+    return lodash_1.keys(predsV);
   }
 };
 
 Graph.prototype.successors = function(v) {
   var sucsV = this._sucs[v];
   if (sucsV) {
-    return lodash_1$1.keys(sucsV);
+    return lodash_1.keys(sucsV);
   }
 };
 
 Graph.prototype.neighbors = function(v) {
   var preds = this.predecessors(v);
   if (preds) {
-    return lodash_1$1.union(preds, this.successors(v));
+    return lodash_1.union(preds, this.successors(v));
   }
 };
 
@@ -22619,13 +22657,13 @@ Graph.prototype.filterNodes = function(filter) {
   copy.setGraph(this.graph());
 
   var self = this;
-  lodash_1$1.each(this._nodes, function(value, v) {
+  lodash_1.each(this._nodes, function(value, v) {
     if (filter(v)) {
       copy.setNode(v, value);
     }
   });
 
-  lodash_1$1.each(this._edgeObjs, function(e) {
+  lodash_1.each(this._edgeObjs, function(e) {
     if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
       copy.setEdge(e, self.edge(e));
     }
@@ -22645,7 +22683,7 @@ Graph.prototype.filterNodes = function(filter) {
   }
 
   if (this._isCompound) {
-    lodash_1$1.each(copy.nodes(), function(v) {
+    lodash_1.each(copy.nodes(), function(v) {
       copy.setParent(v, findParent(v));
     });
   }
@@ -22656,8 +22694,8 @@ Graph.prototype.filterNodes = function(filter) {
 /* === Edge functions ========== */
 
 Graph.prototype.setDefaultEdgeLabel = function(newDefault) {
-  if (!lodash_1$1.isFunction(newDefault)) {
-    newDefault = lodash_1$1.constant(newDefault);
+  if (!lodash_1.isFunction(newDefault)) {
+    newDefault = lodash_1.constant(newDefault);
   }
   this._defaultEdgeLabelFn = newDefault;
   return this;
@@ -22668,13 +22706,13 @@ Graph.prototype.edgeCount = function() {
 };
 
 Graph.prototype.edges = function() {
-  return lodash_1$1.values(this._edgeObjs);
+  return lodash_1.values(this._edgeObjs);
 };
 
 Graph.prototype.setPath = function(vs, value) {
   var self = this;
   var args = arguments;
-  lodash_1$1.reduce(vs, function(v, w) {
+  lodash_1.reduce(vs, function(v, w) {
     if (args.length > 1) {
       self.setEdge(v, w, value);
     } else {
@@ -22714,19 +22752,19 @@ Graph.prototype.setEdge = function() {
 
   v = "" + v;
   w = "" + w;
-  if (!lodash_1$1.isUndefined(name)) {
+  if (!lodash_1.isUndefined(name)) {
     name = "" + name;
   }
 
   var e = edgeArgsToId(this._isDirected, v, w, name);
-  if (lodash_1$1.has(this._edgeLabels, e)) {
+  if (lodash_1.has(this._edgeLabels, e)) {
     if (valueSpecified) {
       this._edgeLabels[e] = value;
     }
     return this;
   }
 
-  if (!lodash_1$1.isUndefined(name) && !this._isMultigraph) {
+  if (!lodash_1.isUndefined(name) && !this._isMultigraph) {
     throw new Error("Cannot set a named edge when isMultigraph = false");
   }
 
@@ -22763,7 +22801,7 @@ Graph.prototype.hasEdge = function(v, w, name) {
   var e = (arguments.length === 1
     ? edgeObjToId(this._isDirected, arguments[0])
     : edgeArgsToId(this._isDirected, v, w, name));
-  return lodash_1$1.has(this._edgeLabels, e);
+  return lodash_1.has(this._edgeLabels, e);
 };
 
 Graph.prototype.removeEdge = function(v, w, name) {
@@ -22788,22 +22826,22 @@ Graph.prototype.removeEdge = function(v, w, name) {
 Graph.prototype.inEdges = function(v, u) {
   var inV = this._in[v];
   if (inV) {
-    var edges = lodash_1$1.values(inV);
+    var edges = lodash_1.values(inV);
     if (!u) {
       return edges;
     }
-    return lodash_1$1.filter(edges, function(edge) { return edge.v === u; });
+    return lodash_1.filter(edges, function(edge) { return edge.v === u; });
   }
 };
 
 Graph.prototype.outEdges = function(v, w) {
   var outV = this._out[v];
   if (outV) {
-    var edges = lodash_1$1.values(outV);
+    var edges = lodash_1.values(outV);
     if (!w) {
       return edges;
     }
-    return lodash_1$1.filter(edges, function(edge) { return edge.w === w; });
+    return lodash_1.filter(edges, function(edge) { return edge.w === w; });
   }
 };
 
@@ -22835,7 +22873,7 @@ function edgeArgsToId(isDirected, v_, w_, name) {
     w = tmp;
   }
   return v + EDGE_KEY_DELIM + w + EDGE_KEY_DELIM +
-             (lodash_1$1.isUndefined(name) ? DEFAULT_EDGE_NAME : name);
+             (lodash_1.isUndefined(name) ? DEFAULT_EDGE_NAME : name);
 }
 
 function edgeArgsToObj(isDirected, v_, w_, name) {
@@ -22880,21 +22918,21 @@ function write(g) {
     nodes: writeNodes(g),
     edges: writeEdges(g)
   };
-  if (!lodash_1$1.isUndefined(g.graph())) {
-    json.value = lodash_1$1.clone(g.graph());
+  if (!lodash_1.isUndefined(g.graph())) {
+    json.value = lodash_1.clone(g.graph());
   }
   return json;
 }
 
 function writeNodes(g) {
-  return lodash_1$1.map(g.nodes(), function(v) {
+  return lodash_1.map(g.nodes(), function(v) {
     var nodeValue = g.node(v);
     var parent = g.parent(v);
     var node = { v: v };
-    if (!lodash_1$1.isUndefined(nodeValue)) {
+    if (!lodash_1.isUndefined(nodeValue)) {
       node.value = nodeValue;
     }
-    if (!lodash_1$1.isUndefined(parent)) {
+    if (!lodash_1.isUndefined(parent)) {
       node.parent = parent;
     }
     return node;
@@ -22902,13 +22940,13 @@ function writeNodes(g) {
 }
 
 function writeEdges(g) {
-  return lodash_1$1.map(g.edges(), function(e) {
+  return lodash_1.map(g.edges(), function(e) {
     var edgeValue = g.edge(e);
     var edge = { v: e.v, w: e.w };
-    if (!lodash_1$1.isUndefined(e.name)) {
+    if (!lodash_1.isUndefined(e.name)) {
       edge.name = e.name;
     }
-    if (!lodash_1$1.isUndefined(edgeValue)) {
+    if (!lodash_1.isUndefined(edgeValue)) {
       edge.value = edgeValue;
     }
     return edge;
@@ -22917,13 +22955,13 @@ function writeEdges(g) {
 
 function read(json) {
   var g = new graph(json.options).setGraph(json.value);
-  lodash_1$1.each(json.nodes, function(entry) {
+  lodash_1.each(json.nodes, function(entry) {
     g.setNode(entry.v, entry.value);
     if (entry.parent) {
       g.setParent(entry.v, entry.parent);
     }
   });
-  lodash_1$1.each(json.edges, function(entry) {
+  lodash_1.each(json.edges, function(entry) {
     g.setEdge({ v: entry.v, w: entry.w, name: entry.name }, entry.value);
   });
   return g;
@@ -22937,14 +22975,14 @@ function components(g) {
   var cmpt;
 
   function dfs(v) {
-    if (lodash_1$1.has(visited, v)) return;
+    if (lodash_1.has(visited, v)) return;
     visited[v] = true;
     cmpt.push(v);
-    lodash_1$1.each(g.successors(v), dfs);
-    lodash_1$1.each(g.predecessors(v), dfs);
+    lodash_1.each(g.successors(v), dfs);
+    lodash_1.each(g.predecessors(v), dfs);
   }
 
-  lodash_1$1.each(g.nodes(), function(v) {
+  lodash_1.each(g.nodes(), function(v) {
     cmpt = [];
     dfs(v);
     if (cmpt.length) {
@@ -22987,7 +23025,7 @@ PriorityQueue.prototype.keys = function() {
  * Returns `true` if **key** is in the queue and `false` if not.
  */
 PriorityQueue.prototype.has = function(key) {
-  return lodash_1$1.has(this._keyIndices, key);
+  return lodash_1.has(this._keyIndices, key);
 };
 
 /**
@@ -23025,7 +23063,7 @@ PriorityQueue.prototype.min = function() {
 PriorityQueue.prototype.add = function(key, priority) {
   var keyIndices = this._keyIndices;
   key = String(key);
-  if (!lodash_1$1.has(keyIndices, key)) {
+  if (!lodash_1.has(keyIndices, key)) {
     var arr = this._arr;
     var index = arr.length;
     keyIndices[key] = index;
@@ -23108,7 +23146,7 @@ PriorityQueue.prototype._swap = function(i, j) {
 
 var dijkstra_1 = dijkstra;
 
-var DEFAULT_WEIGHT_FUNC = lodash_1$1.constant(1);
+var DEFAULT_WEIGHT_FUNC = lodash_1.constant(1);
 
 function dijkstra(g, source, weightFn, edgeFn) {
   return runDijkstra(g, String(source),
@@ -23161,7 +23199,7 @@ function runDijkstra(g, source, weightFn, edgeFn) {
 var dijkstraAll_1 = dijkstraAll;
 
 function dijkstraAll(g, weightFunc, edgeFunc) {
-  return lodash_1$1.transform(g.nodes(), function(acc, v) {
+  return lodash_1.transform(g.nodes(), function(acc, v) {
     acc[v] = dijkstra_1(g, v, weightFunc, edgeFunc);
   }, {});
 }
@@ -23183,7 +23221,7 @@ function tarjan(g) {
     stack.push(v);
 
     g.successors(v).forEach(function(w) {
-      if (!lodash_1$1.has(visited, w)) {
+      if (!lodash_1.has(visited, w)) {
         dfs(w);
         entry.lowlink = Math.min(entry.lowlink, visited[w].lowlink);
       } else if (visited[w].onStack) {
@@ -23204,7 +23242,7 @@ function tarjan(g) {
   }
 
   g.nodes().forEach(function(v) {
-    if (!lodash_1$1.has(visited, v)) {
+    if (!lodash_1.has(visited, v)) {
       dfs(v);
     }
   });
@@ -23215,14 +23253,14 @@ function tarjan(g) {
 var findCycles_1 = findCycles;
 
 function findCycles(g) {
-  return lodash_1$1.filter(tarjan_1(g), function(cmpt) {
+  return lodash_1.filter(tarjan_1(g), function(cmpt) {
     return cmpt.length > 1 || (cmpt.length === 1 && g.hasEdge(cmpt[0], cmpt[0]));
   });
 }
 
 var floydWarshall_1 = floydWarshall;
 
-var DEFAULT_WEIGHT_FUNC$1 = lodash_1$1.constant(1);
+var DEFAULT_WEIGHT_FUNC$1 = lodash_1.constant(1);
 
 function floydWarshall(g, weightFn, edgeFn) {
   return runFloydWarshall(g,
@@ -23278,22 +23316,22 @@ function topsort(g) {
   var results = [];
 
   function visit(node) {
-    if (lodash_1$1.has(stack, node)) {
+    if (lodash_1.has(stack, node)) {
       throw new CycleException();
     }
 
-    if (!lodash_1$1.has(visited, node)) {
+    if (!lodash_1.has(visited, node)) {
       stack[node] = true;
       visited[node] = true;
-      lodash_1$1.each(g.predecessors(node), visit);
+      lodash_1.each(g.predecessors(node), visit);
       delete stack[node];
       results.push(node);
     }
   }
 
-  lodash_1$1.each(g.sinks(), visit);
+  lodash_1.each(g.sinks(), visit);
 
-  if (lodash_1$1.size(visited) !== g.nodeCount()) {
+  if (lodash_1.size(visited) !== g.nodeCount()) {
     throw new CycleException();
   }
 
@@ -23328,7 +23366,7 @@ var dfs_1 = dfs;
  * Order must be one of "pre" or "post".
  */
 function dfs(g, vs, order) {
-  if (!lodash_1$1.isArray(vs)) {
+  if (!lodash_1.isArray(vs)) {
     vs = [vs];
   }
 
@@ -23336,7 +23374,7 @@ function dfs(g, vs, order) {
 
   var acc = [];
   var visited = {};
-  lodash_1$1.each(vs, function(v) {
+  lodash_1.each(vs, function(v) {
     if (!g.hasNode(v)) {
       throw new Error("Graph does not have node: " + v);
     }
@@ -23347,11 +23385,11 @@ function dfs(g, vs, order) {
 }
 
 function doDfs(g, v, postorder, visited, navigation, acc) {
-  if (!lodash_1$1.has(visited, v)) {
+  if (!lodash_1.has(visited, v)) {
     visited[v] = true;
 
     if (!postorder) { acc.push(v); }
-    lodash_1$1.each(navigation(v), function(w) {
+    lodash_1.each(navigation(v), function(w) {
       doDfs(g, w, postorder, visited, navigation, acc);
     });
     if (postorder) { acc.push(v); }
@@ -23394,7 +23432,7 @@ function prim(g, weightFunc) {
     return result;
   }
 
-  lodash_1$1.each(g.nodes(), function(v) {
+  lodash_1.each(g.nodes(), function(v) {
     pq.add(v, Number.POSITIVE_INFINITY);
     result.setNode(v);
   });
@@ -23405,7 +23443,7 @@ function prim(g, weightFunc) {
   var init = false;
   while (pq.size() > 0) {
     v = pq.removeMin();
-    if (lodash_1$1.has(parents, v)) {
+    if (lodash_1.has(parents, v)) {
       result.setEdge(v, parents[v]);
     } else if (init) {
       throw new Error("Input graph is not connected: " + g);
@@ -23471,8 +23509,6 @@ var graphlib = {
   alg: alg,
   version: lib.version
 };
-var graphlib_1 = graphlib.Graph;
-var graphlib_3 = graphlib.alg;
 
 var objectHash_1 = createCommonjsModule(function (module, exports) {
 
@@ -23921,11 +23957,6 @@ function PassThrough() {
   };
 }
 });
-var objectHash_2 = objectHash_1.sha1;
-var objectHash_3 = objectHash_1.keys;
-var objectHash_4 = objectHash_1.MD5;
-var objectHash_5 = objectHash_1.keysMD5;
-var objectHash_6 = objectHash_1.writeToStream;
 
 /**
  * Saves data in new cache folder or reads it from old one.
@@ -23965,7 +23996,7 @@ class RollingCache {
             return false;
         if (!existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return lodash_4(readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return lodash.isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
     }
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
@@ -24689,11 +24720,6 @@ var safe = createCommonjsModule(function (module) {
 
 module['exports'] = colors_1;
 });
-var safe_1 = safe.green;
-var safe_2 = safe.white;
-var safe_3 = safe.red;
-var safe_4 = safe.yellow;
-var safe_5 = safe.blue;
 
 class FormatHost {
     getCurrentDirectory() {
@@ -24735,11 +24761,11 @@ class NoCache {
 function convertEmitOutput(output, references) {
     const out = { code: "", references };
     output.outputFiles.forEach((e) => {
-        if (lodash_7(e.name, ".d.ts"))
+        if (lodash.endsWith(e.name, ".d.ts"))
             out.dts = e;
-        else if (lodash_7(e.name, ".d.ts.map"))
+        else if (lodash.endsWith(e.name, ".d.ts.map"))
             out.dtsmap = e;
-        else if (lodash_7(e.name, ".map"))
+        else if (lodash.endsWith(e.name, ".map"))
             out.map = e.text;
         else
             out.code = e.text;
@@ -24750,13 +24776,13 @@ function getAllReferences(importer, snapshot, options) {
     if (!snapshot)
         return [];
     const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
-    return lodash_1(lodash_11(info.referencedFiles, info.importedFiles).map((reference) => {
+    return lodash.compact(lodash.concat(info.referencedFiles, info.importedFiles).map((reference) => {
         const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
         return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
     }));
 }
 function convertDiagnostic(type, data) {
-    return lodash_8(data, (diagnostic) => {
+    return lodash.map(data, (diagnostic) => {
         const entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
@@ -24793,12 +24819,12 @@ class TsCache {
                 tsVersion: tsModule.version,
             }, this.hashOptions)}`;
         }
-        this.dependencyTree = new graphlib_1({ directed: true });
+        this.dependencyTree = new graphlib.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        const automaticTypes = lodash_8(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+        const automaticTypes = lodash.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
             .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
             .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
-        this.ambientTypes = lodash_6(rootFilenames, (file) => lodash_7(file, ".d.ts"))
+        this.ambientTypes = lodash.filter(rootFilenames, (file) => lodash.endsWith(file, ".d.ts"))
             .concat(automaticTypes)
             .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
         this.init();
@@ -24810,7 +24836,7 @@ class TsCache {
             entries.forEach((e) => {
                 const dir = `${this.cacheRoot}/${e}`;
                 if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory) {
-                    this.context.info(safe_5(`cleaning cache: ${dir}`));
+                    this.context.info(safe.blue(`cleaning cache: ${dir}`));
                     emptyDirSync(`${dir}`);
                     removeSync(`${dir}`);
                 }
@@ -24822,21 +24848,21 @@ class TsCache {
     }
     setDependency(importee, importer) {
         // importee -> importer
-        this.context.debug(`${safe_5("dependency")} '${importee}'`);
+        this.context.debug(`${safe.blue("dependency")} '${importee}'`);
         this.context.debug(`    imported by '${importer}'`);
         this.dependencyTree.setEdge(importer, importee);
     }
     walkTree(cb) {
-        const acyclic = graphlib_3.isAcyclic(this.dependencyTree);
+        const acyclic = graphlib.alg.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash_3(graphlib_3.topsort(this.dependencyTree), (id) => cb(id));
+            lodash.each(graphlib.alg.topsort(this.dependencyTree), (id) => cb(id));
             return;
         }
-        this.context.info(safe_4("import tree has cycles"));
-        lodash_3(this.dependencyTree.nodes(), (id) => cb(id));
+        this.context.info(safe.yellow("import tree has cycles"));
+        lodash.each(this.dependencyTree.nodes(), (id) => cb(id));
     }
     done() {
-        this.context.info(safe_5("rolling caches"));
+        this.context.info(safe.blue("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
@@ -24844,24 +24870,24 @@ class TsCache {
     }
     getCompiled(id, snapshot, transform) {
         if (this.noCache) {
-            this.context.info(`${safe_5("transpiling")} '${id}'`);
+            this.context.info(`${safe.blue("transpiling")} '${id}'`);
             this.markAsDirty(id);
             return transform();
         }
         const name = this.makeName(id, snapshot);
-        this.context.info(`${safe_5("transpiling")} '${id}'`);
+        this.context.info(`${safe.blue("transpiling")} '${id}'`);
         this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
         if (this.codeCache.exists(name) && !this.isDirty(id, false)) {
-            this.context.debug(safe_1("    cache hit"));
+            this.context.debug(safe.green("    cache hit"));
             const data = this.codeCache.read(name);
             if (data) {
                 this.codeCache.write(name, data);
                 return data;
             }
             else
-                this.context.warn(safe_4("    cache broken, discarding"));
+                this.context.warn(safe.yellow("    cache broken, discarding"));
         }
-        this.context.debug(safe_4("    cache miss"));
+        this.context.debug(safe.yellow("    cache miss"));
         const transformedData = transform();
         this.codeCache.write(name, transformedData);
         this.markAsDirty(id);
@@ -24878,8 +24904,8 @@ class TsCache {
             this.ambientTypesDirty = true;
             return;
         }
-        this.context.debug(safe_5("Ambient types:"));
-        const typeNames = lodash_6(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+        this.context.debug(safe.blue("Ambient types:"));
+        const typeNames = lodash.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
             .map((snapshot) => {
             this.context.debug(`    ${snapshot.id}`);
             return this.makeName(snapshot.id, snapshot.snapshot);
@@ -24887,8 +24913,8 @@ class TsCache {
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
-            this.context.info(safe_4("ambient types changed, redoing all semantic diagnostics"));
-        lodash_3(typeNames, (name) => this.typesCache.touch(name));
+            this.context.info(safe.yellow("ambient types changed, redoing all semantic diagnostics"));
+        lodash.each(typeNames, (name) => this.typesCache.touch(name));
     }
     getDiagnostics(type, cache, id, snapshot, check) {
         if (this.noCache) {
@@ -24898,16 +24924,16 @@ class TsCache {
         const name = this.makeName(id, snapshot);
         this.context.debug(`    cache: '${cache.path(name)}'`);
         if (cache.exists(name) && !this.isDirty(id, true)) {
-            this.context.debug(safe_1("    cache hit"));
+            this.context.debug(safe.green("    cache hit"));
             const data = cache.read(name);
             if (data) {
                 cache.write(name, data);
                 return data;
             }
             else
-                this.context.warn(safe_4("    cache broken, discarding"));
+                this.context.warn(safe.yellow("    cache broken, discarding"));
         }
-        this.context.debug(safe_4("    cache miss"));
+        this.context.debug(safe.yellow("    cache miss"));
         const convertedData = convertDiagnostic(type, check());
         cache.write(name, convertedData);
         this.markAsDirty(id);
@@ -24941,8 +24967,8 @@ class TsCache {
             return label.dirty;
         if (this.ambientTypesDirty)
             return true;
-        const dependencies = graphlib_3.dijkstra(this.dependencyTree, id);
-        return lodash_5(dependencies, (dependency, node) => {
+        const dependencies = graphlib.alg.dijkstra(this.dependencyTree, id);
+        return lodash.some(dependencies, (dependency, node) => {
             if (!node || dependency.distance === Infinity)
                 return false;
             const l = this.dependencyTree.node(node);
@@ -24959,25 +24985,25 @@ class TsCache {
 }
 
 function printDiagnostics(context, diagnostics, pretty) {
-    lodash_3(diagnostics, (diagnostic) => {
+    lodash.each(diagnostics, (diagnostic) => {
         let print;
         let color;
         let category;
         switch (diagnostic.category) {
             case tsModule.DiagnosticCategory.Message:
                 print = context.info;
-                color = safe_2;
+                color = safe.white;
                 category = "";
                 break;
             case tsModule.DiagnosticCategory.Error:
                 print = context.error;
-                color = safe_3;
+                color = safe.red;
                 category = "error";
                 break;
             case tsModule.DiagnosticCategory.Warning:
             default:
                 print = context.warn;
-                color = safe_4;
+                color = safe.yellow;
                 category = "warning";
                 break;
         }
@@ -25020,7 +25046,7 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }, preP
     return overrides;
 }
 function expandIncludeWithDirs(include, dirs) {
-    return lodash_17(dirs)
+    return lodash.chain(dirs)
         .flatMap((root) => {
         if (include instanceof Array)
             return include.map((x) => join(root, x));
@@ -25038,8 +25064,8 @@ function createFilter(context, pluginOptions, parsedConfig) {
         excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
     }
     if (parsedConfig.projectReferences) {
-        included = lodash_11(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
-        excluded = lodash_11(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
+        included = lodash.concat(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
+        excluded = lodash.concat(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
     }
     context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
     context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
@@ -25066,7 +25092,7 @@ function parseTsConfig(context, pluginOptions) {
         if (text === undefined)
             throw new Error(`failed to read '${fileName}'`);
         const result = tsModule.parseConfigFileTextToJson(fileName, text);
-        pretty = lodash_2(result.config, "pretty", pretty);
+        pretty = lodash.get(result.config, "pretty", pretty);
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
             throw new Error(`failed to parse '${fileName}'`);
@@ -25076,7 +25102,7 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     const mergedConfig = {};
-    lodash_15(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodash.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
@@ -25312,13 +25338,10 @@ createToken('HYPHENRANGELOOSE', `^\\s*(${src[t.XRANGEPLAINLOOSE]})` +
 
 // Star ranges basically just allow anything at all.
 createToken('STAR', '(<|>)?=?\\s*\\*');
+// >=0.0.0 is like a star
+createToken('GTE0', '^\\s*>=\\s*0\.0\.0\\s*$');
+createToken('GTE0PRE', '^\\s*>=\\s*0\.0\.0-0\\s*$');
 });
-var re_2 = re_1.re;
-var re_3 = re_1.src;
-var re_4 = re_1.t;
-var re_5 = re_1.tildeTrimReplace;
-var re_6 = re_1.caretTrimReplace;
-var re_7 = re_1.comparatorTrimReplace;
 
 const numeric = /^[0-9]+$/;
 const compareIdentifiers = (a, b) => {
@@ -25938,7 +25961,7 @@ class Range {
     range = range.trim();
     // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
     const hr = loose ? re$3[t$3.HYPHENRANGELOOSE] : re$3[t$3.HYPHENRANGE];
-    range = range.replace(hr, hyphenReplace);
+    range = range.replace(hr, hyphenReplace(this.options.includePrerelease));
     debug_1('hyphen replace', range);
     // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
     range = range.replace(re$3[t$3.COMPARATORTRIM], comparatorTrimReplace);
@@ -25962,6 +25985,7 @@ class Range {
       .map(comp => parseComparator(comp, this.options))
       .join(' ')
       .split(/\s+/)
+      .map(comp => replaceGTE0(comp, this.options))
       // in loose mode, throw out any that are not valid comparators
       .filter(this.options.loose ? comp => !!comp.match(compRe) : () => true)
       .map(comp => new comparator(comp, this.options))
@@ -26061,11 +26085,11 @@ const parseComparator = (comp, options) => {
 const isX = id => !id || id.toLowerCase() === 'x' || id === '*';
 
 // ~, ~> --> * (any, kinda silly)
-// ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0
-// ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0
-// ~1.2, ~1.2.x, ~>1.2, ~>1.2.x --> >=1.2.0 <1.3.0
-// ~1.2.3, ~>1.2.3 --> >=1.2.3 <1.3.0
-// ~1.2.0, ~>1.2.0 --> >=1.2.0 <1.3.0
+// ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0-0
+// ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0-0
+// ~1.2, ~1.2.x, ~>1.2, ~>1.2.x --> >=1.2.0 <1.3.0-0
+// ~1.2.3, ~>1.2.3 --> >=1.2.3 <1.3.0-0
+// ~1.2.0, ~>1.2.0 --> >=1.2.0 <1.3.0-0
 const replaceTildes = (comp, options) =>
   comp.trim().split(/\s+/).map((comp) => {
     return replaceTilde(comp, options)
@@ -26080,18 +26104,18 @@ const replaceTilde = (comp, options) => {
     if (isX(M)) {
       ret = '';
     } else if (isX(m)) {
-      ret = `>=${M}.0.0 <${+M + 1}.0.0`;
+      ret = `>=${M}.0.0 <${+M + 1}.0.0-0`;
     } else if (isX(p)) {
-      // ~1.2 == >=1.2.0 <1.3.0
-      ret = `>=${M}.${m}.0 <${M}.${+m + 1}.0`;
+      // ~1.2 == >=1.2.0 <1.3.0-0
+      ret = `>=${M}.${m}.0 <${M}.${+m + 1}.0-0`;
     } else if (pr) {
       debug_1('replaceTilde pr', pr);
       ret = `>=${M}.${m}.${p}-${pr
-      } <${M}.${+m + 1}.0`;
+      } <${M}.${+m + 1}.0-0`;
     } else {
-      // ~1.2.3 == >=1.2.3 <1.3.0
+      // ~1.2.3 == >=1.2.3 <1.3.0-0
       ret = `>=${M}.${m}.${p
-      } <${M}.${+m + 1}.0`;
+      } <${M}.${+m + 1}.0-0`;
     }
 
     debug_1('tilde return', ret);
@@ -26100,11 +26124,11 @@ const replaceTilde = (comp, options) => {
 };
 
 // ^ --> * (any, kinda silly)
-// ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0
-// ^2.0, ^2.0.x --> >=2.0.0 <3.0.0
-// ^1.2, ^1.2.x --> >=1.2.0 <2.0.0
-// ^1.2.3 --> >=1.2.3 <2.0.0
-// ^1.2.0 --> >=1.2.0 <2.0.0
+// ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0-0
+// ^2.0, ^2.0.x --> >=2.0.0 <3.0.0-0
+// ^1.2, ^1.2.x --> >=1.2.0 <2.0.0-0
+// ^1.2.3 --> >=1.2.3 <2.0.0-0
+// ^1.2.0 --> >=1.2.0 <2.0.0-0
 const replaceCarets = (comp, options) =>
   comp.trim().split(/\s+/).map((comp) => {
     return replaceCaret(comp, options)
@@ -26113,6 +26137,7 @@ const replaceCarets = (comp, options) =>
 const replaceCaret = (comp, options) => {
   debug_1('caret', comp, options);
   const r = options.loose ? re$3[t$3.CARETLOOSE] : re$3[t$3.CARET];
+  const z = options.includePrerelease ? '-0' : '';
   return comp.replace(r, (_, M, m, p, pr) => {
     debug_1('caret', comp, _, M, m, p, pr);
     let ret;
@@ -26120,40 +26145,40 @@ const replaceCaret = (comp, options) => {
     if (isX(M)) {
       ret = '';
     } else if (isX(m)) {
-      ret = `>=${M}.0.0 <${+M + 1}.0.0`;
+      ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`;
     } else if (isX(p)) {
       if (M === '0') {
-        ret = `>=${M}.${m}.0 <${M}.${+m + 1}.0`;
+        ret = `>=${M}.${m}.0${z} <${M}.${+m + 1}.0-0`;
       } else {
-        ret = `>=${M}.${m}.0 <${+M + 1}.0.0`;
+        ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`;
       }
     } else if (pr) {
       debug_1('replaceCaret pr', pr);
       if (M === '0') {
         if (m === '0') {
           ret = `>=${M}.${m}.${p}-${pr
-          } <${M}.${m}.${+p + 1}`;
+          } <${M}.${m}.${+p + 1}-0`;
         } else {
           ret = `>=${M}.${m}.${p}-${pr
-          } <${M}.${+m + 1}.0`;
+          } <${M}.${+m + 1}.0-0`;
         }
       } else {
         ret = `>=${M}.${m}.${p}-${pr
-        } <${+M + 1}.0.0`;
+        } <${+M + 1}.0.0-0`;
       }
     } else {
       debug_1('no pr');
       if (M === '0') {
         if (m === '0') {
           ret = `>=${M}.${m}.${p
-          } <${M}.${m}.${+p + 1}`;
+          }${z} <${M}.${m}.${+p + 1}-0`;
         } else {
           ret = `>=${M}.${m}.${p
-          } <${M}.${+m + 1}.0`;
+          }${z} <${M}.${+m + 1}.0-0`;
         }
       } else {
         ret = `>=${M}.${m}.${p
-        } <${+M + 1}.0.0`;
+        } <${+M + 1}.0.0-0`;
       }
     }
 
@@ -26226,12 +26251,15 @@ const replaceXRange = (comp, options) => {
         }
       }
 
+      if (gtlt === '<')
+        pr = '-0';
+
       ret = `${gtlt + M}.${m}.${p}${pr}`;
     } else if (xm) {
-      ret = `>=${M}.0.0${pr} <${+M + 1}.0.0${pr}`;
+      ret = `>=${M}.0.0${pr} <${+M + 1}.0.0-0`;
     } else if (xp) {
       ret = `>=${M}.${m}.0${pr
-      } <${M}.${+m + 1}.0${pr}`;
+      } <${M}.${+m + 1}.0-0`;
     }
 
     debug_1('xRange return', ret);
@@ -26248,32 +26276,42 @@ const replaceStars = (comp, options) => {
   return comp.trim().replace(re$3[t$3.STAR], '')
 };
 
+const replaceGTE0 = (comp, options) => {
+  debug_1('replaceGTE0', comp, options);
+  return comp.trim()
+    .replace(re$3[options.includePrerelease ? t$3.GTE0PRE : t$3.GTE0], '')
+};
+
 // This function is passed to string.replace(re[t.HYPHENRANGE])
 // M, m, patch, prerelease, build
 // 1.2 - 3.4.5 => >=1.2.0 <=3.4.5
-// 1.2.3 - 3.4 => >=1.2.0 <3.5.0 Any 3.4.x will do
-// 1.2 - 3.4 => >=1.2.0 <3.5.0
-const hyphenReplace = ($0,
+// 1.2.3 - 3.4 => >=1.2.0 <3.5.0-0 Any 3.4.x will do
+// 1.2 - 3.4 => >=1.2.0 <3.5.0-0
+const hyphenReplace = incPr => ($0,
   from, fM, fm, fp, fpr, fb,
   to, tM, tm, tp, tpr, tb) => {
   if (isX(fM)) {
     from = '';
   } else if (isX(fm)) {
-    from = `>=${fM}.0.0`;
+    from = `>=${fM}.0.0${incPr ? '-0' : ''}`;
   } else if (isX(fp)) {
-    from = `>=${fM}.${fm}.0`;
-  } else {
+    from = `>=${fM}.${fm}.0${incPr ? '-0' : ''}`;
+  } else if (fpr) {
     from = `>=${from}`;
+  } else {
+    from = `>=${from}${incPr ? '-0' : ''}`;
   }
 
   if (isX(tM)) {
     to = '';
   } else if (isX(tm)) {
-    to = `<${+tM + 1}.0.0`;
+    to = `<${+tM + 1}.0.0-0`;
   } else if (isX(tp)) {
-    to = `<${tM}.${+tm + 1}.0`;
+    to = `<${tM}.${+tm + 1}.0-0`;
   } else if (tpr) {
     to = `<=${tM}.${tm}.${tp}-${tpr}`;
+  } else if (incPr) {
+    to = `<${tM}.${tm}.${+tp + 1}-0`;
   } else {
     to = `<=${to}`;
   }
@@ -26676,6 +26714,206 @@ const intersects = (r1, r2, options) => {
 };
 var intersects_1 = intersects;
 
+// given a set of versions and a range, create a "simplified" range
+// that includes the same versions that the original range does
+// If the original range is shorter than the simplified one, return that.
+
+
+var simplify = (versions, range, options) => {
+  const set = [];
+  let min = null;
+  let prev = null;
+  const v = versions.sort((a, b) => compare_1(a, b, options));
+  for (const version of v) {
+    const included = satisfies_1(version, range, options);
+    if (included) {
+      prev = version;
+      if (!min)
+        min = version;
+    } else {
+      if (prev) {
+        set.push([min, prev]);
+      }
+      prev = null;
+      min = null;
+    }
+  }
+  if (min)
+    set.push([min, null]);
+
+  const ranges = [];
+  for (const [min, max] of set) {
+    if (min === max)
+      ranges.push(min);
+    else if (!max && min === v[0])
+      ranges.push('*');
+    else if (!max)
+      ranges.push(`>=${min}`);
+    else if (min === v[0])
+      ranges.push(`<=${max}`);
+    else
+      ranges.push(`${min} - ${max}`);
+  }
+  const simplified = ranges.join(' || ');
+  const original = typeof range.raw === 'string' ? range.raw : String(range);
+  return simplified.length < original.length ? simplified : range
+};
+
+const { ANY: ANY$2 } = comparator;
+
+
+
+// Complex range `r1 || r2 || ...` is a subset of `R1 || R2 || ...` iff:
+// - Every simple range `r1, r2, ...` is a subset of some `R1, R2, ...`
+//
+// Simple range `c1 c2 ...` is a subset of simple range `C1 C2 ...` iff:
+// - If c is only the ANY comparator
+//   - If C is only the ANY comparator, return true
+//   - Else return false
+// - Let EQ be the set of = comparators in c
+// - If EQ is more than one, return true (null set)
+// - Let GT be the highest > or >= comparator in c
+// - Let LT be the lowest < or <= comparator in c
+// - If GT and LT, and GT.semver > LT.semver, return true (null set)
+// - If EQ
+//   - If GT, and EQ does not satisfy GT, return true (null set)
+//   - If LT, and EQ does not satisfy LT, return true (null set)
+//   - If EQ satisfies every C, return true
+//   - Else return false
+// - If GT
+//   - If GT is lower than any > or >= comp in C, return false
+//   - If GT is >=, and GT.semver does not satisfy every C, return false
+// - If LT
+//   - If LT.semver is greater than that of any > comp in C, return false
+//   - If LT is <=, and LT.semver does not satisfy every C, return false
+// - If any C is a = range, and GT or LT are set, return false
+// - Else return true
+
+const subset = (sub, dom, options) => {
+  sub = new range(sub, options);
+  dom = new range(dom, options);
+  let sawNonNull = false;
+
+  OUTER: for (const simpleSub of sub.set) {
+    for (const simpleDom of dom.set) {
+      const isSub = simpleSubset(simpleSub, simpleDom, options);
+      sawNonNull = sawNonNull || isSub !== null;
+      if (isSub)
+        continue OUTER
+    }
+    // the null set is a subset of everything, but null simple ranges in
+    // a complex range should be ignored.  so if we saw a non-null range,
+    // then we know this isn't a subset, but if EVERY simple range was null,
+    // then it is a subset.
+    if (sawNonNull)
+      return false
+  }
+  return true
+};
+
+const simpleSubset = (sub, dom, options) => {
+  if (sub.length === 1 && sub[0].semver === ANY$2)
+    return dom.length === 1 && dom[0].semver === ANY$2
+
+  const eqSet = new Set();
+  let gt, lt;
+  for (const c of sub) {
+    if (c.operator === '>' || c.operator === '>=')
+      gt = higherGT(gt, c, options);
+    else if (c.operator === '<' || c.operator === '<=')
+      lt = lowerLT(lt, c, options);
+    else
+      eqSet.add(c.semver);
+  }
+
+  if (eqSet.size > 1)
+    return null
+
+  let gtltComp;
+  if (gt && lt) {
+    gtltComp = compare_1(gt.semver, lt.semver, options);
+    if (gtltComp > 0)
+      return null
+    else if (gtltComp === 0 && (gt.operator !== '>=' || lt.operator !== '<='))
+      return null
+  }
+
+  // will iterate one or zero times
+  for (const eq of eqSet) {
+    if (gt && !satisfies_1(eq, String(gt), options))
+      return null
+
+    if (lt && !satisfies_1(eq, String(lt), options))
+      return null
+
+    for (const c of dom) {
+      if (!satisfies_1(eq, String(c), options))
+        return false
+    }
+    return true
+  }
+
+  let higher, lower;
+  let hasDomLT, hasDomGT;
+  for (const c of dom) {
+    hasDomGT = hasDomGT || c.operator === '>' || c.operator === '>=';
+    hasDomLT = hasDomLT || c.operator === '<' || c.operator === '<=';
+    if (gt) {
+      if (c.operator === '>' || c.operator === '>=') {
+        higher = higherGT(gt, c, options);
+        if (higher === c)
+          return false
+      } else if (gt.operator === '>=' && !satisfies_1(gt.semver, String(c), options))
+        return false
+    }
+    if (lt) {
+      if (c.operator === '<' || c.operator === '<=') {
+        lower = lowerLT(lt, c, options);
+        if (lower === c)
+          return false
+      } else if (lt.operator === '<=' && !satisfies_1(lt.semver, String(c), options))
+        return false
+    }
+    if (!c.operator && (lt || gt) && gtltComp !== 0)
+      return false
+  }
+
+  // if there was a < or >, and nothing in the dom, then must be false
+  // UNLESS it was limited by another range in the other direction.
+  // Eg, >1.0.0 <1.0.1 is still a subset of <2.0.0
+  if (gt && hasDomLT && !lt && gtltComp !== 0)
+    return false
+
+  if (lt && hasDomGT && !gt && gtltComp !== 0)
+    return false
+
+  return true
+};
+
+// >=1.2.3 is lower than >1.2.3
+const higherGT = (a, b, options) => {
+  if (!a)
+    return b
+  const comp = compare_1(a.semver, b.semver, options);
+  return comp > 0 ? a
+    : comp < 0 ? b
+    : b.operator === '>' && a.operator === '>=' ? b
+    : a
+};
+
+// <=1.2.3 is higher than <1.2.3
+const lowerLT = (a, b, options) => {
+  if (!a)
+    return b
+  const comp = compare_1(a.semver, b.semver, options);
+  return comp < 0 ? a
+    : comp > 0 ? b
+    : b.operator === '<' && a.operator === '<=' ? b
+    : a
+};
+
+var subset_1 = subset;
+
 // just pre-load all the stuff that index.js lazily exports
 
 var semver$1 = {
@@ -26721,8 +26959,9 @@ var semver$1 = {
   gtr: gtr_1,
   ltr: ltr_1,
   intersects: intersects_1,
+  simplifyRange: simplify,
+  subset: subset_1,
 };
-var semver_33 = semver$1.satisfies;
 
 var commondir = function (basedir, relfiles) {
     if (relfiles) {
@@ -26758,8 +26997,8 @@ const pTry = (fn, ...arguments_) => new Promise(resolve => {
 
 var pTry_1 = pTry;
 // TODO: remove this in the next major version
-var default_1 = pTry;
-pTry_1.default = default_1;
+var _default = pTry;
+pTry_1.default = _default;
 
 const pLimit = concurrency => {
 	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
@@ -26809,8 +27048,8 @@ const pLimit = concurrency => {
 };
 
 var pLimit_1 = pLimit;
-var default_1$1 = pLimit;
-pLimit_1.default = default_1$1;
+var _default$1 = pLimit;
+pLimit_1.default = _default$1;
 
 class EndError extends Error {
 	constructor(value) {
@@ -26860,8 +27099,8 @@ const pLocate = async (iterable, tester, options) => {
 
 var pLocate_1 = pLocate;
 // TODO: Remove this for the next major release
-var default_1$2 = pLocate;
-pLocate_1.default = default_1$2;
+var _default$2 = pLocate;
+pLocate_1.default = _default$2;
 
 const {promisify} = util;
 
@@ -27040,9 +27279,6 @@ module.exports.sync.exists = pathExists.sync;
 
 module.exports.stop = stop;
 });
-var findUp_1 = findUp.sync;
-var findUp_2 = findUp.exists;
-var findUp_3 = findUp.stop;
 
 const pkgDir = async cwd => {
 	const filePath = await findUp('package.json', {cwd});
@@ -27051,13 +27287,13 @@ const pkgDir = async cwd => {
 
 var pkgDir_1 = pkgDir;
 // TODO: Remove this for the next major release
-var default_1$3 = pkgDir;
+var _default$3 = pkgDir;
 
 var sync$2 = cwd => {
 	const filePath = findUp.sync('package.json', {cwd});
 	return filePath && path__default.dirname(filePath);
 };
-pkgDir_1.default = default_1$3;
+pkgDir_1.default = _default$3;
 pkgDir_1.sync = sync$2;
 
 var semver$2 = createCommonjsModule(function (module, exports) {
@@ -28658,48 +28894,6 @@ function coerce (version, options) {
     '.' + (match[4] || '0'), options)
 }
 });
-var semver_1 = semver$2.SEMVER_SPEC_VERSION;
-var semver_2 = semver$2.re;
-var semver_3 = semver$2.src;
-var semver_4 = semver$2.tokens;
-var semver_5 = semver$2.parse;
-var semver_6 = semver$2.valid;
-var semver_7 = semver$2.clean;
-var semver_8 = semver$2.SemVer;
-var semver_9 = semver$2.inc;
-var semver_10 = semver$2.diff;
-var semver_11 = semver$2.compareIdentifiers;
-var semver_12 = semver$2.rcompareIdentifiers;
-var semver_13 = semver$2.major;
-var semver_14 = semver$2.minor;
-var semver_15 = semver$2.patch;
-var semver_16 = semver$2.compare;
-var semver_17 = semver$2.compareLoose;
-var semver_18 = semver$2.compareBuild;
-var semver_19 = semver$2.rcompare;
-var semver_20 = semver$2.sort;
-var semver_21 = semver$2.rsort;
-var semver_22 = semver$2.gt;
-var semver_23 = semver$2.lt;
-var semver_24 = semver$2.eq;
-var semver_25 = semver$2.neq;
-var semver_26 = semver$2.gte;
-var semver_27 = semver$2.lte;
-var semver_28 = semver$2.cmp;
-var semver_29 = semver$2.Comparator;
-var semver_30 = semver$2.Range;
-var semver_31 = semver$2.toComparators;
-var semver_32 = semver$2.satisfies;
-var semver_33$1 = semver$2.maxSatisfying;
-var semver_34 = semver$2.minSatisfying;
-var semver_35 = semver$2.minVersion;
-var semver_36 = semver$2.validRange;
-var semver_37 = semver$2.ltr;
-var semver_38 = semver$2.gtr;
-var semver_39 = semver$2.outside;
-var semver_40 = semver$2.prerelease;
-var semver_41 = semver$2.intersects;
-var semver_42 = semver$2.coerce;
 
 const {promisify: promisify$2} = util;
 
@@ -28937,7 +29131,7 @@ const typescript = (options) => {
         return _cache;
     };
     const pluginOptions = Object.assign({}, options);
-    lodash_13(pluginOptions, {
+    lodash.defaults(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -28971,14 +29165,14 @@ const typescript = (options) => {
                 context.info(`tslib version: ${tslibVersion}`);
                 if (this.meta)
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
-                if (!semver_33(tsModule.version, ">=2.4.0", { includePrerelease: true }))
+                if (!semver$1.satisfies(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
                 context.info(`rollup-plugin-typescript2 version: 0.27.2`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
                 if (pluginOptions.objectHashIgnoreUnknownHack)
-                    context.warn(() => `${safe_4("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
+                    context.warn(() => `${safe.yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
                 if (watchMode)
                     context.info(`running in watch mode`);
             }
@@ -29011,12 +29205,12 @@ const typescript = (options) => {
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (lodash_7(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (lodash.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return;
                 const resolved = pluginOptions.rollupCommonJSResolveHack
                     ? sync$4(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
-                context.debug(() => `${safe_5("resolving")} '${importee}' imported by '${importer}'`);
+                context.debug(() => `${safe.blue("resolving")} '${importee}' imported by '${importer}'`);
                 context.debug(() => `    to '${resolved}'`);
                 return resolved;
             }
@@ -29040,7 +29234,7 @@ const typescript = (options) => {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -29048,14 +29242,14 @@ const typescript = (options) => {
                     printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (lodash_10(this.error))
-                        this.error(safe_3(`failed to transpile '${id}'`));
+                    if (lodash.isFunction(this.error))
+                        this.error(safe.red(`failed to transpile '${id}'`));
                 }
                 const references = getAllReferences(id, servicesHost.getScriptSnapshot(id), parsedConfig.options);
                 return convertEmitOutput(output, references);
             });
             if (pluginOptions.check) {
-                const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                const diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
                     return service.getSyntacticDiagnostics(id);
                 }), cache().getSemanticDiagnostics(id, snapshot, () => {
                     return service.getSemanticDiagnostics(id);
@@ -29071,12 +29265,12 @@ const typescript = (options) => {
                     if (tsConfigPath)
                         this.addWatchFile(tsConfigPath);
                     result.references.map(this.addWatchFile, this);
-                    context.debug(() => `${safe_1("    watching")}: ${result.references.join("\nrpt2:               ")}`);
+                    context.debug(() => `${safe.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
                 }
                 if (result.dts) {
                     const key = normalize(id);
                     declarations[key] = { type: result.dts, map: result.dtsmap };
-                    context.debug(() => `${safe_5("generated declarations")} for '${key}'`);
+                    context.debug(() => `${safe.blue("generated declarations")} for '${key}'`);
                 }
                 const transformResult = { code: result.code, map: { mappings: "" } };
                 if (result.map) {
@@ -29101,7 +29295,7 @@ const typescript = (options) => {
                     const snapshot = servicesHost.getScriptSnapshot(id);
                     if (!snapshot)
                         return;
-                    const diagnostics = lodash_11(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -29110,16 +29304,16 @@ const typescript = (options) => {
                 });
             }
             if (!watchMode && !noErrors)
-                context.info(safe_4("there were errors or warnings."));
+                context.info(safe.yellow("there were errors or warnings."));
             cache().done();
             generateRound++;
         },
         _onwrite(_output) {
             if (!parsedConfig.options.declaration)
                 return;
-            lodash_3(parsedConfig.fileNames, (name) => {
+            lodash.each(parsedConfig.fileNames, (name) => {
                 const key = normalize(name);
-                if (lodash_9(declarations, key))
+                if (lodash.has(declarations, key))
                     return;
                 if (!allImportedFiles.has(key)) {
                     context.debug(() => `skipping declarations for unused '${key}'`);
@@ -29143,12 +29337,12 @@ const typescript = (options) => {
                 // under Rollup's output directory, and thus can't be
                 // emitted as an asset).
                 if (pluginOptions.useTsconfigDeclarationDir) {
-                    context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${fileName}'`);
+                    context.debug(() => `${safe.blue("emitting declarations")} for '${key}' to '${fileName}'`);
                     tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
                 }
                 else {
                     const relativePath = relative(pluginOptions.cwd, fileName);
-                    context.debug(() => `${safe_5("emitting declarations")} for '${key}' to '${relativePath}'`);
+                    context.debug(() => `${safe.blue("emitting declarations")} for '${key}' to '${relativePath}'`);
                     this.emitFile({
                         type: "asset",
                         source: entry.text,
@@ -29156,7 +29350,7 @@ const typescript = (options) => {
                     });
                 }
             };
-            lodash_3(declarations, ({ type, map }, key) => {
+            lodash.each(declarations, ({ type, map }, key) => {
                 emitDeclaration(key, ".d.ts", type);
                 emitDeclaration(key, ".d.ts.map", map);
             });
