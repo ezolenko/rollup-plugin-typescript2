@@ -73,7 +73,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 	setTypescriptModule(pluginOptions.typescript);
 
-	const self: Plugin & { _ongenerate: Function, _onwrite: Function } = {
+	const self: Plugin & { _ongenerate: () => void, _onwrite: (this: PluginContext, _output: OutputOptions) => void } = {
 
 		name: "rpt2",
 

@@ -1,28 +1,32 @@
 /* eslint-disable */
 'use strict';
 
-function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
-
-var crypto = _interopDefault(require('crypto'));
+var crypto = require('crypto');
 var fsExtra = require('fs-extra');
 var fs = require('fs');
-var fs__default = _interopDefault(fs);
-var util = _interopDefault(require('util'));
-var os = _interopDefault(require('os'));
+var require$$0 = require('util');
+var os = require('os');
 var path = require('path');
-var path__default = _interopDefault(path);
 var resolve = require('resolve');
 var pluginutils = require('@rollup/pluginutils');
+
+function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
+
+var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
+var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs);
+var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
+var os__default = /*#__PURE__*/_interopDefaultLegacy(os);
+var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
 function createCommonjsModule(fn, basedir, module) {
 	return module = {
-	  path: basedir,
-	  exports: {},
-	  require: function (path, base) {
-      return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
-    }
+		path: basedir,
+		exports: {},
+		require: function (path, base) {
+			return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
+		}
 	}, fn(module, module.exports), module.exports;
 }
 
@@ -37,7 +41,7 @@ var lodash = createCommonjsModule(function (module, exports) {
   var undefined$1;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.19';
+  var VERSION = '4.17.20';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
@@ -15613,7 +15617,7 @@ var lodash = createCommonjsModule(function (module, exports) {
      * // => [{ 'a': 4, 'b': 5, 'c': 6 }]
      *
      * // Checking for several possible values
-     * _.filter(users, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
+     * _.filter(objects, _.overSome([_.matches({ 'a': 1 }), _.matches({ 'a': 4 })]));
      * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matches(source) {
@@ -15650,7 +15654,7 @@ var lodash = createCommonjsModule(function (module, exports) {
      * // => { 'a': 4, 'b': 5, 'c': 6 }
      *
      * // Checking for several possible values
-     * _.filter(users, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
+     * _.filter(objects, _.overSome([_.matchesProperty('a', 1), _.matchesProperty('a', 4)]));
      * // => [{ 'a': 1, 'b': 2, 'c': 3 }, { 'a': 4, 'b': 5, 'c': 6 }]
      */
     function matchesProperty(path, srcValue) {
@@ -19009,11 +19013,11 @@ var _baseKeysIn = baseKeysIn;
  * _.keysIn(new Foo);
  * // => ['a', 'b', 'c'] (iteration order is not guaranteed)
  */
-function keysIn$1(object) {
+function keysIn(object) {
   return isArrayLike_1(object) ? _arrayLikeKeys(object, true) : _baseKeysIn(object);
 }
 
-var keysIn_1 = keysIn$1;
+var keysIn_1 = keysIn;
 
 /**
  * The base implementation of `_.assignIn` without support for multiple sources
@@ -19792,7 +19796,7 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
 
   var keysFunc = isFull
     ? (isFlat ? _getAllKeysIn : _getAllKeys)
-    : (isFlat ? keysIn : keys_1);
+    : (isFlat ? keysIn_1 : keys_1);
 
   var props = isArr ? undefined : keysFunc(value);
   _arrayEach(props || value, function(subValue, key) {
@@ -20184,10 +20188,11 @@ function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
   if (arrLength != othLength && !(isPartial && othLength > arrLength)) {
     return false;
   }
-  // Assume cyclic values are equal.
-  var stacked = stack.get(array);
-  if (stacked && stack.get(other)) {
-    return stacked == other;
+  // Check that cyclic values are equal.
+  var arrStacked = stack.get(array);
+  var othStacked = stack.get(other);
+  if (arrStacked && othStacked) {
+    return arrStacked == other && othStacked == array;
   }
   var index = -1,
       result = true,
@@ -20422,10 +20427,11 @@ function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
       return false;
     }
   }
-  // Assume cyclic values are equal.
-  var stacked = stack.get(object);
-  if (stacked && stack.get(other)) {
-    return stacked == other;
+  // Check that cyclic values are equal.
+  var objStacked = stack.get(object);
+  var othStacked = stack.get(other);
+  if (objStacked && othStacked) {
+    return objStacked == other && othStacked == object;
   }
   var result = true;
   stack.set(object, other);
@@ -21283,6 +21289,10 @@ var _baseIteratee = baseIteratee;
  * // The `_.property` iteratee shorthand.
  * _.filter(users, 'active');
  * // => objects for ['barney']
+ *
+ * // Combining several predicates using `_.overEvery` or `_.overSome`.
+ * _.filter(users, _.overSome([{ 'age': 36 }, ['age', 40]]));
+ * // => objects for ['fred', 'barney']
  */
 function filter(collection, predicate) {
   var func = isArray_1(collection) ? _arrayFilter : _baseFilter;
@@ -23572,7 +23582,7 @@ exports.keysMD5 = function(object){
 };
 
 // Internals
-var hashes = crypto.getHashes ? crypto.getHashes().slice() : ['sha1', 'md5'];
+var hashes = crypto__default['default'].getHashes ? crypto__default['default'].getHashes().slice() : ['sha1', 'md5'];
 hashes.push('passthrough');
 var encodings = ['buffer', 'hex', 'binary', 'base64'];
 
@@ -23635,7 +23645,7 @@ function hash(object, options) {
   var hashingStream;
 
   if (options.algorithm !== 'passthrough') {
-    hashingStream = crypto.createHash(options.algorithm);
+    hashingStream = crypto__default['default'].createHash(options.algorithm);
   } else {
     hashingStream = new PassThrough();
   }
@@ -24032,7 +24042,9 @@ class RollingCache {
             return;
         this.rolled = true;
         fsExtra.removeSync(this.oldCacheRoot);
-        fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
+        if (fs.existsSync(this.newCacheRoot)) {
+            fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
+        }
     }
 }
 
@@ -24222,7 +24234,7 @@ function supportsColor(stream) {
     // release, and Node.js 7 is not. Windows 10 build 10586 is the first
     // Windows release that supports 256 colors. Windows 10 build 14931 is the
     // first release that supports 16m/TrueColor.
-    var osRelease = os.release().split('.');
+    var osRelease = os__default['default'].release().split('.');
     if (Number(process.versions.node.split('.')[0]) >= 8
         && Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
       return Number(osRelease[2]) >= 14931 ? 3 : 2;
@@ -24621,7 +24633,7 @@ function applyStyle() {
     if (arg != null && arg.constructor === String) {
       return arg;
     } else {
-      return util.inspect(arg);
+      return require$$0__default['default'].inspect(arg);
     }
   }).join(' ');
 
@@ -26972,7 +26984,7 @@ var semver$1 = {
 var commondir = function (basedir, relfiles) {
     if (relfiles) {
         var files = relfiles.map(function (r) {
-            return path__default.resolve(basedir, r);
+            return path__default['default'].resolve(basedir, r);
         });
     }
     else {
@@ -27108,11 +27120,11 @@ var pLocate_1 = pLocate;
 var _default$2 = pLocate;
 pLocate_1.default = _default$2;
 
-const {promisify} = util;
+const {promisify} = require$$0__default['default'];
 
 
-const fsStat = promisify(fs__default.stat);
-const fsLStat = promisify(fs__default.lstat);
+const fsStat = promisify(fs__default['default'].stat);
+const fsLStat = promisify(fs__default['default'].lstat);
 
 const typeMappings = {
 	directory: 'isDirectory',
@@ -27141,7 +27153,7 @@ var locatePath = async (paths, options) => {
 
 	return pLocate_1(paths, async path_ => {
 		try {
-			const stat = await statFn(path__default.resolve(options.cwd, path_));
+			const stat = await statFn(path__default['default'].resolve(options.cwd, path_));
 			return matchType(options.type, stat);
 		} catch (_) {
 			return false;
@@ -27157,11 +27169,11 @@ var sync = (paths, options) => {
 		...options
 	};
 	checkType(options);
-	const statFn = options.allowSymlinks ? fs__default.statSync : fs__default.lstatSync;
+	const statFn = options.allowSymlinks ? fs__default['default'].statSync : fs__default['default'].lstatSync;
 
 	for (const path_ of paths) {
 		try {
-			const stat = statFn(path__default.resolve(options.cwd, path_));
+			const stat = statFn(path__default['default'].resolve(options.cwd, path_));
 
 			if (matchType(options.type, stat)) {
 				return path_;
@@ -27172,9 +27184,9 @@ var sync = (paths, options) => {
 };
 locatePath.sync = sync;
 
-const {promisify: promisify$1} = util;
+const {promisify: promisify$1} = require$$0__default['default'];
 
-const pAccess = promisify$1(fs__default.access);
+const pAccess = promisify$1(fs__default['default'].access);
 
 var pathExists = async path => {
 	try {
@@ -27187,7 +27199,7 @@ var pathExists = async path => {
 
 var sync$1 = path => {
 	try {
-		fs__default.accessSync(path);
+		fs__default['default'].accessSync(path);
 		return true;
 	} catch (_) {
 		return false;
@@ -27203,8 +27215,8 @@ var findUp = createCommonjsModule(function (module) {
 const stop = Symbol('findUp.stop');
 
 module.exports = async (name, options = {}) => {
-	let directory = path__default.resolve(options.cwd || '');
-	const {root} = path__default.parse(directory);
+	let directory = path__default['default'].resolve(options.cwd || '');
+	const {root} = path__default['default'].parse(directory);
 	const paths = [].concat(name);
 
 	const runMatcher = async locateOptions => {
@@ -27230,20 +27242,20 @@ module.exports = async (name, options = {}) => {
 		}
 
 		if (foundPath) {
-			return path__default.resolve(directory, foundPath);
+			return path__default['default'].resolve(directory, foundPath);
 		}
 
 		if (directory === root) {
 			return;
 		}
 
-		directory = path__default.dirname(directory);
+		directory = path__default['default'].dirname(directory);
 	}
 };
 
 module.exports.sync = (name, options = {}) => {
-	let directory = path__default.resolve(options.cwd || '');
-	const {root} = path__default.parse(directory);
+	let directory = path__default['default'].resolve(options.cwd || '');
+	const {root} = path__default['default'].parse(directory);
 	const paths = [].concat(name);
 
 	const runMatcher = locateOptions => {
@@ -27268,14 +27280,14 @@ module.exports.sync = (name, options = {}) => {
 		}
 
 		if (foundPath) {
-			return path__default.resolve(directory, foundPath);
+			return path__default['default'].resolve(directory, foundPath);
 		}
 
 		if (directory === root) {
 			return;
 		}
 
-		directory = path__default.dirname(directory);
+		directory = path__default['default'].dirname(directory);
 	}
 };
 
@@ -27288,7 +27300,7 @@ module.exports.stop = stop;
 
 const pkgDir = async cwd => {
 	const filePath = await findUp('package.json', {cwd});
-	return filePath && path__default.dirname(filePath);
+	return filePath && path__default['default'].dirname(filePath);
 };
 
 var pkgDir_1 = pkgDir;
@@ -27297,7 +27309,7 @@ var _default$3 = pkgDir;
 
 var sync$2 = cwd => {
 	const filePath = findUp.sync('package.json', {cwd});
-	return filePath && path__default.dirname(filePath);
+	return filePath && path__default['default'].dirname(filePath);
 };
 pkgDir_1.default = _default$3;
 pkgDir_1.sync = sync$2;
@@ -28901,7 +28913,7 @@ function coerce (version, options) {
 }
 });
 
-const {promisify: promisify$2} = util;
+const {promisify: promisify$2} = require$$0__default['default'];
 
 
 const useNativeRecursiveOption = semver$2.satisfies(process.version, '>=10.12.0');
@@ -28910,7 +28922,7 @@ const useNativeRecursiveOption = semver$2.satisfies(process.version, '>=10.12.0'
 // https://github.com/libuv/libuv/pull/1088
 const checkPath = pth => {
 	if (process.platform === 'win32') {
-		const pathHasInvalidWinCharacters = /[<>:"|?*]/.test(pth.replace(path__default.parse(pth).root, ''));
+		const pathHasInvalidWinCharacters = /[<>:"|?*]/.test(pth.replace(path__default['default'].parse(pth).root, ''));
 
 		if (pathHasInvalidWinCharacters) {
 			const error = new Error(`Path contains invalid characters: ${pth}`);
@@ -28924,7 +28936,7 @@ const processOptions = options => {
 	// https://github.com/sindresorhus/make-dir/issues/18
 	const defaults = {
 		mode: 0o777 & (~process.umask()),
-		fs: fs__default
+		fs: fs__default['default']
 	};
 
 	return {
@@ -28951,8 +28963,8 @@ const makeDir = async (input, options) => {
 	const mkdir = promisify$2(options.fs.mkdir);
 	const stat = promisify$2(options.fs.stat);
 
-	if (useNativeRecursiveOption && options.fs.mkdir === fs__default.mkdir) {
-		const pth = path__default.resolve(input);
+	if (useNativeRecursiveOption && options.fs.mkdir === fs__default['default'].mkdir) {
+		const pth = path__default['default'].resolve(input);
 
 		await mkdir(pth, {
 			mode: options.mode,
@@ -28973,7 +28985,7 @@ const makeDir = async (input, options) => {
 			}
 
 			if (error.code === 'ENOENT') {
-				if (path__default.dirname(pth) === pth) {
+				if (path__default['default'].dirname(pth) === pth) {
 					throw permissionError(pth);
 				}
 
@@ -28981,7 +28993,7 @@ const makeDir = async (input, options) => {
 					throw error;
 				}
 
-				await make(path__default.dirname(pth));
+				await make(path__default['default'].dirname(pth));
 
 				return make(pth);
 			}
@@ -28999,7 +29011,7 @@ const makeDir = async (input, options) => {
 		}
 	};
 
-	return make(path__default.resolve(input));
+	return make(path__default['default'].resolve(input));
 };
 
 var makeDir_1 = makeDir;
@@ -29008,10 +29020,10 @@ var sync$3 = (input, options) => {
 	checkPath(input);
 	options = processOptions(options);
 
-	if (useNativeRecursiveOption && options.fs.mkdirSync === fs__default.mkdirSync) {
-		const pth = path__default.resolve(input);
+	if (useNativeRecursiveOption && options.fs.mkdirSync === fs__default['default'].mkdirSync) {
+		const pth = path__default['default'].resolve(input);
 
-		fs__default.mkdirSync(pth, {
+		fs__default['default'].mkdirSync(pth, {
 			mode: options.mode,
 			recursive: true
 		});
@@ -29028,7 +29040,7 @@ var sync$3 = (input, options) => {
 			}
 
 			if (error.code === 'ENOENT') {
-				if (path__default.dirname(pth) === pth) {
+				if (path__default['default'].dirname(pth) === pth) {
 					throw permissionError(pth);
 				}
 
@@ -29036,7 +29048,7 @@ var sync$3 = (input, options) => {
 					throw error;
 				}
 
-				make(path__default.dirname(pth));
+				make(path__default['default'].dirname(pth));
 				return make(pth);
 			}
 
@@ -29052,7 +29064,7 @@ var sync$3 = (input, options) => {
 		return pth;
 	};
 
-	return make(path__default.resolve(input));
+	return make(path__default['default'].resolve(input));
 };
 makeDir_1.sync = sync$3;
 
@@ -29060,7 +29072,7 @@ const {env: env$1, cwd} = process;
 
 const isWritable = path => {
 	try {
-		fs__default.accessSync(path, fs__default.constants.W_OK);
+		fs__default['default'].accessSync(path, fs__default['default'].constants.W_OK);
 		return true;
 	} catch (_) {
 		return false;
@@ -29073,18 +29085,18 @@ function useDirectory(directory, options) {
 	}
 
 	if (options.thunk) {
-		return (...arguments_) => path__default.join(directory, ...arguments_);
+		return (...arguments_) => path__default['default'].join(directory, ...arguments_);
 	}
 
 	return directory;
 }
 
 function getNodeModuleDirectory(directory) {
-	const nodeModules = path__default.join(directory, 'node_modules');
+	const nodeModules = path__default['default'].join(directory, 'node_modules');
 
 	if (
 		!isWritable(nodeModules) &&
-		(fs__default.existsSync(nodeModules) || !isWritable(path__default.join(directory)))
+		(fs__default['default'].existsSync(nodeModules) || !isWritable(path__default['default'].join(directory)))
 	) {
 		return;
 	}
@@ -29094,7 +29106,7 @@ function getNodeModuleDirectory(directory) {
 
 var findCacheDir = (options = {}) => {
 	if (env$1.CACHE_DIR && !['true', 'false', '1', '0'].includes(env$1.CACHE_DIR)) {
-		return useDirectory(path__default.join(env$1.CACHE_DIR, 'find-cache-dir'), options);
+		return useDirectory(path__default['default'].join(env$1.CACHE_DIR, 'find-cache-dir'), options);
 	}
 
 	let {cwd: directory = cwd()} = options;
@@ -29114,7 +29126,7 @@ var findCacheDir = (options = {}) => {
 		return undefined;
 	}
 
-	return useDirectory(path__default.join(directory, 'node_modules', '.cache', options.name), options);
+	return useDirectory(path__default['default'].join(directory, 'node_modules', '.cache', options.name), options);
 };
 
 const typescript = (options) => {
