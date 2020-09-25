@@ -98,6 +98,8 @@ export class RollingCache<DataType> implements ICache<DataType>
 
 		this.rolled = true;
 		removeSync(this.oldCacheRoot);
-		renameSync(this.newCacheRoot, this.oldCacheRoot);
+		if (existsSync(this.newCacheRoot)) {
+			renameSync(this.newCacheRoot, this.oldCacheRoot);
+		}
 	}
 }
