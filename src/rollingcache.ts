@@ -98,7 +98,7 @@ export class RollingCache<DataType> implements ICache<DataType>
 
 		this.rolled = true;
 		removeSync(this.oldCacheRoot);
-		if (fs.existsSync(this.newCacheRoot)) {
+		if (existsSync(this.newCacheRoot)) {
 			fs.renameSync(this.newCacheRoot, this.oldCacheRoot);
 		}
 	}
