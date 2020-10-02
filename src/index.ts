@@ -12,11 +12,13 @@ import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow, green } from "colors/safe";
-import { relative } from "path";
+import { relative, dirname, resolve as pathResolve } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, Plugin } from "rollup";
+
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
+
 import { createFilter } from "./get-options-overrides";
 
 type RPT2Options = Partial<IOptions>;
@@ -365,11 +367,29 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				}
 				else
 				{
-					const relativePath = relative(pluginOptions.cwd, fileName);
+					// don't mutate the entry because generateBundle gets called multiple times
+					let entryText = entry.text
+					const declarationDir = (_output.file ? dirname(_output.file) : _output.dir) as string;
+					const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`
+
+					// modify declaration map sources to correct relative path
+					if (extension === ".d.ts.map")
+					{
+						const parsedText = JSON.parse(entryText) as SourceMap;
+						// invert back to absolute, then make relative to declarationDir
+						parsedText.sources = parsedText.sources.map(source =>
+						{
+							const absolutePath = pathResolve(cachePlaceholder, source);
+							return normalize(relative(declarationDir, absolutePath));
+						});
+						entryText = JSON.stringify(parsedText);
+					}
+
+					const relativePath = normalize(relative(cachePlaceholder, fileName);
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
 					this.emitFile({
 						type: "asset",
-						source: entry.text,
+						source: entryText,
 						fileName: relativePath,
 					});
 				}

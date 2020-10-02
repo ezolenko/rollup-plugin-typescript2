@@ -25037,7 +25037,7 @@ function printDiagnostics(context, diagnostics, pretty) {
     });
 }
 
-function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }, preParsedTsconfig) {
+function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
     const overrides = {
         noEmitHelpers: false,
         importHelpers: true,
@@ -25051,11 +25051,9 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot, cwd }, preP
     if (preParsedTsconfig) {
         if (preParsedTsconfig.options.module === undefined)
             overrides.module = tsModule.ModuleKind.ES2015;
-        const declaration = preParsedTsconfig.options.declaration;
-        if (!declaration)
+        // only set declarationDir if useTsconfigDeclarationDir is enabled
+        if (!useTsconfigDeclarationDir)
             overrides.declarationDir = undefined;
-        if (declaration && !useTsconfigDeclarationDir)
-            overrides.declarationDir = cwd;
         // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
         const sourceMap = preParsedTsconfig.options.sourceMap;
         if (!sourceMap)
@@ -29359,11 +29357,25 @@ const typescript = (options) => {
                     tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
                 }
                 else {
-                    const relativePath = path.relative(pluginOptions.cwd, fileName);
+                    // don't mutate the entry because generateBundle gets called multiple times
+                    let entryText = entry.text;
+                    const declarationDir = (_output.file ? path.dirname(_output.file) : _output.dir);
+                    const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`;
+                    // modify declaration map sources to correct relative path
+                    if (extension === ".d.ts.map") {
+                        const parsedText = JSON.parse(entryText);
+                        // invert back to absolute, then make relative to declarationDir
+                        parsedText.sources = parsedText.sources.map(source => {
+                            const absolutePath = path.resolve(cachePlaceholder, source);
+                            return normalize(path.relative(declarationDir, absolutePath));
+                        });
+                        entryText = JSON.stringify(parsedText);
+                    }
+                    const relativePath = normalize(path.relative(cachePlaceholder, fileName));
                     context.debug(() => `${safe.blue("emitting declarations")} for '${key}' to '${relativePath}'`);
                     this.emitFile({
                         type: "asset",
-                        source: entry.text,
+                        source: entryText,
                         fileName: relativePath,
                     });
                 }
