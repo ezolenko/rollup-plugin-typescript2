@@ -17,7 +17,7 @@ import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
 
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, MinimalPluginContext, TransformResult, SourceMap, Plugin } from "rollup";
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
 
 import { createFilter } from "./get-options-overrides";
 
@@ -373,17 +373,19 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`
 
 					// modify declaration map sources to correct relative path
-					if (extension === ".d.ts.map") {
+					if (extension === ".d.ts.map")
+					{
 						const parsedText = JSON.parse(entryText) as SourceMap;
 						// invert back to absolute, then make relative to declarationDir
-						parsedText.sources = parsedText.sources.map(source => {
+						parsedText.sources = parsedText.sources.map(source =>
+						{
 							const absolutePath = pathResolve(cachePlaceholder, source);
-							return relative(declarationDir, absolutePath);
+							return normalize(relative(declarationDir, absolutePath));
 						});
 						entryText = JSON.stringify(parsedText);
 					}
 
-					const relativePath = relative(cachePlaceholder, fileName);
+					const relativePath = normalize(relative(cachePlaceholder, fileName);
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
 					this.emitFile({
 						type: "asset",
