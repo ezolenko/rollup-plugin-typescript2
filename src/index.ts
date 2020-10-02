@@ -385,7 +385,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 						entryText = JSON.stringify(parsedText);
 					}
 
-					const relativePath = normalize(relative(cachePlaceholder, fileName);
+					const relativePath = normalize(relative(cachePlaceholder, fileName));
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
 					this.emitFile({
 						type: "asset",
