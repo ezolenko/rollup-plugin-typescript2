@@ -1,13 +1,22 @@
 #### What happens and why it is wrong
 
-#### Environment 
+#### Environment
 
 <!--- describe your environment if it is relevant to the problem --->
 
-#### Versions
-- typescript:
-- rollup:
-- rollup-plugin-typescript2:
+##### Versions
+
+<!--
+  PLEASE RUN THIS COMMAND INSIDE YOUR PROJECT:
+
+  npx envinfo --npmPackages typescript,rollup,rollup-plugin-typescript2
+
+  AND PASTE ITS CONTENTS BELOW INSIDE THE CODE SNIPPET vvvvvvvvv
+-->
+
+```text
+
+```
 
 #### rollup.config.js
 
