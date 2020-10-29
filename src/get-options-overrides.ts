@@ -71,5 +71,5 @@ export function createFilter(context: IContext, pluginOptions: IOptions, parsedC
 
 	context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
 	context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-	return createRollupFilter(included, excluded);
+	return createRollupFilter(included, excluded, { resolve: parsedConfig.options.rootDir });
 }
