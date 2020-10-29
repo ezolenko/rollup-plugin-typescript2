@@ -25075,7 +25075,7 @@ function createFilter(context, pluginOptions, parsedConfig) {
     }
     context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
     context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-    return createFilter$1(included, excluded);
+    return createFilter$1(included, excluded, { resolve: parsedConfig.options.rootDir });
 }
 
 function checkTsConfig(parsedConfig) {
