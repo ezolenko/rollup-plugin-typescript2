@@ -12,7 +12,7 @@ import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow, green } from "colors/safe";
-import { relative, dirname, resolve as pathResolve } from "path";
+import { relative, dirname, normalize as pathNormalize, resolve as pathResolve } from "path";
 import { normalize } from "./normalize";
 import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
@@ -166,7 +166,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				context.debug(() => `${blue("resolving")} '${importee}' imported by '${importer}'`);
 				context.debug(() => `    to '${resolved}'`);
 
-				return resolved;
+				return pathNormalize(resolved);
 			}
 
 			return;
