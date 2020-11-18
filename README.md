@@ -17,7 +17,9 @@ This version is somewhat slower than original, but it will print out typescript 
 ```bash
 # with npm
 npm install rollup-plugin-typescript2 typescript --save-dev
-# with yarn
+# with yarn berry
+yarn add rollup-plugin-typescript2 typescript tslib --dev
+# with classic yarn
 yarn add rollup-plugin-typescript2 typescript --dev
 ```
 
