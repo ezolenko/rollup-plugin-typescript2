@@ -29228,7 +29228,7 @@ const typescript = (options) => {
                     : result.resolvedModule.resolvedFileName;
                 context.debug(() => `${safe.blue("resolving")} '${importee}' imported by '${importer}'`);
                 context.debug(() => `    to '${resolved}'`);
-                return resolved;
+                return path.normalize(resolved);
             }
             return;
         },
