@@ -25111,7 +25111,7 @@ function createFilter(context, pluginOptions, parsedConfig) {
 
 function checkTsConfig(parsedConfig) {
     const module = parsedConfig.options.module;
-    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ESNext)
+    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ESNext && module !== tsModule.ModuleKind.ES2020)
         throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
 }
 
