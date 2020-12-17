@@ -20,19 +20,23 @@ var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
-function createCommonjsModule(fn, basedir, module) {
-	return module = {
-		path: basedir,
-		exports: {},
-		require: function (path, base) {
-			return commonjsRequire(path, (base === undefined || base === null) ? module.path : base);
-		}
-	}, fn(module, module.exports), module.exports;
+function createCommonjsModule(fn) {
+  var module = { exports: {} };
+	return fn(module, module.exports), module.exports;
 }
 
-function commonjsRequire () {
-	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
+function commonjsRequire (target) {
+	throw new Error('Could not dynamically require "' + target + '". Please configure the dynamicRequireTargets option of @rollup/plugin-commonjs appropriately for this require call to behave properly.');
 }
+
+/**
+ * @license
+ * Lodash <https://lodash.com/>
+ * Copyright OpenJS Foundation and other contributors <https://openjsf.org/>
+ * Released under MIT license <https://lodash.com/license>
+ * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
+ * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
+ */
 
 var lodash = createCommonjsModule(function (module, exports) {
 (function() {
@@ -17613,6 +17617,7 @@ function stackHas(key) {
 var _stackHas = stackHas;
 
 /** Detect free variable `global` from Node.js. */
+
 var freeGlobal = typeof commonjsGlobal == 'object' && commonjsGlobal && commonjsGlobal.Object === Object && commonjsGlobal;
 
 var _freeGlobal = freeGlobal;
@@ -23517,8 +23522,6 @@ var alg = {
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-
 var graphlib = {
   Graph: lib.Graph,
   json: json,
@@ -24048,7 +24051,6 @@ class RollingCache {
     }
 }
 
-var styles_1 = createCommonjsModule(function (module) {
 /*
 The MIT License (MIT)
 
@@ -24074,6 +24076,7 @@ THE SOFTWARE.
 
 */
 
+var styles_1 = createCommonjsModule(function (module) {
 var styles = {};
 module['exports'] = styles;
 
@@ -24179,6 +24182,34 @@ var hasFlag = function(flag, argv) {
 
   return pos !== -1 && (terminatorPos === -1 ? true : pos < terminatorPos);
 };
+
+/*
+The MIT License (MIT)
+
+Copyright (c) Sindre Sorhus <sindresorhus@gmail.com> (sindresorhus.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+
+*/
+
+
+
 
 var env = process.env;
 
@@ -24512,7 +24543,6 @@ module['exports'] = function(colors) {
 };
 });
 
-var colors_1 = createCommonjsModule(function (module) {
 /*
 
 The MIT License (MIT)
@@ -24543,6 +24573,7 @@ THE SOFTWARE.
 
 */
 
+var colors_1 = createCommonjsModule(function (module) {
 var colors = {};
 module['exports'] = colors;
 
