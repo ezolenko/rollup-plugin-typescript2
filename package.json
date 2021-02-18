@@ -58,7 +58,7 @@
     "@rollup/plugin-commonjs": "17.1.0",
     "@rollup/plugin-node-resolve": "11.2.0",
     "rollup-plugin-re": "1.0.7",
-    "rollup-plugin-typescript2": "0.29.0",
+    "rollup-plugin-typescript2": "0.30.0",
     "rollup-watch": "4.3.1",
     "semver": "7.3.4",
     "tslint": "6.1.3",
