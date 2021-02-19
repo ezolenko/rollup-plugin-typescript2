@@ -235,7 +235,7 @@ Use the normal github process of forking, making a branch and creating a PR when
 
 Fastest way to test changes is to do a self build, the plugin is part of its own build system:
 - make changes
-- run `npm build` (uses build committed to master branch)
+- run `npm build` (uses last released version on npm)
 - check that you get expected changes in `dist`
 - run `npm build-self` (uses fresh local build)
 - check `dist` for the expected changes
