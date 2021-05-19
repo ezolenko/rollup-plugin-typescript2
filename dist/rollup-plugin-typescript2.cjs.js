@@ -12,11 +12,33 @@ var pluginutils = require('@rollup/pluginutils');
 
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
+function _interopNamespace(e) {
+	if (e && e.__esModule) return e;
+	var n = Object.create(null);
+	if (e) {
+		Object.keys(e).forEach(function (k) {
+			if (k !== 'default') {
+				var d = Object.getOwnPropertyDescriptor(e, k);
+				Object.defineProperty(n, k, d.get ? d : {
+					enumerable: true,
+					get: function () {
+						return e[k];
+					}
+				});
+			}
+		});
+	}
+	n['default'] = e;
+	return Object.freeze(n);
+}
+
 var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
 var fs__default = /*#__PURE__*/_interopDefaultLegacy(fs);
 var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
 var os__default = /*#__PURE__*/_interopDefaultLegacy(os);
+var path__namespace = /*#__PURE__*/_interopNamespace(path);
 var path__default = /*#__PURE__*/_interopDefaultLegacy(path);
+var resolve__namespace = /*#__PURE__*/_interopNamespace(resolve);
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -38,21 +60,22 @@ function commonjsRequire (target) {
  * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
  */
 
-var lodash = createCommonjsModule(function (module, exports) {
+var lodash$1 = createCommonjsModule(function (module, exports) {
 (function() {
 
   /** Used as a safe reference for `undefined` in pre-ES5 environments. */
   var undefined$1;
 
   /** Used as the semantic version number. */
-  var VERSION = '4.17.20';
+  var VERSION = '4.17.21';
 
   /** Used as the size to enable large array optimizations. */
   var LARGE_ARRAY_SIZE = 200;
 
   /** Error message constants. */
   var CORE_ERROR_TEXT = 'Unsupported core-js use. Try https://npms.io/search?q=ponyfill.',
-      FUNC_ERROR_TEXT = 'Expected a function';
+      FUNC_ERROR_TEXT = 'Expected a function',
+      INVALID_TEMPL_VAR_ERROR_TEXT = 'Invalid `variable` option passed into `_.template`';
 
   /** Used to stand-in for `undefined` hash values. */
   var HASH_UNDEFINED = '__lodash_hash_undefined__';
@@ -185,10 +208,11 @@ var lodash = createCommonjsModule(function (module, exports) {
   var reRegExpChar = /[\\^$.*+?()[\]{}|]/g,
       reHasRegExpChar = RegExp(reRegExpChar.source);
 
-  /** Used to match leading and trailing whitespace. */
-  var reTrim = /^\s+|\s+$/g,
-      reTrimStart = /^\s+/,
-      reTrimEnd = /\s+$/;
+  /** Used to match leading whitespace. */
+  var reTrimStart = /^\s+/;
+
+  /** Used to match a single whitespace character. */
+  var reWhitespace = /\s/;
 
   /** Used to match wrap detail comments. */
   var reWrapComment = /\{(?:\n\/\* \[wrapped with .+\] \*\/)?\n?/,
@@ -197,6 +221,18 @@ var lodash = createCommonjsModule(function (module, exports) {
 
   /** Used to match words composed of alphanumeric characters. */
   var reAsciiWord = /[^\x00-\x2f\x3a-\x40\x5b-\x60\x7b-\x7f]+/g;
+
+  /**
+   * Used to validate the `validate` option in `_.template` variable.
+   *
+   * Forbids characters which could potentially change the meaning of the function argument definition:
+   * - "()," (modification of function parameters)
+   * - "=" (default value)
+   * - "[]{}" (destructuring of function parameters)
+   * - "/" (beginning of a comment)
+   * - whitespace
+   */
+  var reForbiddenIdentifierChars = /[()=,{}\[\]\/\s]/;
 
   /** Used to match backslashes in property paths. */
   var reEscapeChar = /\\(\\)?/g;
@@ -1027,6 +1063,19 @@ var lodash = createCommonjsModule(function (module, exports) {
   }
 
   /**
+   * The base implementation of `_.trim`.
+   *
+   * @private
+   * @param {string} string The string to trim.
+   * @returns {string} Returns the trimmed string.
+   */
+  function baseTrim(string) {
+    return string
+      ? string.slice(0, trimmedEndIndex(string) + 1).replace(reTrimStart, '')
+      : string;
+  }
+
+  /**
    * The base implementation of `_.unary` without support for storing metadata.
    *
    * @private
@@ -1357,6 +1406,21 @@ var lodash = createCommonjsModule(function (module, exports) {
     return hasUnicode(string)
       ? unicodeToArray(string)
       : asciiToArray(string);
+  }
+
+  /**
+   * Used by `_.trim` and `_.trimEnd` to get the index of the last non-whitespace
+   * character of `string`.
+   *
+   * @private
+   * @param {string} string The string to inspect.
+   * @returns {number} Returns the index of the last non-whitespace character.
+   */
+  function trimmedEndIndex(string) {
+    var index = string.length;
+
+    while (index-- && reWhitespace.test(string.charAt(index))) {}
+    return index;
   }
 
   /**
@@ -12527,7 +12591,7 @@ var lodash = createCommonjsModule(function (module, exports) {
       if (typeof value != 'string') {
         return value === 0 ? value : +value;
       }
-      value = value.replace(reTrim, '');
+      value = baseTrim(value);
       var isBinary = reIsBinary.test(value);
       return (isBinary || reIsOctal.test(value))
         ? freeParseInt(value.slice(2), isBinary ? 2 : 8)
@@ -14899,6 +14963,12 @@ var lodash = createCommonjsModule(function (module, exports) {
       if (!variable) {
         source = 'with (obj) {\n' + source + '\n}\n';
       }
+      // Throw an error if a forbidden character was found in `variable`, to prevent
+      // potential command injection attacks.
+      else if (reForbiddenIdentifierChars.test(variable)) {
+        throw new Error(INVALID_TEMPL_VAR_ERROR_TEXT);
+      }
+
       // Cleanup code by stripping empty strings.
       source = (isEvaluating ? source.replace(reEmptyStringLeading, '') : source)
         .replace(reEmptyStringMiddle, '$1')
@@ -15012,7 +15082,7 @@ var lodash = createCommonjsModule(function (module, exports) {
     function trim(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined$1)) {
-        return string.replace(reTrim, '');
+        return baseTrim(string);
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -15047,7 +15117,7 @@ var lodash = createCommonjsModule(function (module, exports) {
     function trimEnd(string, chars, guard) {
       string = toString(string);
       if (string && (guard || chars === undefined$1)) {
-        return string.replace(reTrimEnd, '');
+        return string.slice(0, trimmedEndIndex(string) + 1);
       }
       if (!string || !(chars = baseToString(chars))) {
         return string;
@@ -17195,22 +17265,22 @@ class ConsoleContext {
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash$1.isFunction(message) ? message() : message}`);
     }
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash$1.isFunction(message) ? message() : message}`);
     }
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash$1.isFunction(message) ? message() : message}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        console.log(`${this.prefix}${lodash.isFunction(message) ? message() : message}`);
+        console.log(`${this.prefix}${lodash$1.isFunction(message) ? message() : message}`);
     }
 }
 
@@ -17221,12 +17291,12 @@ class RollupContext {
         this.context = context;
         this.prefix = prefix;
         this.hasContext = true;
-        this.hasContext = lodash.isFunction(this.context.warn) && lodash.isFunction(this.context.error);
+        this.hasContext = lodash$1.isFunction(this.context.warn) && lodash$1.isFunction(this.context.error);
     }
     warn(message) {
         if (this.verbosity < VerbosityLevel.Warning)
             return;
-        const text = lodash.isFunction(message) ? message() : message;
+        const text = lodash$1.isFunction(message) ? message() : message;
         if (this.hasContext)
             this.context.warn(`${text}`);
         else
@@ -17235,7 +17305,7 @@ class RollupContext {
     error(message) {
         if (this.verbosity < VerbosityLevel.Error)
             return;
-        const text = lodash.isFunction(message) ? message() : message;
+        const text = lodash$1.isFunction(message) ? message() : message;
         if (this.hasContext) {
             if (this.bail)
                 this.context.error(`${text}`);
@@ -17248,13 +17318,13 @@ class RollupContext {
     info(message) {
         if (this.verbosity < VerbosityLevel.Info)
             return;
-        const text = lodash.isFunction(message) ? message() : message;
+        const text = lodash$1.isFunction(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
     debug(message) {
         if (this.verbosity < VerbosityLevel.Debug)
             return;
-        const text = lodash.isFunction(message) ? message() : message;
+        const text = lodash$1.isFunction(message) ? message() : message;
         console.log(`${this.prefix}${text}`);
     }
 }
@@ -17294,7 +17364,7 @@ class LanguageServiceHost {
     }
     getScriptSnapshot(fileName) {
         fileName = normalize(fileName);
-        if (lodash.has(this.snapshots, fileName))
+        if (lodash$1.has(this.snapshots, fileName))
             return this.snapshots[fileName];
         const source = tsModule.sys.readFile(fileName);
         if (source) {
@@ -17352,11 +17422,11 @@ class LanguageServiceHost {
         for (const creator of this.transformers) {
             const factory = creator(this.service);
             if (factory.before)
-                transformer.before = lodash.concat(transformer.before, factory.before);
+                transformer.before = lodash$1.concat(transformer.before, factory.before);
             if (factory.after)
-                transformer.after = lodash.concat(transformer.after, factory.after);
+                transformer.after = lodash$1.concat(transformer.after, factory.after);
             if (factory.afterDeclarations)
-                transformer.afterDeclarations = lodash.concat(transformer.afterDeclarations, factory.afterDeclarations);
+                transformer.afterDeclarations = lodash$1.concat(transformer.afterDeclarations, factory.afterDeclarations);
         }
         return transformer;
     }
@@ -17408,11 +17478,11 @@ var _listCacheClear = listCacheClear;
  * _.eq(NaN, NaN);
  * // => true
  */
-function eq(value, other) {
+function eq$1(value, other) {
   return value === other || (value !== value && other !== other);
 }
 
-var eq_1 = eq;
+var eq_1$1 = eq$1;
 
 /**
  * Gets the index at which the `key` is found in `array` of key-value pairs.
@@ -17425,7 +17495,7 @@ var eq_1 = eq;
 function assocIndexOf(array, key) {
   var length = array.length;
   while (length--) {
-    if (eq_1(array[length][0], key)) {
+    if (eq_1$1(array[length][0], key)) {
       return length;
     }
   }
@@ -17636,20 +17706,20 @@ var Symbol$1 = _root.Symbol;
 var _Symbol = Symbol$1;
 
 /** Used for built-in method references. */
-var objectProto = Object.prototype;
+var objectProto$g = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty = objectProto.hasOwnProperty;
+var hasOwnProperty$d = objectProto$g.hasOwnProperty;
 
 /**
  * Used to resolve the
  * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
  * of values.
  */
-var nativeObjectToString = objectProto.toString;
+var nativeObjectToString$1 = objectProto$g.toString;
 
 /** Built-in value references. */
-var symToStringTag = _Symbol ? _Symbol.toStringTag : undefined;
+var symToStringTag$1 = _Symbol ? _Symbol.toStringTag : undefined;
 
 /**
  * A specialized version of `baseGetTag` which ignores `Symbol.toStringTag` values.
@@ -17659,20 +17729,20 @@ var symToStringTag = _Symbol ? _Symbol.toStringTag : undefined;
  * @returns {string} Returns the raw `toStringTag`.
  */
 function getRawTag(value) {
-  var isOwn = hasOwnProperty.call(value, symToStringTag),
-      tag = value[symToStringTag];
+  var isOwn = hasOwnProperty$d.call(value, symToStringTag$1),
+      tag = value[symToStringTag$1];
 
   try {
-    value[symToStringTag] = undefined;
+    value[symToStringTag$1] = undefined;
     var unmasked = true;
   } catch (e) {}
 
-  var result = nativeObjectToString.call(value);
+  var result = nativeObjectToString$1.call(value);
   if (unmasked) {
     if (isOwn) {
-      value[symToStringTag] = tag;
+      value[symToStringTag$1] = tag;
     } else {
-      delete value[symToStringTag];
+      delete value[symToStringTag$1];
     }
   }
   return result;
@@ -17681,14 +17751,14 @@ function getRawTag(value) {
 var _getRawTag = getRawTag;
 
 /** Used for built-in method references. */
-var objectProto$1 = Object.prototype;
+var objectProto$f = Object.prototype;
 
 /**
  * Used to resolve the
  * [`toStringTag`](http://ecma-international.org/ecma-262/7.0/#sec-object.prototype.tostring)
  * of values.
  */
-var nativeObjectToString$1 = objectProto$1.toString;
+var nativeObjectToString = objectProto$f.toString;
 
 /**
  * Converts `value` to a string using `Object.prototype.toString`.
@@ -17698,7 +17768,7 @@ var nativeObjectToString$1 = objectProto$1.toString;
  * @returns {string} Returns the converted string.
  */
 function objectToString(value) {
-  return nativeObjectToString$1.call(value);
+  return nativeObjectToString.call(value);
 }
 
 var _objectToString = objectToString;
@@ -17708,7 +17778,7 @@ var nullTag = '[object Null]',
     undefinedTag = '[object Undefined]';
 
 /** Built-in value references. */
-var symToStringTag$1 = _Symbol ? _Symbol.toStringTag : undefined;
+var symToStringTag = _Symbol ? _Symbol.toStringTag : undefined;
 
 /**
  * The base implementation of `getTag` without fallbacks for buggy environments.
@@ -17721,7 +17791,7 @@ function baseGetTag(value) {
   if (value == null) {
     return value === undefined ? undefinedTag : nullTag;
   }
-  return (symToStringTag$1 && symToStringTag$1 in Object(value))
+  return (symToStringTag && symToStringTag in Object(value))
     ? _getRawTag(value)
     : _objectToString(value);
 }
@@ -17762,8 +17832,8 @@ var isObject_1 = isObject;
 
 /** `Object#toString` result references. */
 var asyncTag = '[object AsyncFunction]',
-    funcTag = '[object Function]',
-    genTag = '[object GeneratorFunction]',
+    funcTag$2 = '[object Function]',
+    genTag$1 = '[object GeneratorFunction]',
     proxyTag = '[object Proxy]';
 
 /**
@@ -17790,7 +17860,7 @@ function isFunction(value) {
   // The use of `Object#toString` avoids issues with the `typeof` operator
   // in Safari 9 which returns 'object' for typed arrays and other constructors.
   var tag = _baseGetTag(value);
-  return tag == funcTag || tag == genTag || tag == asyncTag || tag == proxyTag;
+  return tag == funcTag$2 || tag == genTag$1 || tag == asyncTag || tag == proxyTag;
 }
 
 var isFunction_1 = isFunction;
@@ -17820,10 +17890,10 @@ function isMasked(func) {
 var _isMasked = isMasked;
 
 /** Used for built-in method references. */
-var funcProto = Function.prototype;
+var funcProto$1 = Function.prototype;
 
 /** Used to resolve the decompiled source of functions. */
-var funcToString = funcProto.toString;
+var funcToString$1 = funcProto$1.toString;
 
 /**
  * Converts `func` to its source code.
@@ -17835,7 +17905,7 @@ var funcToString = funcProto.toString;
 function toSource(func) {
   if (func != null) {
     try {
-      return funcToString.call(func);
+      return funcToString$1.call(func);
     } catch (e) {}
     try {
       return (func + '');
@@ -17856,18 +17926,18 @@ var reRegExpChar = /[\\^$.*+?()[\]{}|]/g;
 var reIsHostCtor = /^\[object .+?Constructor\]$/;
 
 /** Used for built-in method references. */
-var funcProto$1 = Function.prototype,
-    objectProto$2 = Object.prototype;
+var funcProto = Function.prototype,
+    objectProto$e = Object.prototype;
 
 /** Used to resolve the decompiled source of functions. */
-var funcToString$1 = funcProto$1.toString;
+var funcToString = funcProto.toString;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$1 = objectProto$2.hasOwnProperty;
+var hasOwnProperty$c = objectProto$e.hasOwnProperty;
 
 /** Used to detect if a method is native. */
 var reIsNative = RegExp('^' +
-  funcToString$1.call(hasOwnProperty$1).replace(reRegExpChar, '\\$&')
+  funcToString.call(hasOwnProperty$c).replace(reRegExpChar, '\\$&')
   .replace(/hasOwnProperty|(function).*?(?=\\\()| for .+?(?=\\\])/g, '$1.*?') + '$'
 );
 
@@ -17961,13 +18031,13 @@ function hashDelete(key) {
 var _hashDelete = hashDelete;
 
 /** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED = '__lodash_hash_undefined__';
+var HASH_UNDEFINED$2 = '__lodash_hash_undefined__';
 
 /** Used for built-in method references. */
-var objectProto$3 = Object.prototype;
+var objectProto$d = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$2 = objectProto$3.hasOwnProperty;
+var hasOwnProperty$b = objectProto$d.hasOwnProperty;
 
 /**
  * Gets the hash value for `key`.
@@ -17982,18 +18052,18 @@ function hashGet(key) {
   var data = this.__data__;
   if (_nativeCreate) {
     var result = data[key];
-    return result === HASH_UNDEFINED ? undefined : result;
+    return result === HASH_UNDEFINED$2 ? undefined : result;
   }
-  return hasOwnProperty$2.call(data, key) ? data[key] : undefined;
+  return hasOwnProperty$b.call(data, key) ? data[key] : undefined;
 }
 
 var _hashGet = hashGet;
 
 /** Used for built-in method references. */
-var objectProto$4 = Object.prototype;
+var objectProto$c = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
+var hasOwnProperty$a = objectProto$c.hasOwnProperty;
 
 /**
  * Checks if a hash value for `key` exists.
@@ -18006,7 +18076,7 @@ var hasOwnProperty$3 = objectProto$4.hasOwnProperty;
  */
 function hashHas(key) {
   var data = this.__data__;
-  return _nativeCreate ? (data[key] !== undefined) : hasOwnProperty$3.call(data, key);
+  return _nativeCreate ? (data[key] !== undefined) : hasOwnProperty$a.call(data, key);
 }
 
 var _hashHas = hashHas;
@@ -18207,7 +18277,7 @@ MapCache.prototype.set = _mapCacheSet;
 var _MapCache = MapCache;
 
 /** Used as the size to enable large array optimizations. */
-var LARGE_ARRAY_SIZE = 200;
+var LARGE_ARRAY_SIZE$1 = 200;
 
 /**
  * Sets the stack `key` to `value`.
@@ -18223,7 +18293,7 @@ function stackSet(key, value) {
   var data = this.__data__;
   if (data instanceof _ListCache) {
     var pairs = data.__data__;
-    if (!_Map || (pairs.length < LARGE_ARRAY_SIZE - 1)) {
+    if (!_Map || (pairs.length < LARGE_ARRAY_SIZE$1 - 1)) {
       pairs.push([key, value]);
       this.size = ++data.size;
       return this;
@@ -18316,10 +18386,10 @@ function baseAssignValue(object, key, value) {
 var _baseAssignValue = baseAssignValue;
 
 /** Used for built-in method references. */
-var objectProto$5 = Object.prototype;
+var objectProto$b = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$4 = objectProto$5.hasOwnProperty;
+var hasOwnProperty$9 = objectProto$b.hasOwnProperty;
 
 /**
  * Assigns `value` to `key` of `object` if the existing value is not equivalent
@@ -18333,7 +18403,7 @@ var hasOwnProperty$4 = objectProto$5.hasOwnProperty;
  */
 function assignValue(object, key, value) {
   var objValue = object[key];
-  if (!(hasOwnProperty$4.call(object, key) && eq_1(objValue, value)) ||
+  if (!(hasOwnProperty$9.call(object, key) && eq_1$1(objValue, value)) ||
       (value === undefined && !(key in object))) {
     _baseAssignValue(object, key, value);
   }
@@ -18431,7 +18501,7 @@ function isObjectLike(value) {
 var isObjectLike_1 = isObjectLike;
 
 /** `Object#toString` result references. */
-var argsTag = '[object Arguments]';
+var argsTag$3 = '[object Arguments]';
 
 /**
  * The base implementation of `_.isArguments`.
@@ -18441,19 +18511,19 @@ var argsTag = '[object Arguments]';
  * @returns {boolean} Returns `true` if `value` is an `arguments` object,
  */
 function baseIsArguments(value) {
-  return isObjectLike_1(value) && _baseGetTag(value) == argsTag;
+  return isObjectLike_1(value) && _baseGetTag(value) == argsTag$3;
 }
 
 var _baseIsArguments = baseIsArguments;
 
 /** Used for built-in method references. */
-var objectProto$6 = Object.prototype;
+var objectProto$a = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$5 = objectProto$6.hasOwnProperty;
+var hasOwnProperty$8 = objectProto$a.hasOwnProperty;
 
 /** Built-in value references. */
-var propertyIsEnumerable = objectProto$6.propertyIsEnumerable;
+var propertyIsEnumerable$1 = objectProto$a.propertyIsEnumerable;
 
 /**
  * Checks if `value` is likely an `arguments` object.
@@ -18474,8 +18544,8 @@ var propertyIsEnumerable = objectProto$6.propertyIsEnumerable;
  * // => false
  */
 var isArguments = _baseIsArguments(function() { return arguments; }()) ? _baseIsArguments : function(value) {
-  return isObjectLike_1(value) && hasOwnProperty$5.call(value, 'callee') &&
-    !propertyIsEnumerable.call(value, 'callee');
+  return isObjectLike_1(value) && hasOwnProperty$8.call(value, 'callee') &&
+    !propertyIsEnumerable$1.call(value, 'callee');
 };
 
 var isArguments_1 = isArguments;
@@ -18565,7 +18635,7 @@ module.exports = isBuffer;
 });
 
 /** Used as references for various `Number` constants. */
-var MAX_SAFE_INTEGER = 9007199254740991;
+var MAX_SAFE_INTEGER$3 = 9007199254740991;
 
 /** Used to detect unsigned integer values. */
 var reIsUint = /^(?:0|[1-9]\d*)$/;
@@ -18580,7 +18650,7 @@ var reIsUint = /^(?:0|[1-9]\d*)$/;
  */
 function isIndex(value, length) {
   var type = typeof value;
-  length = length == null ? MAX_SAFE_INTEGER : length;
+  length = length == null ? MAX_SAFE_INTEGER$3 : length;
 
   return !!length &&
     (type == 'number' ||
@@ -18591,7 +18661,7 @@ function isIndex(value, length) {
 var _isIndex = isIndex;
 
 /** Used as references for various `Number` constants. */
-var MAX_SAFE_INTEGER$1 = 9007199254740991;
+var MAX_SAFE_INTEGER$2 = 9007199254740991;
 
 /**
  * Checks if `value` is a valid array-like length.
@@ -18621,53 +18691,53 @@ var MAX_SAFE_INTEGER$1 = 9007199254740991;
  */
 function isLength(value) {
   return typeof value == 'number' &&
-    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER$1;
+    value > -1 && value % 1 == 0 && value <= MAX_SAFE_INTEGER$2;
 }
 
 var isLength_1 = isLength;
 
 /** `Object#toString` result references. */
-var argsTag$1 = '[object Arguments]',
-    arrayTag = '[object Array]',
-    boolTag = '[object Boolean]',
-    dateTag = '[object Date]',
-    errorTag = '[object Error]',
+var argsTag$2 = '[object Arguments]',
+    arrayTag$2 = '[object Array]',
+    boolTag$3 = '[object Boolean]',
+    dateTag$3 = '[object Date]',
+    errorTag$2 = '[object Error]',
     funcTag$1 = '[object Function]',
-    mapTag = '[object Map]',
-    numberTag = '[object Number]',
-    objectTag = '[object Object]',
-    regexpTag = '[object RegExp]',
-    setTag = '[object Set]',
-    stringTag = '[object String]',
-    weakMapTag = '[object WeakMap]';
+    mapTag$7 = '[object Map]',
+    numberTag$3 = '[object Number]',
+    objectTag$3 = '[object Object]',
+    regexpTag$3 = '[object RegExp]',
+    setTag$7 = '[object Set]',
+    stringTag$4 = '[object String]',
+    weakMapTag$2 = '[object WeakMap]';
 
-var arrayBufferTag = '[object ArrayBuffer]',
-    dataViewTag = '[object DataView]',
-    float32Tag = '[object Float32Array]',
-    float64Tag = '[object Float64Array]',
-    int8Tag = '[object Int8Array]',
-    int16Tag = '[object Int16Array]',
-    int32Tag = '[object Int32Array]',
-    uint8Tag = '[object Uint8Array]',
-    uint8ClampedTag = '[object Uint8ClampedArray]',
-    uint16Tag = '[object Uint16Array]',
-    uint32Tag = '[object Uint32Array]';
+var arrayBufferTag$3 = '[object ArrayBuffer]',
+    dataViewTag$4 = '[object DataView]',
+    float32Tag$2 = '[object Float32Array]',
+    float64Tag$2 = '[object Float64Array]',
+    int8Tag$2 = '[object Int8Array]',
+    int16Tag$2 = '[object Int16Array]',
+    int32Tag$2 = '[object Int32Array]',
+    uint8Tag$2 = '[object Uint8Array]',
+    uint8ClampedTag$2 = '[object Uint8ClampedArray]',
+    uint16Tag$2 = '[object Uint16Array]',
+    uint32Tag$2 = '[object Uint32Array]';
 
 /** Used to identify `toStringTag` values of typed arrays. */
 var typedArrayTags = {};
-typedArrayTags[float32Tag] = typedArrayTags[float64Tag] =
-typedArrayTags[int8Tag] = typedArrayTags[int16Tag] =
-typedArrayTags[int32Tag] = typedArrayTags[uint8Tag] =
-typedArrayTags[uint8ClampedTag] = typedArrayTags[uint16Tag] =
-typedArrayTags[uint32Tag] = true;
-typedArrayTags[argsTag$1] = typedArrayTags[arrayTag] =
-typedArrayTags[arrayBufferTag] = typedArrayTags[boolTag] =
-typedArrayTags[dataViewTag] = typedArrayTags[dateTag] =
-typedArrayTags[errorTag] = typedArrayTags[funcTag$1] =
-typedArrayTags[mapTag] = typedArrayTags[numberTag] =
-typedArrayTags[objectTag] = typedArrayTags[regexpTag] =
-typedArrayTags[setTag] = typedArrayTags[stringTag] =
-typedArrayTags[weakMapTag] = false;
+typedArrayTags[float32Tag$2] = typedArrayTags[float64Tag$2] =
+typedArrayTags[int8Tag$2] = typedArrayTags[int16Tag$2] =
+typedArrayTags[int32Tag$2] = typedArrayTags[uint8Tag$2] =
+typedArrayTags[uint8ClampedTag$2] = typedArrayTags[uint16Tag$2] =
+typedArrayTags[uint32Tag$2] = true;
+typedArrayTags[argsTag$2] = typedArrayTags[arrayTag$2] =
+typedArrayTags[arrayBufferTag$3] = typedArrayTags[boolTag$3] =
+typedArrayTags[dataViewTag$4] = typedArrayTags[dateTag$3] =
+typedArrayTags[errorTag$2] = typedArrayTags[funcTag$1] =
+typedArrayTags[mapTag$7] = typedArrayTags[numberTag$3] =
+typedArrayTags[objectTag$3] = typedArrayTags[regexpTag$3] =
+typedArrayTags[setTag$7] = typedArrayTags[stringTag$4] =
+typedArrayTags[weakMapTag$2] = false;
 
 /**
  * The base implementation of `_.isTypedArray` without Node.js optimizations.
@@ -18754,10 +18824,10 @@ var isTypedArray = nodeIsTypedArray ? _baseUnary(nodeIsTypedArray) : _baseIsType
 var isTypedArray_1 = isTypedArray;
 
 /** Used for built-in method references. */
-var objectProto$7 = Object.prototype;
+var objectProto$9 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$6 = objectProto$7.hasOwnProperty;
+var hasOwnProperty$7 = objectProto$9.hasOwnProperty;
 
 /**
  * Creates an array of the enumerable property names of the array-like `value`.
@@ -18777,7 +18847,7 @@ function arrayLikeKeys(value, inherited) {
       length = result.length;
 
   for (var key in value) {
-    if ((inherited || hasOwnProperty$6.call(value, key)) &&
+    if ((inherited || hasOwnProperty$7.call(value, key)) &&
         !(skipIndexes && (
            // Safari 9 has enumerable `arguments.length` in strict mode.
            key == 'length' ||
@@ -18837,10 +18907,10 @@ var nativeKeys = _overArg(Object.keys, Object);
 var _nativeKeys = nativeKeys;
 
 /** Used for built-in method references. */
-var objectProto$9 = Object.prototype;
+var objectProto$7 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$7 = objectProto$9.hasOwnProperty;
+var hasOwnProperty$6 = objectProto$7.hasOwnProperty;
 
 /**
  * The base implementation of `_.keys` which doesn't treat sparse arrays as dense.
@@ -18855,7 +18925,7 @@ function baseKeys(object) {
   }
   var result = [];
   for (var key in Object(object)) {
-    if (hasOwnProperty$7.call(object, key) && key != 'constructor') {
+    if (hasOwnProperty$6.call(object, key) && key != 'constructor') {
       result.push(key);
     }
   }
@@ -18966,10 +19036,10 @@ function nativeKeysIn(object) {
 var _nativeKeysIn = nativeKeysIn;
 
 /** Used for built-in method references. */
-var objectProto$a = Object.prototype;
+var objectProto$6 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$8 = objectProto$a.hasOwnProperty;
+var hasOwnProperty$5 = objectProto$6.hasOwnProperty;
 
 /**
  * The base implementation of `_.keysIn` which doesn't treat sparse arrays as dense.
@@ -18986,7 +19056,7 @@ function baseKeysIn(object) {
       result = [];
 
   for (var key in object) {
-    if (!(key == 'constructor' && (isProto || !hasOwnProperty$8.call(object, key)))) {
+    if (!(key == 'constructor' && (isProto || !hasOwnProperty$5.call(object, key)))) {
       result.push(key);
     }
   }
@@ -19147,13 +19217,13 @@ function stubArray() {
 var stubArray_1 = stubArray;
 
 /** Used for built-in method references. */
-var objectProto$b = Object.prototype;
+var objectProto$5 = Object.prototype;
 
 /** Built-in value references. */
-var propertyIsEnumerable$1 = objectProto$b.propertyIsEnumerable;
+var propertyIsEnumerable = objectProto$5.propertyIsEnumerable;
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeGetSymbols = Object.getOwnPropertySymbols;
+var nativeGetSymbols$1 = Object.getOwnPropertySymbols;
 
 /**
  * Creates an array of the own enumerable symbols of `object`.
@@ -19162,13 +19232,13 @@ var nativeGetSymbols = Object.getOwnPropertySymbols;
  * @param {Object} object The object to query.
  * @returns {Array} Returns the array of symbols.
  */
-var getSymbols = !nativeGetSymbols ? stubArray_1 : function(object) {
+var getSymbols = !nativeGetSymbols$1 ? stubArray_1 : function(object) {
   if (object == null) {
     return [];
   }
   object = Object(object);
-  return _arrayFilter(nativeGetSymbols(object), function(symbol) {
-    return propertyIsEnumerable$1.call(object, symbol);
+  return _arrayFilter(nativeGetSymbols$1(object), function(symbol) {
+    return propertyIsEnumerable.call(object, symbol);
   });
 };
 
@@ -19215,7 +19285,7 @@ var getPrototype = _overArg(Object.getPrototypeOf, Object);
 var _getPrototype = getPrototype;
 
 /* Built-in method references for those with the same name as other `lodash` methods. */
-var nativeGetSymbols$1 = Object.getOwnPropertySymbols;
+var nativeGetSymbols = Object.getOwnPropertySymbols;
 
 /**
  * Creates an array of the own and inherited enumerable symbols of `object`.
@@ -19224,7 +19294,7 @@ var nativeGetSymbols$1 = Object.getOwnPropertySymbols;
  * @param {Object} object The object to query.
  * @returns {Array} Returns the array of symbols.
  */
-var getSymbolsIn = !nativeGetSymbols$1 ? stubArray_1 : function(object) {
+var getSymbolsIn = !nativeGetSymbols ? stubArray_1 : function(object) {
   var result = [];
   while (object) {
     _arrayPush(result, _getSymbols(object));
@@ -19315,13 +19385,13 @@ var WeakMap = _getNative(_root, 'WeakMap');
 var _WeakMap = WeakMap;
 
 /** `Object#toString` result references. */
-var mapTag$1 = '[object Map]',
-    objectTag$1 = '[object Object]',
+var mapTag$6 = '[object Map]',
+    objectTag$2 = '[object Object]',
     promiseTag = '[object Promise]',
-    setTag$1 = '[object Set]',
+    setTag$6 = '[object Set]',
     weakMapTag$1 = '[object WeakMap]';
 
-var dataViewTag$1 = '[object DataView]';
+var dataViewTag$3 = '[object DataView]';
 
 /** Used to detect maps, sets, and weakmaps. */
 var dataViewCtorString = _toSource(_DataView),
@@ -19340,22 +19410,22 @@ var dataViewCtorString = _toSource(_DataView),
 var getTag = _baseGetTag;
 
 // Fallback for data views, maps, sets, and weak maps in IE 11 and promises in Node.js < 6.
-if ((_DataView && getTag(new _DataView(new ArrayBuffer(1))) != dataViewTag$1) ||
-    (_Map && getTag(new _Map) != mapTag$1) ||
+if ((_DataView && getTag(new _DataView(new ArrayBuffer(1))) != dataViewTag$3) ||
+    (_Map && getTag(new _Map) != mapTag$6) ||
     (_Promise && getTag(_Promise.resolve()) != promiseTag) ||
-    (_Set && getTag(new _Set) != setTag$1) ||
+    (_Set && getTag(new _Set) != setTag$6) ||
     (_WeakMap && getTag(new _WeakMap) != weakMapTag$1)) {
   getTag = function(value) {
     var result = _baseGetTag(value),
-        Ctor = result == objectTag$1 ? value.constructor : undefined,
+        Ctor = result == objectTag$2 ? value.constructor : undefined,
         ctorString = Ctor ? _toSource(Ctor) : '';
 
     if (ctorString) {
       switch (ctorString) {
-        case dataViewCtorString: return dataViewTag$1;
-        case mapCtorString: return mapTag$1;
+        case dataViewCtorString: return dataViewTag$3;
+        case mapCtorString: return mapTag$6;
         case promiseCtorString: return promiseTag;
-        case setCtorString: return setTag$1;
+        case setCtorString: return setTag$6;
         case weakMapCtorString: return weakMapTag$1;
       }
     }
@@ -19366,10 +19436,10 @@ if ((_DataView && getTag(new _DataView(new ArrayBuffer(1))) != dataViewTag$1) ||
 var _getTag = getTag;
 
 /** Used for built-in method references. */
-var objectProto$c = Object.prototype;
+var objectProto$4 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$9 = objectProto$c.hasOwnProperty;
+var hasOwnProperty$4 = objectProto$4.hasOwnProperty;
 
 /**
  * Initializes an array clone.
@@ -19383,7 +19453,7 @@ function initCloneArray(array) {
       result = new array.constructor(length);
 
   // Add properties assigned by `RegExp#exec`.
-  if (length && typeof array[0] == 'string' && hasOwnProperty$9.call(array, 'index')) {
+  if (length && typeof array[0] == 'string' && hasOwnProperty$4.call(array, 'index')) {
     result.index = array.index;
     result.input = array.input;
   }
@@ -19446,8 +19516,8 @@ function cloneRegExp(regexp) {
 var _cloneRegExp = cloneRegExp;
 
 /** Used to convert symbols to primitives and strings. */
-var symbolProto = _Symbol ? _Symbol.prototype : undefined,
-    symbolValueOf = symbolProto ? symbolProto.valueOf : undefined;
+var symbolProto$2 = _Symbol ? _Symbol.prototype : undefined,
+    symbolValueOf$1 = symbolProto$2 ? symbolProto$2.valueOf : undefined;
 
 /**
  * Creates a clone of the `symbol` object.
@@ -19457,7 +19527,7 @@ var symbolProto = _Symbol ? _Symbol.prototype : undefined,
  * @returns {Object} Returns the cloned symbol object.
  */
 function cloneSymbol(symbol) {
-  return symbolValueOf ? Object(symbolValueOf.call(symbol)) : {};
+  return symbolValueOf$1 ? Object(symbolValueOf$1.call(symbol)) : {};
 }
 
 var _cloneSymbol = cloneSymbol;
@@ -19478,16 +19548,16 @@ function cloneTypedArray(typedArray, isDeep) {
 var _cloneTypedArray = cloneTypedArray;
 
 /** `Object#toString` result references. */
-var boolTag$1 = '[object Boolean]',
-    dateTag$1 = '[object Date]',
-    mapTag$2 = '[object Map]',
-    numberTag$1 = '[object Number]',
-    regexpTag$1 = '[object RegExp]',
-    setTag$2 = '[object Set]',
-    stringTag$1 = '[object String]',
-    symbolTag = '[object Symbol]';
+var boolTag$2 = '[object Boolean]',
+    dateTag$2 = '[object Date]',
+    mapTag$5 = '[object Map]',
+    numberTag$2 = '[object Number]',
+    regexpTag$2 = '[object RegExp]',
+    setTag$5 = '[object Set]',
+    stringTag$3 = '[object String]',
+    symbolTag$3 = '[object Symbol]';
 
-var arrayBufferTag$1 = '[object ArrayBuffer]',
+var arrayBufferTag$2 = '[object ArrayBuffer]',
     dataViewTag$2 = '[object DataView]',
     float32Tag$1 = '[object Float32Array]',
     float64Tag$1 = '[object Float64Array]',
@@ -19514,11 +19584,11 @@ var arrayBufferTag$1 = '[object ArrayBuffer]',
 function initCloneByTag(object, tag, isDeep) {
   var Ctor = object.constructor;
   switch (tag) {
-    case arrayBufferTag$1:
+    case arrayBufferTag$2:
       return _cloneArrayBuffer(object);
 
-    case boolTag$1:
-    case dateTag$1:
+    case boolTag$2:
+    case dateTag$2:
       return new Ctor(+object);
 
     case dataViewTag$2:
@@ -19529,20 +19599,20 @@ function initCloneByTag(object, tag, isDeep) {
     case uint8Tag$1: case uint8ClampedTag$1: case uint16Tag$1: case uint32Tag$1:
       return _cloneTypedArray(object, isDeep);
 
-    case mapTag$2:
+    case mapTag$5:
       return new Ctor;
 
-    case numberTag$1:
-    case stringTag$1:
+    case numberTag$2:
+    case stringTag$3:
       return new Ctor(object);
 
-    case regexpTag$1:
+    case regexpTag$2:
       return _cloneRegExp(object);
 
-    case setTag$2:
+    case setTag$5:
       return new Ctor;
 
-    case symbolTag:
+    case symbolTag$3:
       return _cloneSymbol(object);
   }
 }
@@ -19594,7 +19664,7 @@ function initCloneObject(object) {
 var _initCloneObject = initCloneObject;
 
 /** `Object#toString` result references. */
-var mapTag$3 = '[object Map]';
+var mapTag$4 = '[object Map]';
 
 /**
  * The base implementation of `_.isMap` without Node.js optimizations.
@@ -19604,7 +19674,7 @@ var mapTag$3 = '[object Map]';
  * @returns {boolean} Returns `true` if `value` is a map, else `false`.
  */
 function baseIsMap(value) {
-  return isObjectLike_1(value) && _getTag(value) == mapTag$3;
+  return isObjectLike_1(value) && _getTag(value) == mapTag$4;
 }
 
 var _baseIsMap = baseIsMap;
@@ -19634,7 +19704,7 @@ var isMap = nodeIsMap ? _baseUnary(nodeIsMap) : _baseIsMap;
 var isMap_1 = isMap;
 
 /** `Object#toString` result references. */
-var setTag$3 = '[object Set]';
+var setTag$4 = '[object Set]';
 
 /**
  * The base implementation of `_.isSet` without Node.js optimizations.
@@ -19644,7 +19714,7 @@ var setTag$3 = '[object Set]';
  * @returns {boolean} Returns `true` if `value` is a set, else `false`.
  */
 function baseIsSet(value) {
-  return isObjectLike_1(value) && _getTag(value) == setTag$3;
+  return isObjectLike_1(value) && _getTag(value) == setTag$4;
 }
 
 var _baseIsSet = baseIsSet;
@@ -19676,52 +19746,52 @@ var isSet_1 = isSet;
 /** Used to compose bitmasks for cloning. */
 var CLONE_DEEP_FLAG = 1,
     CLONE_FLAT_FLAG = 2,
-    CLONE_SYMBOLS_FLAG = 4;
+    CLONE_SYMBOLS_FLAG$1 = 4;
 
 /** `Object#toString` result references. */
-var argsTag$2 = '[object Arguments]',
+var argsTag$1 = '[object Arguments]',
     arrayTag$1 = '[object Array]',
-    boolTag$2 = '[object Boolean]',
-    dateTag$2 = '[object Date]',
+    boolTag$1 = '[object Boolean]',
+    dateTag$1 = '[object Date]',
     errorTag$1 = '[object Error]',
-    funcTag$2 = '[object Function]',
-    genTag$1 = '[object GeneratorFunction]',
-    mapTag$4 = '[object Map]',
-    numberTag$2 = '[object Number]',
-    objectTag$2 = '[object Object]',
-    regexpTag$2 = '[object RegExp]',
-    setTag$4 = '[object Set]',
+    funcTag = '[object Function]',
+    genTag = '[object GeneratorFunction]',
+    mapTag$3 = '[object Map]',
+    numberTag$1 = '[object Number]',
+    objectTag$1 = '[object Object]',
+    regexpTag$1 = '[object RegExp]',
+    setTag$3 = '[object Set]',
     stringTag$2 = '[object String]',
-    symbolTag$1 = '[object Symbol]',
-    weakMapTag$2 = '[object WeakMap]';
+    symbolTag$2 = '[object Symbol]',
+    weakMapTag = '[object WeakMap]';
 
-var arrayBufferTag$2 = '[object ArrayBuffer]',
-    dataViewTag$3 = '[object DataView]',
-    float32Tag$2 = '[object Float32Array]',
-    float64Tag$2 = '[object Float64Array]',
-    int8Tag$2 = '[object Int8Array]',
-    int16Tag$2 = '[object Int16Array]',
-    int32Tag$2 = '[object Int32Array]',
-    uint8Tag$2 = '[object Uint8Array]',
-    uint8ClampedTag$2 = '[object Uint8ClampedArray]',
-    uint16Tag$2 = '[object Uint16Array]',
-    uint32Tag$2 = '[object Uint32Array]';
+var arrayBufferTag$1 = '[object ArrayBuffer]',
+    dataViewTag$1 = '[object DataView]',
+    float32Tag = '[object Float32Array]',
+    float64Tag = '[object Float64Array]',
+    int8Tag = '[object Int8Array]',
+    int16Tag = '[object Int16Array]',
+    int32Tag = '[object Int32Array]',
+    uint8Tag = '[object Uint8Array]',
+    uint8ClampedTag = '[object Uint8ClampedArray]',
+    uint16Tag = '[object Uint16Array]',
+    uint32Tag = '[object Uint32Array]';
 
 /** Used to identify `toStringTag` values supported by `_.clone`. */
 var cloneableTags = {};
-cloneableTags[argsTag$2] = cloneableTags[arrayTag$1] =
-cloneableTags[arrayBufferTag$2] = cloneableTags[dataViewTag$3] =
-cloneableTags[boolTag$2] = cloneableTags[dateTag$2] =
-cloneableTags[float32Tag$2] = cloneableTags[float64Tag$2] =
-cloneableTags[int8Tag$2] = cloneableTags[int16Tag$2] =
-cloneableTags[int32Tag$2] = cloneableTags[mapTag$4] =
-cloneableTags[numberTag$2] = cloneableTags[objectTag$2] =
-cloneableTags[regexpTag$2] = cloneableTags[setTag$4] =
-cloneableTags[stringTag$2] = cloneableTags[symbolTag$1] =
-cloneableTags[uint8Tag$2] = cloneableTags[uint8ClampedTag$2] =
-cloneableTags[uint16Tag$2] = cloneableTags[uint32Tag$2] = true;
-cloneableTags[errorTag$1] = cloneableTags[funcTag$2] =
-cloneableTags[weakMapTag$2] = false;
+cloneableTags[argsTag$1] = cloneableTags[arrayTag$1] =
+cloneableTags[arrayBufferTag$1] = cloneableTags[dataViewTag$1] =
+cloneableTags[boolTag$1] = cloneableTags[dateTag$1] =
+cloneableTags[float32Tag] = cloneableTags[float64Tag] =
+cloneableTags[int8Tag] = cloneableTags[int16Tag] =
+cloneableTags[int32Tag] = cloneableTags[mapTag$3] =
+cloneableTags[numberTag$1] = cloneableTags[objectTag$1] =
+cloneableTags[regexpTag$1] = cloneableTags[setTag$3] =
+cloneableTags[stringTag$2] = cloneableTags[symbolTag$2] =
+cloneableTags[uint8Tag] = cloneableTags[uint8ClampedTag] =
+cloneableTags[uint16Tag] = cloneableTags[uint32Tag] = true;
+cloneableTags[errorTag$1] = cloneableTags[funcTag] =
+cloneableTags[weakMapTag] = false;
 
 /**
  * The base implementation of `_.clone` and `_.cloneDeep` which tracks
@@ -19743,7 +19813,7 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
   var result,
       isDeep = bitmask & CLONE_DEEP_FLAG,
       isFlat = bitmask & CLONE_FLAT_FLAG,
-      isFull = bitmask & CLONE_SYMBOLS_FLAG;
+      isFull = bitmask & CLONE_SYMBOLS_FLAG$1;
 
   if (customizer) {
     result = object ? customizer(value, key, object, stack) : customizer(value);
@@ -19762,12 +19832,12 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
     }
   } else {
     var tag = _getTag(value),
-        isFunc = tag == funcTag$2 || tag == genTag$1;
+        isFunc = tag == funcTag || tag == genTag;
 
     if (isBuffer_1(value)) {
       return _cloneBuffer(value, isDeep);
     }
-    if (tag == objectTag$2 || tag == argsTag$2 || (isFunc && !object)) {
+    if (tag == objectTag$1 || tag == argsTag$1 || (isFunc && !object)) {
       result = (isFlat || isFunc) ? {} : _initCloneObject(value);
       if (!isDeep) {
         return isFlat
@@ -19818,7 +19888,7 @@ function baseClone(value, bitmask, customizer, key, object, stack) {
 var _baseClone = baseClone;
 
 /** Used to compose bitmasks for cloning. */
-var CLONE_SYMBOLS_FLAG$1 = 4;
+var CLONE_SYMBOLS_FLAG = 4;
 
 /**
  * Creates a shallow clone of `value`.
@@ -19847,7 +19917,7 @@ var CLONE_SYMBOLS_FLAG$1 = 4;
  * // => true
  */
 function clone(value) {
-  return _baseClone(value, CLONE_SYMBOLS_FLAG$1);
+  return _baseClone(value, CLONE_SYMBOLS_FLAG);
 }
 
 var clone_1 = clone;
@@ -20072,7 +20142,7 @@ function baseFilter(collection, predicate) {
 var _baseFilter = baseFilter;
 
 /** Used to stand-in for `undefined` hash values. */
-var HASH_UNDEFINED$2 = '__lodash_hash_undefined__';
+var HASH_UNDEFINED = '__lodash_hash_undefined__';
 
 /**
  * Adds `value` to the array cache.
@@ -20085,7 +20155,7 @@ var HASH_UNDEFINED$2 = '__lodash_hash_undefined__';
  * @returns {Object} Returns the cache instance.
  */
 function setCacheAdd(value) {
-  this.__data__.set(value, HASH_UNDEFINED$2);
+  this.__data__.set(value, HASH_UNDEFINED);
   return this;
 }
 
@@ -20169,8 +20239,8 @@ function cacheHas(cache, key) {
 var _cacheHas = cacheHas;
 
 /** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG = 1,
-    COMPARE_UNORDERED_FLAG = 2;
+var COMPARE_PARTIAL_FLAG$5 = 1,
+    COMPARE_UNORDERED_FLAG$3 = 2;
 
 /**
  * A specialized version of `baseIsEqualDeep` for arrays with support for
@@ -20186,7 +20256,7 @@ var COMPARE_PARTIAL_FLAG = 1,
  * @returns {boolean} Returns `true` if the arrays are equivalent, else `false`.
  */
 function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
-  var isPartial = bitmask & COMPARE_PARTIAL_FLAG,
+  var isPartial = bitmask & COMPARE_PARTIAL_FLAG$5,
       arrLength = array.length,
       othLength = other.length;
 
@@ -20201,7 +20271,7 @@ function equalArrays(array, other, bitmask, customizer, equalFunc, stack) {
   }
   var index = -1,
       result = true,
-      seen = (bitmask & COMPARE_UNORDERED_FLAG) ? new _SetCache : undefined;
+      seen = (bitmask & COMPARE_UNORDERED_FLAG$3) ? new _SetCache : undefined;
 
   stack.set(array, other);
   stack.set(other, array);
@@ -20288,26 +20358,26 @@ function setToArray(set) {
 var _setToArray = setToArray;
 
 /** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG$1 = 1,
-    COMPARE_UNORDERED_FLAG$1 = 2;
+var COMPARE_PARTIAL_FLAG$4 = 1,
+    COMPARE_UNORDERED_FLAG$2 = 2;
 
 /** `Object#toString` result references. */
-var boolTag$3 = '[object Boolean]',
-    dateTag$3 = '[object Date]',
-    errorTag$2 = '[object Error]',
-    mapTag$5 = '[object Map]',
-    numberTag$3 = '[object Number]',
-    regexpTag$3 = '[object RegExp]',
-    setTag$5 = '[object Set]',
-    stringTag$3 = '[object String]',
-    symbolTag$2 = '[object Symbol]';
+var boolTag = '[object Boolean]',
+    dateTag = '[object Date]',
+    errorTag = '[object Error]',
+    mapTag$2 = '[object Map]',
+    numberTag = '[object Number]',
+    regexpTag = '[object RegExp]',
+    setTag$2 = '[object Set]',
+    stringTag$1 = '[object String]',
+    symbolTag$1 = '[object Symbol]';
 
-var arrayBufferTag$3 = '[object ArrayBuffer]',
-    dataViewTag$4 = '[object DataView]';
+var arrayBufferTag = '[object ArrayBuffer]',
+    dataViewTag = '[object DataView]';
 
 /** Used to convert symbols to primitives and strings. */
 var symbolProto$1 = _Symbol ? _Symbol.prototype : undefined,
-    symbolValueOf$1 = symbolProto$1 ? symbolProto$1.valueOf : undefined;
+    symbolValueOf = symbolProto$1 ? symbolProto$1.valueOf : undefined;
 
 /**
  * A specialized version of `baseIsEqualDeep` for comparing objects of
@@ -20328,7 +20398,7 @@ var symbolProto$1 = _Symbol ? _Symbol.prototype : undefined,
  */
 function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
   switch (tag) {
-    case dataViewTag$4:
+    case dataViewTag:
       if ((object.byteLength != other.byteLength) ||
           (object.byteOffset != other.byteOffset)) {
         return false;
@@ -20336,35 +20406,35 @@ function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
       object = object.buffer;
       other = other.buffer;
 
-    case arrayBufferTag$3:
+    case arrayBufferTag:
       if ((object.byteLength != other.byteLength) ||
           !equalFunc(new _Uint8Array(object), new _Uint8Array(other))) {
         return false;
       }
       return true;
 
-    case boolTag$3:
-    case dateTag$3:
-    case numberTag$3:
+    case boolTag:
+    case dateTag:
+    case numberTag:
       // Coerce booleans to `1` or `0` and dates to milliseconds.
       // Invalid dates are coerced to `NaN`.
-      return eq_1(+object, +other);
+      return eq_1$1(+object, +other);
 
-    case errorTag$2:
+    case errorTag:
       return object.name == other.name && object.message == other.message;
 
-    case regexpTag$3:
-    case stringTag$3:
+    case regexpTag:
+    case stringTag$1:
       // Coerce regexes to strings and treat strings, primitives and objects,
       // as equal. See http://www.ecma-international.org/ecma-262/7.0/#sec-regexp.prototype.tostring
       // for more details.
       return object == (other + '');
 
-    case mapTag$5:
+    case mapTag$2:
       var convert = _mapToArray;
 
-    case setTag$5:
-      var isPartial = bitmask & COMPARE_PARTIAL_FLAG$1;
+    case setTag$2:
+      var isPartial = bitmask & COMPARE_PARTIAL_FLAG$4;
       convert || (convert = _setToArray);
 
       if (object.size != other.size && !isPartial) {
@@ -20375,7 +20445,7 @@ function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
       if (stacked) {
         return stacked == other;
       }
-      bitmask |= COMPARE_UNORDERED_FLAG$1;
+      bitmask |= COMPARE_UNORDERED_FLAG$2;
 
       // Recursively compare objects (susceptible to call stack limits).
       stack.set(object, other);
@@ -20383,9 +20453,9 @@ function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
       stack['delete'](object);
       return result;
 
-    case symbolTag$2:
-      if (symbolValueOf$1) {
-        return symbolValueOf$1.call(object) == symbolValueOf$1.call(other);
+    case symbolTag$1:
+      if (symbolValueOf) {
+        return symbolValueOf.call(object) == symbolValueOf.call(other);
       }
   }
   return false;
@@ -20394,13 +20464,13 @@ function equalByTag(object, other, tag, bitmask, customizer, equalFunc, stack) {
 var _equalByTag = equalByTag;
 
 /** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG$2 = 1;
+var COMPARE_PARTIAL_FLAG$3 = 1;
 
 /** Used for built-in method references. */
-var objectProto$d = Object.prototype;
+var objectProto$3 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$a = objectProto$d.hasOwnProperty;
+var hasOwnProperty$3 = objectProto$3.hasOwnProperty;
 
 /**
  * A specialized version of `baseIsEqualDeep` for objects with support for
@@ -20416,7 +20486,7 @@ var hasOwnProperty$a = objectProto$d.hasOwnProperty;
  * @returns {boolean} Returns `true` if the objects are equivalent, else `false`.
  */
 function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
-  var isPartial = bitmask & COMPARE_PARTIAL_FLAG$2,
+  var isPartial = bitmask & COMPARE_PARTIAL_FLAG$3,
       objProps = _getAllKeys(object),
       objLength = objProps.length,
       othProps = _getAllKeys(other),
@@ -20428,7 +20498,7 @@ function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
   var index = objLength;
   while (index--) {
     var key = objProps[index];
-    if (!(isPartial ? key in other : hasOwnProperty$a.call(other, key))) {
+    if (!(isPartial ? key in other : hasOwnProperty$3.call(other, key))) {
       return false;
     }
   }
@@ -20483,18 +20553,18 @@ function equalObjects(object, other, bitmask, customizer, equalFunc, stack) {
 var _equalObjects = equalObjects;
 
 /** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG$3 = 1;
+var COMPARE_PARTIAL_FLAG$2 = 1;
 
 /** `Object#toString` result references. */
-var argsTag$3 = '[object Arguments]',
-    arrayTag$2 = '[object Array]',
-    objectTag$3 = '[object Object]';
+var argsTag = '[object Arguments]',
+    arrayTag = '[object Array]',
+    objectTag = '[object Object]';
 
 /** Used for built-in method references. */
-var objectProto$e = Object.prototype;
+var objectProto$2 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$b = objectProto$e.hasOwnProperty;
+var hasOwnProperty$2 = objectProto$2.hasOwnProperty;
 
 /**
  * A specialized version of `baseIsEqual` for arrays and objects which performs
@@ -20513,14 +20583,14 @@ var hasOwnProperty$b = objectProto$e.hasOwnProperty;
 function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
   var objIsArr = isArray_1(object),
       othIsArr = isArray_1(other),
-      objTag = objIsArr ? arrayTag$2 : _getTag(object),
-      othTag = othIsArr ? arrayTag$2 : _getTag(other);
+      objTag = objIsArr ? arrayTag : _getTag(object),
+      othTag = othIsArr ? arrayTag : _getTag(other);
 
-  objTag = objTag == argsTag$3 ? objectTag$3 : objTag;
-  othTag = othTag == argsTag$3 ? objectTag$3 : othTag;
+  objTag = objTag == argsTag ? objectTag : objTag;
+  othTag = othTag == argsTag ? objectTag : othTag;
 
-  var objIsObj = objTag == objectTag$3,
-      othIsObj = othTag == objectTag$3,
+  var objIsObj = objTag == objectTag,
+      othIsObj = othTag == objectTag,
       isSameTag = objTag == othTag;
 
   if (isSameTag && isBuffer_1(object)) {
@@ -20536,9 +20606,9 @@ function baseIsEqualDeep(object, other, bitmask, customizer, equalFunc, stack) {
       ? _equalArrays(object, other, bitmask, customizer, equalFunc, stack)
       : _equalByTag(object, other, objTag, bitmask, customizer, equalFunc, stack);
   }
-  if (!(bitmask & COMPARE_PARTIAL_FLAG$3)) {
-    var objIsWrapped = objIsObj && hasOwnProperty$b.call(object, '__wrapped__'),
-        othIsWrapped = othIsObj && hasOwnProperty$b.call(other, '__wrapped__');
+  if (!(bitmask & COMPARE_PARTIAL_FLAG$2)) {
+    var objIsWrapped = objIsObj && hasOwnProperty$2.call(object, '__wrapped__'),
+        othIsWrapped = othIsObj && hasOwnProperty$2.call(other, '__wrapped__');
 
     if (objIsWrapped || othIsWrapped) {
       var objUnwrapped = objIsWrapped ? object.value() : object,
@@ -20584,8 +20654,8 @@ function baseIsEqual(value, other, bitmask, customizer, stack) {
 var _baseIsEqual = baseIsEqual;
 
 /** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG$4 = 1,
-    COMPARE_UNORDERED_FLAG$2 = 2;
+var COMPARE_PARTIAL_FLAG$1 = 1,
+    COMPARE_UNORDERED_FLAG$1 = 2;
 
 /**
  * The base implementation of `_.isMatch` without support for iteratee shorthands.
@@ -20631,7 +20701,7 @@ function baseIsMatch(object, source, matchData, customizer) {
         var result = customizer(objValue, srcValue, key, object, source, stack);
       }
       if (!(result === undefined
-            ? _baseIsEqual(srcValue, objValue, COMPARE_PARTIAL_FLAG$4 | COMPARE_UNORDERED_FLAG$2, customizer, stack)
+            ? _baseIsEqual(srcValue, objValue, COMPARE_PARTIAL_FLAG$1 | COMPARE_UNORDERED_FLAG$1, customizer, stack)
             : result
           )) {
         return false;
@@ -20720,7 +20790,7 @@ function baseMatches(source) {
 var _baseMatches = baseMatches;
 
 /** `Object#toString` result references. */
-var symbolTag$3 = '[object Symbol]';
+var symbolTag = '[object Symbol]';
 
 /**
  * Checks if `value` is classified as a `Symbol` primitive or object.
@@ -20741,7 +20811,7 @@ var symbolTag$3 = '[object Symbol]';
  */
 function isSymbol(value) {
   return typeof value == 'symbol' ||
-    (isObjectLike_1(value) && _baseGetTag(value) == symbolTag$3);
+    (isObjectLike_1(value) && _baseGetTag(value) == symbolTag);
 }
 
 var isSymbol_1 = isSymbol;
@@ -20919,11 +20989,11 @@ function arrayMap(array, iteratee) {
 var _arrayMap = arrayMap;
 
 /** Used as references for various `Number` constants. */
-var INFINITY = 1 / 0;
+var INFINITY$2 = 1 / 0;
 
 /** Used to convert symbols to primitives and strings. */
-var symbolProto$2 = _Symbol ? _Symbol.prototype : undefined,
-    symbolToString = symbolProto$2 ? symbolProto$2.toString : undefined;
+var symbolProto = _Symbol ? _Symbol.prototype : undefined,
+    symbolToString = symbolProto ? symbolProto.toString : undefined;
 
 /**
  * The base implementation of `_.toString` which doesn't convert nullish
@@ -20946,7 +21016,7 @@ function baseToString(value) {
     return symbolToString ? symbolToString.call(value) : '';
   }
   var result = (value + '');
-  return (result == '0' && (1 / value) == -INFINITY) ? '-0' : result;
+  return (result == '0' && (1 / value) == -INFINITY$2) ? '-0' : result;
 }
 
 var _baseToString = baseToString;
@@ -21062,12 +21132,12 @@ var _baseGet = baseGet;
  * _.get(object, 'a.b.c', 'default');
  * // => 'default'
  */
-function get(object, path, defaultValue) {
+function get$1(object, path, defaultValue) {
   var result = object == null ? undefined : _baseGet(object, path);
   return result === undefined ? defaultValue : result;
 }
 
-var get_1 = get;
+var get_1 = get$1;
 
 /**
  * The base implementation of `_.hasIn` without support for deep paths.
@@ -21149,8 +21219,8 @@ function hasIn(object, path) {
 var hasIn_1 = hasIn;
 
 /** Used to compose bitmasks for value comparisons. */
-var COMPARE_PARTIAL_FLAG$5 = 1,
-    COMPARE_UNORDERED_FLAG$3 = 2;
+var COMPARE_PARTIAL_FLAG = 1,
+    COMPARE_UNORDERED_FLAG = 2;
 
 /**
  * The base implementation of `_.matchesProperty` which doesn't clone `srcValue`.
@@ -21168,7 +21238,7 @@ function baseMatchesProperty(path, srcValue) {
     var objValue = get_1(object, path);
     return (objValue === undefined && objValue === srcValue)
       ? hasIn_1(object, path)
-      : _baseIsEqual(srcValue, objValue, COMPARE_PARTIAL_FLAG$5 | COMPARE_UNORDERED_FLAG$3);
+      : _baseIsEqual(srcValue, objValue, COMPARE_PARTIAL_FLAG | COMPARE_UNORDERED_FLAG);
   };
 }
 
@@ -21307,10 +21377,10 @@ function filter(collection, predicate) {
 var filter_1 = filter;
 
 /** Used for built-in method references. */
-var objectProto$f = Object.prototype;
+var objectProto$1 = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$c = objectProto$f.hasOwnProperty;
+var hasOwnProperty$1 = objectProto$1.hasOwnProperty;
 
 /**
  * The base implementation of `_.has` without support for deep paths.
@@ -21321,7 +21391,7 @@ var hasOwnProperty$c = objectProto$f.hasOwnProperty;
  * @returns {boolean} Returns `true` if `key` exists, else `false`.
  */
 function baseHas(object, key) {
-  return object != null && hasOwnProperty$c.call(object, key);
+  return object != null && hasOwnProperty$1.call(object, key);
 }
 
 var _baseHas = baseHas;
@@ -21360,14 +21430,14 @@ function has(object, path) {
 var has_1 = has;
 
 /** `Object#toString` result references. */
-var mapTag$6 = '[object Map]',
-    setTag$6 = '[object Set]';
+var mapTag$1 = '[object Map]',
+    setTag$1 = '[object Set]';
 
 /** Used for built-in method references. */
-var objectProto$g = Object.prototype;
+var objectProto = Object.prototype;
 
 /** Used to check objects for own properties. */
-var hasOwnProperty$d = objectProto$g.hasOwnProperty;
+var hasOwnProperty = objectProto.hasOwnProperty;
 
 /**
  * Checks if `value` is an empty object, collection, map, or set.
@@ -21412,14 +21482,14 @@ function isEmpty(value) {
     return !value.length;
   }
   var tag = _getTag(value);
-  if (tag == mapTag$6 || tag == setTag$6) {
+  if (tag == mapTag$1 || tag == setTag$1) {
     return !value.size;
   }
   if (_isPrototype(value)) {
     return !_baseKeys(value).length;
   }
   for (var key in value) {
-    if (hasOwnProperty$d.call(value, key)) {
+    if (hasOwnProperty.call(value, key)) {
       return false;
     }
   }
@@ -21618,7 +21688,7 @@ function reduce(collection, iteratee, accumulator) {
 var reduce_1 = reduce;
 
 /** `Object#toString` result references. */
-var stringTag$4 = '[object String]';
+var stringTag = '[object String]';
 
 /**
  * Checks if `value` is classified as a `String` primitive or object.
@@ -21639,7 +21709,7 @@ var stringTag$4 = '[object String]';
  */
 function isString(value) {
   return typeof value == 'string' ||
-    (!isArray_1(value) && isObjectLike_1(value) && _baseGetTag(value) == stringTag$4);
+    (!isArray_1(value) && isObjectLike_1(value) && _baseGetTag(value) == stringTag);
 }
 
 var isString_1 = isString;
@@ -21656,18 +21726,18 @@ var asciiSize = _baseProperty('length');
 var _asciiSize = asciiSize;
 
 /** Used to compose unicode character classes. */
-var rsAstralRange = '\\ud800-\\udfff',
-    rsComboMarksRange = '\\u0300-\\u036f',
-    reComboHalfMarksRange = '\\ufe20-\\ufe2f',
-    rsComboSymbolsRange = '\\u20d0-\\u20ff',
-    rsComboRange = rsComboMarksRange + reComboHalfMarksRange + rsComboSymbolsRange,
-    rsVarRange = '\\ufe0e\\ufe0f';
+var rsAstralRange$1 = '\\ud800-\\udfff',
+    rsComboMarksRange$1 = '\\u0300-\\u036f',
+    reComboHalfMarksRange$1 = '\\ufe20-\\ufe2f',
+    rsComboSymbolsRange$1 = '\\u20d0-\\u20ff',
+    rsComboRange$1 = rsComboMarksRange$1 + reComboHalfMarksRange$1 + rsComboSymbolsRange$1,
+    rsVarRange$1 = '\\ufe0e\\ufe0f';
 
 /** Used to compose unicode capture groups. */
-var rsZWJ = '\\u200d';
+var rsZWJ$1 = '\\u200d';
 
 /** Used to detect strings with [zero-width joiners or code points from the astral planes](http://eev.ee/blog/2015/09/12/dark-corners-of-unicode/). */
-var reHasUnicode = RegExp('[' + rsZWJ + rsAstralRange  + rsComboRange + rsVarRange + ']');
+var reHasUnicode = RegExp('[' + rsZWJ$1 + rsAstralRange$1  + rsComboRange$1 + rsVarRange$1 + ']');
 
 /**
  * Checks if `string` contains Unicode symbols.
@@ -21683,27 +21753,27 @@ function hasUnicode(string) {
 var _hasUnicode = hasUnicode;
 
 /** Used to compose unicode character classes. */
-var rsAstralRange$1 = '\\ud800-\\udfff',
-    rsComboMarksRange$1 = '\\u0300-\\u036f',
-    reComboHalfMarksRange$1 = '\\ufe20-\\ufe2f',
-    rsComboSymbolsRange$1 = '\\u20d0-\\u20ff',
-    rsComboRange$1 = rsComboMarksRange$1 + reComboHalfMarksRange$1 + rsComboSymbolsRange$1,
-    rsVarRange$1 = '\\ufe0e\\ufe0f';
+var rsAstralRange = '\\ud800-\\udfff',
+    rsComboMarksRange = '\\u0300-\\u036f',
+    reComboHalfMarksRange = '\\ufe20-\\ufe2f',
+    rsComboSymbolsRange = '\\u20d0-\\u20ff',
+    rsComboRange = rsComboMarksRange + reComboHalfMarksRange + rsComboSymbolsRange,
+    rsVarRange = '\\ufe0e\\ufe0f';
 
 /** Used to compose unicode capture groups. */
-var rsAstral = '[' + rsAstralRange$1 + ']',
-    rsCombo = '[' + rsComboRange$1 + ']',
+var rsAstral = '[' + rsAstralRange + ']',
+    rsCombo = '[' + rsComboRange + ']',
     rsFitz = '\\ud83c[\\udffb-\\udfff]',
     rsModifier = '(?:' + rsCombo + '|' + rsFitz + ')',
-    rsNonAstral = '[^' + rsAstralRange$1 + ']',
+    rsNonAstral = '[^' + rsAstralRange + ']',
     rsRegional = '(?:\\ud83c[\\udde6-\\uddff]){2}',
     rsSurrPair = '[\\ud800-\\udbff][\\udc00-\\udfff]',
-    rsZWJ$1 = '\\u200d';
+    rsZWJ = '\\u200d';
 
 /** Used to compose unicode regexes. */
 var reOptMod = rsModifier + '?',
-    rsOptVar = '[' + rsVarRange$1 + ']?',
-    rsOptJoin = '(?:' + rsZWJ$1 + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*',
+    rsOptVar = '[' + rsVarRange + ']?',
+    rsOptJoin = '(?:' + rsZWJ + '(?:' + [rsNonAstral, rsRegional, rsSurrPair].join('|') + ')' + rsOptVar + reOptMod + ')*',
     rsSeq = rsOptVar + reOptMod + rsOptJoin,
     rsSymbol = '(?:' + [rsNonAstral + rsCombo + '?', rsCombo, rsRegional, rsSurrPair, rsAstral].join('|') + ')';
 
@@ -21743,8 +21813,8 @@ function stringSize(string) {
 var _stringSize = stringSize;
 
 /** `Object#toString` result references. */
-var mapTag$7 = '[object Map]',
-    setTag$7 = '[object Set]';
+var mapTag = '[object Map]',
+    setTag = '[object Set]';
 
 /**
  * Gets the size of `collection` by returning its length for array-like
@@ -21775,7 +21845,7 @@ function size(collection) {
     return isString_1(collection) ? _stringSize(collection) : collection.length;
   }
   var tag = _getTag(collection);
-  if (tag == mapTag$7 || tag == setTag$7) {
+  if (tag == mapTag || tag == setTag) {
     return collection.size;
   }
   return _baseKeys(collection).length;
@@ -22168,7 +22238,7 @@ function noop() {
 var noop_1 = noop;
 
 /** Used as references for various `Number` constants. */
-var INFINITY$2 = 1 / 0;
+var INFINITY = 1 / 0;
 
 /**
  * Creates a set object of `values`.
@@ -22177,14 +22247,14 @@ var INFINITY$2 = 1 / 0;
  * @param {Array} values The values to add to the set.
  * @returns {Object} Returns the new set.
  */
-var createSet = !(_Set && (1 / _setToArray(new _Set([,-0]))[1]) == INFINITY$2) ? noop_1 : function(values) {
+var createSet = !(_Set && (1 / _setToArray(new _Set([,-0]))[1]) == INFINITY) ? noop_1 : function(values) {
   return new _Set(values);
 };
 
 var _createSet = createSet;
 
 /** Used as the size to enable large array optimizations. */
-var LARGE_ARRAY_SIZE$1 = 200;
+var LARGE_ARRAY_SIZE = 200;
 
 /**
  * The base implementation of `_.uniqBy` without support for iteratee shorthands.
@@ -22207,7 +22277,7 @@ function baseUniq(array, iteratee, comparator) {
     isCommon = false;
     includes = _arrayIncludesWith;
   }
-  else if (length >= LARGE_ARRAY_SIZE$1) {
+  else if (length >= LARGE_ARRAY_SIZE) {
     var set = iteratee ? null : _createSet(array);
     if (set) {
       return _setToArray(set);
@@ -22354,11 +22424,11 @@ var values_1 = values;
 
 /* global window */
 
-var lodash$1;
+var lodash;
 
 if (typeof commonjsRequire === "function") {
   try {
-    lodash$1 = {
+    lodash = {
       clone: clone_1,
       constant: constant_1,
       each: each,
@@ -22381,11 +22451,11 @@ if (typeof commonjsRequire === "function") {
   }
 }
 
-if (!lodash$1) {
-  lodash$1 = window._;
+if (!lodash) {
+  lodash = window._;
 }
 
-var lodash_1 = lodash$1;
+var lodash_1 = lodash;
 
 var graph = Graph;
 
@@ -23167,11 +23237,11 @@ PriorityQueue.prototype._swap = function(i, j) {
 
 var dijkstra_1 = dijkstra;
 
-var DEFAULT_WEIGHT_FUNC = lodash_1.constant(1);
+var DEFAULT_WEIGHT_FUNC$1 = lodash_1.constant(1);
 
 function dijkstra(g, source, weightFn, edgeFn) {
   return runDijkstra(g, String(source),
-    weightFn || DEFAULT_WEIGHT_FUNC,
+    weightFn || DEFAULT_WEIGHT_FUNC$1,
     edgeFn || function(v) { return g.outEdges(v); });
 }
 
@@ -23281,11 +23351,11 @@ function findCycles(g) {
 
 var floydWarshall_1 = floydWarshall;
 
-var DEFAULT_WEIGHT_FUNC$1 = lodash_1.constant(1);
+var DEFAULT_WEIGHT_FUNC = lodash_1.constant(1);
 
 function floydWarshall(g, weightFn, edgeFn) {
   return runFloydWarshall(g,
-    weightFn || DEFAULT_WEIGHT_FUNC$1,
+    weightFn || DEFAULT_WEIGHT_FUNC,
     edgeFn || function(v) { return g.outEdges(v); });
 }
 
@@ -23923,6 +23993,10 @@ function typeHasher(options, writeTo, context){
       var arr = Array.from(set);
       return this._array(arr, options.unorderedSets !== false);
     },
+    _file: function(file) {
+      write('file:');
+      return this.dispatch([file.name, file.size, file.type, file.lastModfied]);
+    },
     _blob: function() {
       if (options.ignoreUnknown) {
         return write('[blob]');
@@ -23950,7 +24024,7 @@ function typeHasher(options, writeTo, context){
     _dataview: function() { return write('dataview'); },
     _signal: function() { return write('signal'); },
     _fsevent: function() { return write('fsevent'); },
-    _tlswrap: function() { return write('tlswrap'); }
+    _tlswrap: function() { return write('tlswrap'); },
   };
 }
 
@@ -24015,7 +24089,7 @@ class RollingCache {
             return false;
         if (!fs.existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return lodash.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return lodash$1.isEqual(fs.readdirSync(this.oldCacheRoot).sort(), names.sort());
     }
     /**
      * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
@@ -24211,7 +24285,7 @@ THE SOFTWARE.
 
 
 
-var env = process.env;
+var env$1 = process.env;
 
 var forceColor = void 0;
 if (hasFlag('no-color') || hasFlag('no-colors') || hasFlag('color=false')) {
@@ -24220,9 +24294,9 @@ if (hasFlag('no-color') || hasFlag('no-colors') || hasFlag('color=false')) {
            || hasFlag('color=always')) {
   forceColor = true;
 }
-if ('FORCE_COLOR' in env) {
-  forceColor = env.FORCE_COLOR.length === 0
-    || parseInt(env.FORCE_COLOR, 10) !== 0;
+if ('FORCE_COLOR' in env$1) {
+  forceColor = env$1.FORCE_COLOR.length === 0
+    || parseInt(env$1.FORCE_COLOR, 10) !== 0;
 }
 
 function translateLevel(level) {
@@ -24274,25 +24348,25 @@ function supportsColor(stream) {
     return 1;
   }
 
-  if ('CI' in env) {
+  if ('CI' in env$1) {
     if (['TRAVIS', 'CIRCLECI', 'APPVEYOR', 'GITLAB_CI'].some(function(sign) {
-      return sign in env;
-    }) || env.CI_NAME === 'codeship') {
+      return sign in env$1;
+    }) || env$1.CI_NAME === 'codeship') {
       return 1;
     }
 
     return min;
   }
 
-  if ('TEAMCITY_VERSION' in env) {
-    return (/^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env.TEAMCITY_VERSION) ? 1 : 0
+  if ('TEAMCITY_VERSION' in env$1) {
+    return (/^(9\.(0*[1-9]\d*)\.|\d{2,}\.)/.test(env$1.TEAMCITY_VERSION) ? 1 : 0
     );
   }
 
-  if ('TERM_PROGRAM' in env) {
-    var version = parseInt((env.TERM_PROGRAM_VERSION || '').split('.')[0], 10);
+  if ('TERM_PROGRAM' in env$1) {
+    var version = parseInt((env$1.TERM_PROGRAM_VERSION || '').split('.')[0], 10);
 
-    switch (env.TERM_PROGRAM) {
+    switch (env$1.TERM_PROGRAM) {
       case 'iTerm.app':
         return version >= 3 ? 3 : 2;
       case 'Hyper':
@@ -24303,19 +24377,19 @@ function supportsColor(stream) {
     }
   }
 
-  if (/-256(color)?$/i.test(env.TERM)) {
+  if (/-256(color)?$/i.test(env$1.TERM)) {
     return 2;
   }
 
-  if (/^screen|^xterm|^vt100|^rxvt|color|ansi|cygwin|linux/i.test(env.TERM)) {
+  if (/^screen|^xterm|^vt100|^rxvt|color|ansi|cygwin|linux/i.test(env$1.TERM)) {
     return 1;
   }
 
-  if ('COLORTERM' in env) {
+  if ('COLORTERM' in env$1) {
     return 1;
   }
 
-  if (env.TERM === 'dumb') {
+  if (env$1.TERM === 'dumb') {
     return min;
   }
 
@@ -24775,7 +24849,7 @@ class FormatHost {
         return tsModule.sys.getCurrentDirectory();
     }
     getCanonicalFileName(fileName) {
-        return path.normalize(fileName);
+        return path__namespace.normalize(fileName);
     }
     getNewLine() {
         return tsModule.sys.newLine;
@@ -24810,11 +24884,11 @@ class NoCache {
 function convertEmitOutput(output, references) {
     const out = { code: "", references };
     output.outputFiles.forEach((e) => {
-        if (lodash.endsWith(e.name, ".d.ts"))
+        if (lodash$1.endsWith(e.name, ".d.ts"))
             out.dts = e;
-        else if (lodash.endsWith(e.name, ".d.ts.map"))
+        else if (lodash$1.endsWith(e.name, ".d.ts.map"))
             out.dtsmap = e;
-        else if (lodash.endsWith(e.name, ".map"))
+        else if (lodash$1.endsWith(e.name, ".map"))
             out.map = e.text;
         else
             out.code = e.text;
@@ -24825,13 +24899,13 @@ function getAllReferences(importer, snapshot, options) {
     if (!snapshot)
         return [];
     const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
-    return lodash.compact(lodash.concat(info.referencedFiles, info.importedFiles).map((reference) => {
+    return lodash$1.compact(lodash$1.concat(info.referencedFiles, info.importedFiles).map((reference) => {
         const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
         return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
     }));
 }
 function convertDiagnostic(type, data) {
-    return lodash.map(data, (diagnostic) => {
+    return lodash$1.map(data, (diagnostic) => {
         const entry = {
             flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
             formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
@@ -24870,10 +24944,10 @@ class TsCache {
         }
         this.dependencyTree = new graphlib.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        const automaticTypes = lodash.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+        const automaticTypes = lodash$1.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
             .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
             .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
-        this.ambientTypes = lodash.filter(rootFilenames, (file) => lodash.endsWith(file, ".d.ts"))
+        this.ambientTypes = lodash$1.filter(rootFilenames, (file) => lodash$1.endsWith(file, ".d.ts"))
             .concat(automaticTypes)
             .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
         this.init();
@@ -24904,11 +24978,11 @@ class TsCache {
     walkTree(cb) {
         const acyclic = graphlib.alg.isAcyclic(this.dependencyTree);
         if (acyclic) {
-            lodash.each(graphlib.alg.topsort(this.dependencyTree), (id) => cb(id));
+            lodash$1.each(graphlib.alg.topsort(this.dependencyTree), (id) => cb(id));
             return;
         }
         this.context.info(safe.yellow("import tree has cycles"));
-        lodash.each(this.dependencyTree.nodes(), (id) => cb(id));
+        lodash$1.each(this.dependencyTree.nodes(), (id) => cb(id));
     }
     done() {
         this.context.info(safe.blue("rolling caches"));
@@ -24954,7 +25028,7 @@ class TsCache {
             return;
         }
         this.context.debug(safe.blue("Ambient types:"));
-        const typeNames = lodash.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+        const typeNames = lodash$1.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
             .map((snapshot) => {
             this.context.debug(`    ${snapshot.id}`);
             return this.makeName(snapshot.id, snapshot.snapshot);
@@ -24963,7 +25037,7 @@ class TsCache {
         this.ambientTypesDirty = !this.typesCache.match(typeNames);
         if (this.ambientTypesDirty)
             this.context.info(safe.yellow("ambient types changed, redoing all semantic diagnostics"));
-        lodash.each(typeNames, (name) => this.typesCache.touch(name));
+        lodash$1.each(typeNames, (name) => this.typesCache.touch(name));
     }
     getDiagnostics(type, cache, id, snapshot, check) {
         if (this.noCache) {
@@ -25017,7 +25091,7 @@ class TsCache {
         if (this.ambientTypesDirty)
             return true;
         const dependencies = graphlib.alg.dijkstra(this.dependencyTree, id);
-        return lodash.some(dependencies, (dependency, node) => {
+        return lodash$1.some(dependencies, (dependency, node) => {
             if (!node || dependency.distance === Infinity)
                 return false;
             const l = this.dependencyTree.node(node);
@@ -25034,7 +25108,7 @@ class TsCache {
 }
 
 function printDiagnostics(context, diagnostics, pretty) {
-    lodash.each(diagnostics, (diagnostic) => {
+    lodash$1.each(diagnostics, (diagnostic) => {
         let print;
         let color;
         let category;
@@ -25093,7 +25167,7 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
     return overrides;
 }
 function expandIncludeWithDirs(include, dirs) {
-    return lodash.chain(dirs)
+    return lodash$1.chain(dirs)
         .flatMap((root) => {
         if (include instanceof Array)
             return include.map((x) => path.join(root, x));
@@ -25111,8 +25185,8 @@ function createFilter(context, pluginOptions, parsedConfig) {
         excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
     }
     if (parsedConfig.projectReferences) {
-        included = lodash.concat(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
-        excluded = lodash.concat(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
+        included = lodash$1.concat(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
+        excluded = lodash$1.concat(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
     }
     context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
     context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
@@ -25139,7 +25213,7 @@ function parseTsConfig(context, pluginOptions) {
         if (text === undefined)
             throw new Error(`failed to read '${fileName}'`);
         const result = tsModule.parseConfigFileTextToJson(fileName, text);
-        pretty = lodash.get(result.config, "pretty", pretty);
+        pretty = lodash$1.get(result.config, "pretty", pretty);
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
             throw new Error(`failed to parse '${fileName}'`);
@@ -25149,7 +25223,7 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     const mergedConfig = {};
-    lodash.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodash$1.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
@@ -25181,8 +25255,8 @@ catch (e) {
 // Not necessarily the package version of this code.
 const SEMVER_SPEC_VERSION = '2.0.0';
 
-const MAX_LENGTH = 256;
-const MAX_SAFE_INTEGER$2 = Number.MAX_SAFE_INTEGER ||
+const MAX_LENGTH$2 = 256;
+const MAX_SAFE_INTEGER$1 = Number.MAX_SAFE_INTEGER ||
   /* istanbul ignore next */ 9007199254740991;
 
 // Max safe segment length for coercion.
@@ -25190,8 +25264,8 @@ const MAX_SAFE_COMPONENT_LENGTH = 16;
 
 var constants = {
   SEMVER_SPEC_VERSION,
-  MAX_LENGTH,
-  MAX_SAFE_INTEGER: MAX_SAFE_INTEGER$2,
+  MAX_LENGTH: MAX_LENGTH$2,
+  MAX_SAFE_INTEGER: MAX_SAFE_INTEGER$1,
   MAX_SAFE_COMPONENT_LENGTH
 };
 
@@ -25403,7 +25477,7 @@ const parseOptions = options =>
 var parseOptions_1 = parseOptions;
 
 const numeric = /^[0-9]+$/;
-const compareIdentifiers = (a, b) => {
+const compareIdentifiers$1 = (a, b) => {
   const anum = numeric.test(a);
   const bnum = numeric.test(b);
 
@@ -25419,18 +25493,18 @@ const compareIdentifiers = (a, b) => {
     : 1
 };
 
-const rcompareIdentifiers = (a, b) => compareIdentifiers(b, a);
+const rcompareIdentifiers = (a, b) => compareIdentifiers$1(b, a);
 
 var identifiers = {
-  compareIdentifiers,
+  compareIdentifiers: compareIdentifiers$1,
   rcompareIdentifiers
 };
 
-const { MAX_LENGTH: MAX_LENGTH$1, MAX_SAFE_INTEGER: MAX_SAFE_INTEGER$3 } = constants;
-const { re, t } = re_1;
+const { MAX_LENGTH: MAX_LENGTH$1, MAX_SAFE_INTEGER } = constants;
+const { re: re$4, t: t$4 } = re_1;
 
 
-const { compareIdentifiers: compareIdentifiers$1 } = identifiers;
+const { compareIdentifiers } = identifiers;
 class SemVer {
   constructor (version, options) {
     options = parseOptions_1(options);
@@ -25459,7 +25533,7 @@ class SemVer {
     // don't run into trouble passing this.options around.
     this.includePrerelease = !!options.includePrerelease;
 
-    const m = version.trim().match(options.loose ? re[t.LOOSE] : re[t.FULL]);
+    const m = version.trim().match(options.loose ? re$4[t$4.LOOSE] : re$4[t$4.FULL]);
 
     if (!m) {
       throw new TypeError(`Invalid Version: ${version}`)
@@ -25472,15 +25546,15 @@ class SemVer {
     this.minor = +m[2];
     this.patch = +m[3];
 
-    if (this.major > MAX_SAFE_INTEGER$3 || this.major < 0) {
+    if (this.major > MAX_SAFE_INTEGER || this.major < 0) {
       throw new TypeError('Invalid major version')
     }
 
-    if (this.minor > MAX_SAFE_INTEGER$3 || this.minor < 0) {
+    if (this.minor > MAX_SAFE_INTEGER || this.minor < 0) {
       throw new TypeError('Invalid minor version')
     }
 
-    if (this.patch > MAX_SAFE_INTEGER$3 || this.patch < 0) {
+    if (this.patch > MAX_SAFE_INTEGER || this.patch < 0) {
       throw new TypeError('Invalid patch version')
     }
 
@@ -25491,7 +25565,7 @@ class SemVer {
       this.prerelease = m[4].split('.').map((id) => {
         if (/^[0-9]+$/.test(id)) {
           const num = +id;
-          if (num >= 0 && num < MAX_SAFE_INTEGER$3) {
+          if (num >= 0 && num < MAX_SAFE_INTEGER) {
             return num
           }
         }
@@ -25537,9 +25611,9 @@ class SemVer {
     }
 
     return (
-      compareIdentifiers$1(this.major, other.major) ||
-      compareIdentifiers$1(this.minor, other.minor) ||
-      compareIdentifiers$1(this.patch, other.patch)
+      compareIdentifiers(this.major, other.major) ||
+      compareIdentifiers(this.minor, other.minor) ||
+      compareIdentifiers(this.patch, other.patch)
     )
   }
 
@@ -25571,7 +25645,7 @@ class SemVer {
       } else if (a === b) {
         continue
       } else {
-        return compareIdentifiers$1(a, b)
+        return compareIdentifiers(a, b)
       }
     } while (++i)
   }
@@ -25595,7 +25669,7 @@ class SemVer {
       } else if (a === b) {
         continue
       } else {
-        return compareIdentifiers$1(a, b)
+        return compareIdentifiers(a, b)
       }
     } while (++i)
   }
@@ -25711,17 +25785,17 @@ class SemVer {
   }
 }
 
-var semver = SemVer;
+var semver$2 = SemVer;
 
-const {MAX_LENGTH: MAX_LENGTH$2} = constants;
-const { re: re$1, t: t$1 } = re_1;
+const {MAX_LENGTH} = constants;
+const { re: re$3, t: t$3 } = re_1;
 
 
 
 const parse = (version, options) => {
   options = parseOptions_1(options);
 
-  if (version instanceof semver) {
+  if (version instanceof semver$2) {
     return version
   }
 
@@ -25729,17 +25803,17 @@ const parse = (version, options) => {
     return null
   }
 
-  if (version.length > MAX_LENGTH$2) {
+  if (version.length > MAX_LENGTH) {
     return null
   }
 
-  const r = options.loose ? re$1[t$1.LOOSE] : re$1[t$1.FULL];
+  const r = options.loose ? re$3[t$3.LOOSE] : re$3[t$3.FULL];
   if (!r.test(version)) {
     return null
   }
 
   try {
-    return new semver(version, options)
+    return new semver$2(version, options)
   } catch (er) {
     return null
   }
@@ -25747,11 +25821,11 @@ const parse = (version, options) => {
 
 var parse_1 = parse;
 
-const valid = (version, options) => {
+const valid$1 = (version, options) => {
   const v = parse_1(version, options);
   return v ? v.version : null
 };
-var valid_1 = valid;
+var valid_1 = valid$1;
 
 const clean = (version, options) => {
   const s = parse_1(version.trim().replace(/^[=v]+/, ''), options);
@@ -25766,7 +25840,7 @@ const inc = (version, release, options, identifier) => {
   }
 
   try {
-    return new semver(version, options).inc(release, identifier).version
+    return new semver$2(version, options).inc(release, identifier).version
   } catch (er) {
     return null
   }
@@ -25774,15 +25848,15 @@ const inc = (version, release, options, identifier) => {
 var inc_1 = inc;
 
 const compare = (a, b, loose) =>
-  new semver(a, loose).compare(new semver(b, loose));
+  new semver$2(a, loose).compare(new semver$2(b, loose));
 
 var compare_1 = compare;
 
-const eq$1 = (a, b, loose) => compare_1(a, b, loose) === 0;
-var eq_1$1 = eq$1;
+const eq = (a, b, loose) => compare_1(a, b, loose) === 0;
+var eq_1 = eq;
 
 const diff = (version1, version2) => {
-  if (eq_1$1(version1, version2)) {
+  if (eq_1(version1, version2)) {
     return null
   } else {
     const v1 = parse_1(version1);
@@ -25802,13 +25876,13 @@ const diff = (version1, version2) => {
 };
 var diff_1 = diff;
 
-const major = (a, loose) => new semver(a, loose).major;
+const major = (a, loose) => new semver$2(a, loose).major;
 var major_1 = major;
 
-const minor = (a, loose) => new semver(a, loose).minor;
+const minor = (a, loose) => new semver$2(a, loose).minor;
 var minor_1 = minor;
 
-const patch = (a, loose) => new semver(a, loose).patch;
+const patch = (a, loose) => new semver$2(a, loose).patch;
 var patch_1 = patch;
 
 const prerelease = (version, options) => {
@@ -25824,8 +25898,8 @@ const compareLoose = (a, b) => compare_1(a, b, true);
 var compareLoose_1 = compareLoose;
 
 const compareBuild = (a, b, loose) => {
-  const versionA = new semver(a, loose);
-  const versionB = new semver(b, loose);
+  const versionA = new semver$2(a, loose);
+  const versionB = new semver$2(b, loose);
   return versionA.compare(versionB) || versionA.compareBuild(versionB)
 };
 var compareBuild_1 = compareBuild;
@@ -25870,7 +25944,7 @@ const cmp = (a, op, b, loose) => {
     case '':
     case '=':
     case '==':
-      return eq_1$1(a, b, loose)
+      return eq_1(a, b, loose)
 
     case '!=':
       return neq_1(a, b, loose)
@@ -25896,7 +25970,7 @@ var cmp_1 = cmp;
 const {re: re$2, t: t$2} = re_1;
 
 const coerce = (version, options) => {
-  if (version instanceof semver) {
+  if (version instanceof semver$2) {
     return version
   }
 
@@ -26586,11 +26660,11 @@ class LRUCache {
   }
 
   get (key) {
-    return get$1(this, key, true)
+    return get(this, key, true)
   }
 
   peek (key) {
-    return get$1(this, key, false)
+    return get(this, key, false)
   }
 
   pop () {
@@ -26629,11 +26703,11 @@ class LRUCache {
   }
 
   prune () {
-    this[CACHE].forEach((value, key) => get$1(this, key, false));
+    this[CACHE].forEach((value, key) => get(this, key, false));
   }
 }
 
-const get$1 = (self, key, doUse) => {
+const get = (self, key, doUse) => {
   const node = self[CACHE].get(key);
   if (node) {
     const hit = node.value;
@@ -26801,18 +26875,18 @@ class Range {
 
     const loose = this.options.loose;
     // `1.2.3 - 1.2.4` => `>=1.2.3 <=1.2.4`
-    const hr = loose ? re$3[t$3.HYPHENRANGELOOSE] : re$3[t$3.HYPHENRANGE];
+    const hr = loose ? re$1[t$1.HYPHENRANGELOOSE] : re$1[t$1.HYPHENRANGE];
     range = range.replace(hr, hyphenReplace(this.options.includePrerelease));
     debug_1('hyphen replace', range);
     // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
-    range = range.replace(re$3[t$3.COMPARATORTRIM], comparatorTrimReplace);
-    debug_1('comparator trim', range, re$3[t$3.COMPARATORTRIM]);
+    range = range.replace(re$1[t$1.COMPARATORTRIM], comparatorTrimReplace);
+    debug_1('comparator trim', range, re$1[t$1.COMPARATORTRIM]);
 
     // `~ 1.2.3` => `~1.2.3`
-    range = range.replace(re$3[t$3.TILDETRIM], tildeTrimReplace);
+    range = range.replace(re$1[t$1.TILDETRIM], tildeTrimReplace);
 
     // `^ 1.2.3` => `^1.2.3`
-    range = range.replace(re$3[t$3.CARETTRIM], caretTrimReplace);
+    range = range.replace(re$1[t$1.CARETTRIM], caretTrimReplace);
 
     // normalize spaces
     range = range.split(/\s+/).join(' ');
@@ -26820,7 +26894,7 @@ class Range {
     // At this point, the range is completely trimmed and
     // ready to be split into comparators.
 
-    const compRe = loose ? re$3[t$3.COMPARATORLOOSE] : re$3[t$3.COMPARATOR];
+    const compRe = loose ? re$1[t$1.COMPARATORLOOSE] : re$1[t$1.COMPARATOR];
     const rangeList = range
       .split(' ')
       .map(comp => parseComparator(comp, this.options))
@@ -26880,7 +26954,7 @@ class Range {
 
     if (typeof version === 'string') {
       try {
-        version = new semver(version, this.options);
+        version = new semver$2(version, this.options);
       } catch (er) {
         return false
       }
@@ -26904,8 +26978,8 @@ const cache = new lruCache({ max: 1000 });
 
 
 const {
-  re: re$3,
-  t: t$3,
+  re: re$1,
+  t: t$1,
   comparatorTrimReplace,
   tildeTrimReplace,
   caretTrimReplace
@@ -26962,7 +27036,7 @@ const replaceTildes = (comp, options) =>
   }).join(' ');
 
 const replaceTilde = (comp, options) => {
-  const r = options.loose ? re$3[t$3.TILDELOOSE] : re$3[t$3.TILDE];
+  const r = options.loose ? re$1[t$1.TILDELOOSE] : re$1[t$1.TILDE];
   return comp.replace(r, (_, M, m, p, pr) => {
     debug_1('tilde', comp, _, M, m, p, pr);
     let ret;
@@ -27002,7 +27076,7 @@ const replaceCarets = (comp, options) =>
 
 const replaceCaret = (comp, options) => {
   debug_1('caret', comp, options);
-  const r = options.loose ? re$3[t$3.CARETLOOSE] : re$3[t$3.CARET];
+  const r = options.loose ? re$1[t$1.CARETLOOSE] : re$1[t$1.CARET];
   const z = options.includePrerelease ? '-0' : '';
   return comp.replace(r, (_, M, m, p, pr) => {
     debug_1('caret', comp, _, M, m, p, pr);
@@ -27062,7 +27136,7 @@ const replaceXRanges = (comp, options) => {
 
 const replaceXRange = (comp, options) => {
   comp = comp.trim();
-  const r = options.loose ? re$3[t$3.XRANGELOOSE] : re$3[t$3.XRANGE];
+  const r = options.loose ? re$1[t$1.XRANGELOOSE] : re$1[t$1.XRANGE];
   return comp.replace(r, (ret, gtlt, M, m, p, pr) => {
     debug_1('xRange', comp, ret, gtlt, M, m, p, pr);
     const xM = isX(M);
@@ -27139,13 +27213,13 @@ const replaceXRange = (comp, options) => {
 const replaceStars = (comp, options) => {
   debug_1('replaceStars', comp, options);
   // Looseness is ignored here.  star is always as loose as it gets!
-  return comp.trim().replace(re$3[t$3.STAR], '')
+  return comp.trim().replace(re$1[t$1.STAR], '')
 };
 
 const replaceGTE0 = (comp, options) => {
   debug_1('replaceGTE0', comp, options);
   return comp.trim()
-    .replace(re$3[options.includePrerelease ? t$3.GTE0PRE : t$3.GTE0], '')
+    .replace(re$1[options.includePrerelease ? t$1.GTE0PRE : t$1.GTE0], '')
 };
 
 // This function is passed to string.replace(re[t.HYPHENRANGE])
@@ -27221,11 +27295,11 @@ const testSet = (set, version, options) => {
   return true
 };
 
-const ANY = Symbol('SemVer ANY');
+const ANY$2 = Symbol('SemVer ANY');
 // hoisted class for cyclic dependency
 class Comparator {
   static get ANY () {
-    return ANY
+    return ANY$2
   }
   constructor (comp, options) {
     options = parseOptions_1(options);
@@ -27243,7 +27317,7 @@ class Comparator {
     this.loose = !!options.loose;
     this.parse(comp);
 
-    if (this.semver === ANY) {
+    if (this.semver === ANY$2) {
       this.value = '';
     } else {
       this.value = this.operator + this.semver.version;
@@ -27253,7 +27327,7 @@ class Comparator {
   }
 
   parse (comp) {
-    const r = this.options.loose ? re$4[t$4.COMPARATORLOOSE] : re$4[t$4.COMPARATOR];
+    const r = this.options.loose ? re[t.COMPARATORLOOSE] : re[t.COMPARATOR];
     const m = comp.match(r);
 
     if (!m) {
@@ -27267,9 +27341,9 @@ class Comparator {
 
     // if it literally is just '>' or '' then allow anything.
     if (!m[2]) {
-      this.semver = ANY;
+      this.semver = ANY$2;
     } else {
-      this.semver = new semver(m[2], this.options.loose);
+      this.semver = new semver$2(m[2], this.options.loose);
     }
   }
 
@@ -27280,13 +27354,13 @@ class Comparator {
   test (version) {
     debug_1('Comparator.test', version, this.options.loose);
 
-    if (this.semver === ANY || version === ANY) {
+    if (this.semver === ANY$2 || version === ANY$2) {
       return true
     }
 
     if (typeof version === 'string') {
       try {
-        version = new semver(version, this.options);
+        version = new semver$2(version, this.options);
       } catch (er) {
         return false
       }
@@ -27351,7 +27425,7 @@ class Comparator {
 var comparator = Comparator;
 
 
-const {re: re$4, t: t$4} = re_1;
+const {re, t} = re_1;
 
 const satisfies = (version, range$1, options) => {
   try {
@@ -27385,7 +27459,7 @@ const maxSatisfying = (versions, range$1, options) => {
       if (!max || maxSV.compare(v) === -1) {
         // compare(max, v, true)
         max = v;
-        maxSV = new semver(max, options);
+        maxSV = new semver$2(max, options);
       }
     }
   });
@@ -27408,7 +27482,7 @@ const minSatisfying = (versions, range$1, options) => {
       if (!min || minSV.compare(v) === 1) {
         // compare(min, v, true)
         min = v;
-        minSV = new semver(min, options);
+        minSV = new semver$2(min, options);
       }
     }
   });
@@ -27419,12 +27493,12 @@ var minSatisfying_1 = minSatisfying;
 const minVersion = (range$1, loose) => {
   range$1 = new range(range$1, loose);
 
-  let minver = new semver('0.0.0');
+  let minver = new semver$2('0.0.0');
   if (range$1.test(minver)) {
     return minver
   }
 
-  minver = new semver('0.0.0-0');
+  minver = new semver$2('0.0.0-0');
   if (range$1.test(minver)) {
     return minver
   }
@@ -27436,7 +27510,7 @@ const minVersion = (range$1, loose) => {
     let setMin = null;
     comparators.forEach((comparator) => {
       // Clone to avoid manipulating the comparator's semver object.
-      const compver = new semver(comparator.semver.version);
+      const compver = new semver$2(comparator.semver.version);
       switch (comparator.operator) {
         case '>':
           if (compver.prerelease.length === 0) {
@@ -27482,7 +27556,7 @@ const validRange = (range$1, options) => {
     return null
   }
 };
-var valid$1 = validRange;
+var valid = validRange;
 
 const {ANY: ANY$1} = comparator;
 
@@ -27493,7 +27567,7 @@ const {ANY: ANY$1} = comparator;
 
 
 const outside = (version, range$1, hilo, options) => {
-  version = new semver(version, options);
+  version = new semver$2(version, options);
   range$1 = new range(range$1, options);
 
   let gtfn, ltefn, ltfn, comp, ecomp;
@@ -27624,22 +27698,29 @@ var simplify = (versions, range, options) => {
   return simplified.length < original.length ? simplified : range
 };
 
-const { ANY: ANY$2 } = comparator;
+const { ANY } = comparator;
 
 
 
 // Complex range `r1 || r2 || ...` is a subset of `R1 || R2 || ...` iff:
-// - Every simple range `r1, r2, ...` is a subset of some `R1, R2, ...`
+// - Every simple range `r1, r2, ...` is a null set, OR
+// - Every simple range `r1, r2, ...` which is not a null set is a subset of
+//   some `R1, R2, ...`
 //
 // Simple range `c1 c2 ...` is a subset of simple range `C1 C2 ...` iff:
 // - If c is only the ANY comparator
 //   - If C is only the ANY comparator, return true
-//   - Else return false
+//   - Else if in prerelease mode, return false
+//   - else replace c with `[>=0.0.0]`
+// - If C is only the ANY comparator
+//   - if in prerelease mode, return true
+//   - else replace C with `[>=0.0.0]`
 // - Let EQ be the set of = comparators in c
 // - If EQ is more than one, return true (null set)
 // - Let GT be the highest > or >= comparator in c
 // - Let LT be the lowest < or <= comparator in c
 // - If GT and LT, and GT.semver > LT.semver, return true (null set)
+// - If any C is a = range, and GT or LT are set, return false
 // - If EQ
 //   - If GT, and EQ does not satisfy GT, return true (null set)
 //   - If LT, and EQ does not satisfy LT, return true (null set)
@@ -27648,13 +27729,16 @@ const { ANY: ANY$2 } = comparator;
 // - If GT
 //   - If GT.semver is lower than any > or >= comp in C, return false
 //   - If GT is >=, and GT.semver does not satisfy every C, return false
+//   - If GT.semver has a prerelease, and not in prerelease mode
+//     - If no C has a prerelease and the GT.semver tuple, return false
 // - If LT
 //   - If LT.semver is greater than any < or <= comp in C, return false
 //   - If LT is <=, and LT.semver does not satisfy every C, return false
-// - If any C is a = range, and GT or LT are set, return false
+//   - If GT.semver has a prerelease, and not in prerelease mode
+//     - If no C has a prerelease and the LT.semver tuple, return false
 // - Else return true
 
-const subset = (sub, dom, options) => {
+const subset = (sub, dom, options = {}) => {
   if (sub === dom)
     return true
 
@@ -27683,8 +27767,21 @@ const simpleSubset = (sub, dom, options) => {
   if (sub === dom)
     return true
 
-  if (sub.length === 1 && sub[0].semver === ANY$2)
-    return dom.length === 1 && dom[0].semver === ANY$2
+  if (sub.length === 1 && sub[0].semver === ANY) {
+    if (dom.length === 1 && dom[0].semver === ANY)
+      return true
+    else if (options.includePrerelease)
+      sub = [ new comparator('>=0.0.0-0') ];
+    else
+      sub = [ new comparator('>=0.0.0') ];
+  }
+
+  if (dom.length === 1 && dom[0].semver === ANY) {
+    if (options.includePrerelease)
+      return true
+    else
+      dom = [ new comparator('>=0.0.0') ];
+  }
 
   const eqSet = new Set();
   let gt, lt;
@@ -27727,10 +27824,32 @@ const simpleSubset = (sub, dom, options) => {
 
   let higher, lower;
   let hasDomLT, hasDomGT;
+  // if the subset has a prerelease, we need a comparator in the superset
+  // with the same tuple and a prerelease, or it's not a subset
+  let needDomLTPre = lt &&
+    !options.includePrerelease &&
+    lt.semver.prerelease.length ? lt.semver : false;
+  let needDomGTPre = gt &&
+    !options.includePrerelease &&
+    gt.semver.prerelease.length ? gt.semver : false;
+  // exception: <1.2.3-0 is the same as <1.2.3
+  if (needDomLTPre && needDomLTPre.prerelease.length === 1 &&
+      lt.operator === '<' && needDomLTPre.prerelease[0] === 0) {
+    needDomLTPre = false;
+  }
+
   for (const c of dom) {
     hasDomGT = hasDomGT || c.operator === '>' || c.operator === '>=';
     hasDomLT = hasDomLT || c.operator === '<' || c.operator === '<=';
     if (gt) {
+      if (needDomGTPre) {
+        if (c.semver.prerelease && c.semver.prerelease.length &&
+            c.semver.major === needDomGTPre.major &&
+            c.semver.minor === needDomGTPre.minor &&
+            c.semver.patch === needDomGTPre.patch) {
+          needDomGTPre = false;
+        }
+      }
       if (c.operator === '>' || c.operator === '>=') {
         higher = higherGT(gt, c, options);
         if (higher === c && higher !== gt)
@@ -27739,6 +27858,14 @@ const simpleSubset = (sub, dom, options) => {
         return false
     }
     if (lt) {
+      if (needDomLTPre) {
+        if (c.semver.prerelease && c.semver.prerelease.length &&
+            c.semver.major === needDomLTPre.major &&
+            c.semver.minor === needDomLTPre.minor &&
+            c.semver.patch === needDomLTPre.patch) {
+          needDomLTPre = false;
+        }
+      }
       if (c.operator === '<' || c.operator === '<=') {
         lower = lowerLT(lt, c, options);
         if (lower === c && lower !== lt)
@@ -27757,6 +27884,12 @@ const simpleSubset = (sub, dom, options) => {
     return false
 
   if (lt && hasDomGT && !gt && gtltComp !== 0)
+    return false
+
+  // we needed a prerelease range in a specific tuple, but didn't get one
+  // then this isn't a subset.  eg >=1.2.3-pre is not a subset of >=1.0.0,
+  // because it includes prereleases in the 1.2.3 tuple
+  if (needDomGTPre || needDomLTPre)
     return false
 
   return true
@@ -27793,7 +27926,7 @@ var semver$1 = {
   src: re_1.src,
   tokens: re_1.t,
   SEMVER_SPEC_VERSION: constants.SEMVER_SPEC_VERSION,
-  SemVer: semver,
+  SemVer: semver$2,
   compareIdentifiers: identifiers.compareIdentifiers,
   rcompareIdentifiers: identifiers.rcompareIdentifiers,
   parse: parse_1,
@@ -27813,7 +27946,7 @@ var semver$1 = {
   rsort: rsort_1,
   gt: gt_1,
   lt: lt_1,
-  eq: eq_1$1,
+  eq: eq_1,
   neq: neq_1,
   gte: gte_1,
   lte: lte_1,
@@ -27826,7 +27959,7 @@ var semver$1 = {
   maxSatisfying: maxSatisfying_1,
   minSatisfying: minSatisfying_1,
   minVersion: minVersion_1,
-  validRange: valid$1,
+  validRange: valid,
   outside: outside_1,
   gtr: gtr_1,
   ltr: ltr_1,
@@ -27869,8 +28002,8 @@ const pTry = (fn, ...arguments_) => new Promise(resolve => {
 
 var pTry_1 = pTry;
 // TODO: remove this in the next major version
-var _default = pTry;
-pTry_1.default = _default;
+var _default$3 = pTry;
+pTry_1.default = _default$3;
 
 const pLimit = concurrency => {
 	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
@@ -27920,8 +28053,8 @@ const pLimit = concurrency => {
 };
 
 var pLimit_1 = pLimit;
-var _default$1 = pLimit;
-pLimit_1.default = _default$1;
+var _default$2 = pLimit;
+pLimit_1.default = _default$2;
 
 class EndError extends Error {
 	constructor(value) {
@@ -27971,14 +28104,14 @@ const pLocate = async (iterable, tester, options) => {
 
 var pLocate_1 = pLocate;
 // TODO: Remove this for the next major release
-var _default$2 = pLocate;
-pLocate_1.default = _default$2;
+var _default$1 = pLocate;
+pLocate_1.default = _default$1;
 
-const {promisify} = require$$0__default['default'];
+const {promisify: promisify$2} = require$$0__default['default'];
 
 
-const fsStat = promisify(fs__default['default'].stat);
-const fsLStat = promisify(fs__default['default'].lstat);
+const fsStat = promisify$2(fs__default['default'].stat);
+const fsLStat = promisify$2(fs__default['default'].lstat);
 
 const typeMappings = {
 	directory: 'isDirectory',
@@ -28015,7 +28148,7 @@ var locatePath = async (paths, options) => {
 	}, options);
 };
 
-var sync = (paths, options) => {
+var sync$3 = (paths, options) => {
 	options = {
 		cwd: process.cwd(),
 		allowSymlinks: true,
@@ -28036,7 +28169,7 @@ var sync = (paths, options) => {
 		}
 	}
 };
-locatePath.sync = sync;
+locatePath.sync = sync$3;
 
 const {promisify: promisify$1} = require$$0__default['default'];
 
@@ -28051,7 +28184,7 @@ var pathExists = async path => {
 	}
 };
 
-var sync$1 = path => {
+var sync$2 = path => {
 	try {
 		fs__default['default'].accessSync(path);
 		return true;
@@ -28059,7 +28192,7 @@ var sync$1 = path => {
 		return false;
 	}
 };
-pathExists.sync = sync$1;
+pathExists.sync = sync$2;
 
 var findUp = createCommonjsModule(function (module) {
 
@@ -28159,16 +28292,16 @@ const pkgDir = async cwd => {
 
 var pkgDir_1 = pkgDir;
 // TODO: Remove this for the next major release
-var _default$3 = pkgDir;
+var _default = pkgDir;
 
-var sync$2 = cwd => {
+var sync$1 = cwd => {
 	const filePath = findUp.sync('package.json', {cwd});
 	return filePath && path__default['default'].dirname(filePath);
 };
-pkgDir_1.default = _default$3;
-pkgDir_1.sync = sync$2;
+pkgDir_1.default = _default;
+pkgDir_1.sync = sync$1;
 
-var semver$2 = createCommonjsModule(function (module, exports) {
+var semver = createCommonjsModule(function (module, exports) {
 exports = module.exports = SemVer;
 
 var debug;
@@ -29767,10 +29900,10 @@ function coerce (version, options) {
 }
 });
 
-const {promisify: promisify$2} = require$$0__default['default'];
+const {promisify} = require$$0__default['default'];
 
 
-const useNativeRecursiveOption = semver$2.satisfies(process.version, '>=10.12.0');
+const useNativeRecursiveOption = semver.satisfies(process.version, '>=10.12.0');
 
 // https://github.com/nodejs/node/issues/8987
 // https://github.com/libuv/libuv/pull/1088
@@ -29814,8 +29947,8 @@ const makeDir = async (input, options) => {
 	checkPath(input);
 	options = processOptions(options);
 
-	const mkdir = promisify$2(options.fs.mkdir);
-	const stat = promisify$2(options.fs.stat);
+	const mkdir = promisify(options.fs.mkdir);
+	const stat = promisify(options.fs.stat);
 
 	if (useNativeRecursiveOption && options.fs.mkdir === fs__default['default'].mkdir) {
 		const pth = path__default['default'].resolve(input);
@@ -29870,7 +30003,7 @@ const makeDir = async (input, options) => {
 
 var makeDir_1 = makeDir;
 
-var sync$3 = (input, options) => {
+var sync = (input, options) => {
 	checkPath(input);
 	options = processOptions(options);
 
@@ -29920,9 +30053,9 @@ var sync$3 = (input, options) => {
 
 	return make(path__default['default'].resolve(input));
 };
-makeDir_1.sync = sync$3;
+makeDir_1.sync = sync;
 
-const {env: env$1, cwd} = process;
+const {env, cwd} = process;
 
 const isWritable = path => {
 	try {
@@ -29959,8 +30092,8 @@ function getNodeModuleDirectory(directory) {
 }
 
 var findCacheDir = (options = {}) => {
-	if (env$1.CACHE_DIR && !['true', 'false', '1', '0'].includes(env$1.CACHE_DIR)) {
-		return useDirectory(path__default['default'].join(env$1.CACHE_DIR, 'find-cache-dir'), options);
+	if (env.CACHE_DIR && !['true', 'false', '1', '0'].includes(env.CACHE_DIR)) {
+		return useDirectory(path__default['default'].join(env.CACHE_DIR, 'find-cache-dir'), options);
 	}
 
 	let {cwd: directory = cwd()} = options;
@@ -30003,7 +30136,7 @@ const typescript = (options) => {
         return _cache;
     };
     const pluginOptions = Object.assign({}, options);
-    lodash.defaults(pluginOptions, {
+    lodash$1.defaults(pluginOptions, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -30039,7 +30172,7 @@ const typescript = (options) => {
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
                 if (!semver$1.satisfies(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-                context.info(`rollup-plugin-typescript2 version: 0.30.1`);
+                context.info(`rollup-plugin-typescript2 version: 0.31.0`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
@@ -30077,10 +30210,10 @@ const typescript = (options) => {
             if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
                 if (filter(result.resolvedModule.resolvedFileName))
                     cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (lodash.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+                if (lodash$1.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
                     return;
                 const resolved = pluginOptions.rollupCommonJSResolveHack
-                    ? resolve.sync(result.resolvedModule.resolvedFileName)
+                    ? resolve__namespace.sync(result.resolvedModule.resolvedFileName)
                     : result.resolvedModule.resolvedFileName;
                 context.debug(() => `${safe.blue("resolving")} '${importee}' imported by '${importer}'`);
                 context.debug(() => `    to '${resolved}'`);
@@ -30106,7 +30239,7 @@ const typescript = (options) => {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    const diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash$1.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -30114,14 +30247,14 @@ const typescript = (options) => {
                     printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
-                    if (lodash.isFunction(this.error))
+                    if (lodash$1.isFunction(this.error))
                         this.error(safe.red(`failed to transpile '${id}'`));
                 }
                 const references = getAllReferences(id, servicesHost.getScriptSnapshot(id), parsedConfig.options);
                 return convertEmitOutput(output, references);
             });
             if (pluginOptions.check) {
-                const diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                const diagnostics = lodash$1.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
                     return service.getSyntacticDiagnostics(id);
                 }), cache().getSemanticDiagnostics(id, snapshot, () => {
                     return service.getSemanticDiagnostics(id);
@@ -30167,7 +30300,7 @@ const typescript = (options) => {
                     const snapshot = servicesHost.getScriptSnapshot(id);
                     if (!snapshot)
                         return;
-                    const diagnostics = lodash.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
+                    const diagnostics = lodash$1.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
                         return service.getSyntacticDiagnostics(id);
                     }), cache().getSemanticDiagnostics(id, snapshot, () => {
                         return service.getSemanticDiagnostics(id);
@@ -30183,9 +30316,9 @@ const typescript = (options) => {
         _onwrite(_output) {
             if (!parsedConfig.options.declaration)
                 return;
-            lodash.each(parsedConfig.fileNames, (name) => {
+            lodash$1.each(parsedConfig.fileNames, (name) => {
                 const key = normalize(name);
-                if (lodash.has(declarations, key))
+                if (lodash$1.has(declarations, key))
                     return;
                 if (!allImportedFiles.has(key)) {
                     context.debug(() => `skipping declarations for unused '${key}'`);
@@ -30236,7 +30369,7 @@ const typescript = (options) => {
                     });
                 }
             };
-            lodash.each(declarations, ({ type, map }, key) => {
+            lodash$1.each(declarations, ({ type, map }, key) => {
                 emitDeclaration(key, ".d.ts", type);
                 emitDeclaration(key, ".d.ts.map", map);
             });
