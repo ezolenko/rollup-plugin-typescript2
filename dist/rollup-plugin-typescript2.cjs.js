@@ -21,14 +21,12 @@ function _interopNamespace(e) {
 				var d = Object.getOwnPropertyDescriptor(e, k);
 				Object.defineProperty(n, k, d.get ? d : {
 					enumerable: true,
-					get: function () {
-						return e[k];
-					}
+					get: function () { return e[k]; }
 				});
 			}
 		});
 	}
-	n['default'] = e;
+	n["default"] = e;
 	return Object.freeze(n);
 }
 
@@ -23655,7 +23653,7 @@ exports.keysMD5 = function(object){
 };
 
 // Internals
-var hashes = crypto__default['default'].getHashes ? crypto__default['default'].getHashes().slice() : ['sha1', 'md5'];
+var hashes = crypto__default["default"].getHashes ? crypto__default["default"].getHashes().slice() : ['sha1', 'md5'];
 hashes.push('passthrough');
 var encodings = ['buffer', 'hex', 'binary', 'base64'];
 
@@ -23718,7 +23716,7 @@ function hash(object, options) {
   var hashingStream;
 
   if (options.algorithm !== 'passthrough') {
-    hashingStream = crypto__default['default'].createHash(options.algorithm);
+    hashingStream = crypto__default["default"].createHash(options.algorithm);
   } else {
     hashingStream = new PassThrough();
   }
@@ -24339,7 +24337,7 @@ function supportsColor(stream) {
     // release, and Node.js 7 is not. Windows 10 build 10586 is the first
     // Windows release that supports 256 colors. Windows 10 build 14931 is the
     // first release that supports 16m/TrueColor.
-    var osRelease = os__default['default'].release().split('.');
+    var osRelease = os__default["default"].release().split('.');
     if (Number(process.versions.node.split('.')[0]) >= 8
         && Number(osRelease[0]) >= 10 && Number(osRelease[2]) >= 10586) {
       return Number(osRelease[2]) >= 14931 ? 3 : 2;
@@ -24738,7 +24736,7 @@ function applyStyle() {
     if (arg != null && arg.constructor === String) {
       return arg;
     } else {
-      return require$$0__default['default'].inspect(arg);
+      return require$$0__default["default"].inspect(arg);
     }
   }).join(' ');
 
@@ -25241,8 +25239,9 @@ let tslibSource;
 let tslibVersion;
 try {
     // tslint:disable-next-line:no-string-literal no-var-requires
-    const tslibPackage = require("tslib/package.json");
-    const tslibPath = require.resolve("tslib/" + tslibPackage.module);
+    const _ = require("@yarn-tool/resolve-package").resolvePackage('tslib');
+    const tslibPackage = _.pkg;
+    const tslibPath = _.resolveLocation(tslibPackage.module);
     tslibSource = fs.readFileSync(tslibPath, "utf8");
     tslibVersion = tslibPackage.version;
 }
@@ -26784,6 +26783,8 @@ const forEachStep = (self, fn, node, thisp) => {
 
 var lruCache = LRUCache;
 
+var require$$26 = comparator;
+
 // hoisted class for cyclic dependency
 class Range {
   constructor (range, options) {
@@ -26800,7 +26801,7 @@ class Range {
       }
     }
 
-    if (range instanceof comparator) {
+    if (range instanceof require$$26) {
       // just put it in the set and return
       this.raw = range.value;
       this.set = [[range]];
@@ -26904,7 +26905,7 @@ class Range {
       .map(comp => replaceGTE0(comp, this.options))
       // in loose mode, throw out any that are not valid comparators
       .filter(this.options.loose ? comp => !!comp.match(compRe) : () => true)
-      .map(comp => new comparator(comp, this.options));
+      .map(comp => new require$$26(comp, this.options));
 
     // if any comparators are the null set, then replace with JUST null set
     // if more than one comparator, remove any * comparators
@@ -27274,7 +27275,7 @@ const testSet = (set, version, options) => {
     // even though it's within the range set by the comparators.
     for (let i = 0; i < set.length; i++) {
       debug_1(set[i].semver);
-      if (set[i].semver === comparator.ANY) {
+      if (set[i].semver === require$$26.ANY) {
         continue
       }
 
@@ -27558,7 +27559,7 @@ const validRange = (range$1, options) => {
 };
 var valid = validRange;
 
-const {ANY: ANY$1} = comparator;
+const {ANY: ANY$1} = require$$26;
 
 
 
@@ -27604,16 +27605,16 @@ const outside = (version, range$1, hilo, options) => {
     let high = null;
     let low = null;
 
-    comparators.forEach((comparator$1) => {
-      if (comparator$1.semver === ANY$1) {
-        comparator$1 = new comparator('>=0.0.0');
+    comparators.forEach((comparator) => {
+      if (comparator.semver === ANY$1) {
+        comparator = new require$$26('>=0.0.0');
       }
-      high = high || comparator$1;
-      low = low || comparator$1;
-      if (gtfn(comparator$1.semver, high.semver, options)) {
-        high = comparator$1;
-      } else if (ltfn(comparator$1.semver, low.semver, options)) {
-        low = comparator$1;
+      high = high || comparator;
+      low = low || comparator;
+      if (gtfn(comparator.semver, high.semver, options)) {
+        high = comparator;
+      } else if (ltfn(comparator.semver, low.semver, options)) {
+        low = comparator;
       }
     });
 
@@ -27698,7 +27699,7 @@ var simplify = (versions, range, options) => {
   return simplified.length < original.length ? simplified : range
 };
 
-const { ANY } = comparator;
+const { ANY } = require$$26;
 
 
 
@@ -27771,16 +27772,16 @@ const simpleSubset = (sub, dom, options) => {
     if (dom.length === 1 && dom[0].semver === ANY)
       return true
     else if (options.includePrerelease)
-      sub = [ new comparator('>=0.0.0-0') ];
+      sub = [ new require$$26('>=0.0.0-0') ];
     else
-      sub = [ new comparator('>=0.0.0') ];
+      sub = [ new require$$26('>=0.0.0') ];
   }
 
   if (dom.length === 1 && dom[0].semver === ANY) {
     if (options.includePrerelease)
       return true
     else
-      dom = [ new comparator('>=0.0.0') ];
+      dom = [ new require$$26('>=0.0.0') ];
   }
 
   const eqSet = new Set();
@@ -27952,7 +27953,7 @@ var semver$1 = {
   lte: lte_1,
   cmp: cmp_1,
   coerce: coerce_1,
-  Comparator: comparator,
+  Comparator: require$$26,
   Range: range,
   satisfies: satisfies_1,
   toComparators: toComparators_1,
@@ -27971,7 +27972,7 @@ var semver$1 = {
 var commondir = function (basedir, relfiles) {
     if (relfiles) {
         var files = relfiles.map(function (r) {
-            return path__default['default'].resolve(basedir, r);
+            return path__default["default"].resolve(basedir, r);
         });
     }
     else {
@@ -28046,6 +28047,11 @@ const pLimit = concurrency => {
 		},
 		pendingCount: {
 			get: () => queue.length
+		},
+		clearQueue: {
+			value: () => {
+				queue.length = 0;
+			}
 		}
 	});
 
@@ -28107,11 +28113,11 @@ var pLocate_1 = pLocate;
 var _default$1 = pLocate;
 pLocate_1.default = _default$1;
 
-const {promisify: promisify$2} = require$$0__default['default'];
+const {promisify: promisify$2} = require$$0__default["default"];
 
 
-const fsStat = promisify$2(fs__default['default'].stat);
-const fsLStat = promisify$2(fs__default['default'].lstat);
+const fsStat = promisify$2(fs__default["default"].stat);
+const fsLStat = promisify$2(fs__default["default"].lstat);
 
 const typeMappings = {
 	directory: 'isDirectory',
@@ -28140,7 +28146,7 @@ var locatePath = async (paths, options) => {
 
 	return pLocate_1(paths, async path_ => {
 		try {
-			const stat = await statFn(path__default['default'].resolve(options.cwd, path_));
+			const stat = await statFn(path__default["default"].resolve(options.cwd, path_));
 			return matchType(options.type, stat);
 		} catch (_) {
 			return false;
@@ -28156,11 +28162,11 @@ var sync$3 = (paths, options) => {
 		...options
 	};
 	checkType(options);
-	const statFn = options.allowSymlinks ? fs__default['default'].statSync : fs__default['default'].lstatSync;
+	const statFn = options.allowSymlinks ? fs__default["default"].statSync : fs__default["default"].lstatSync;
 
 	for (const path_ of paths) {
 		try {
-			const stat = statFn(path__default['default'].resolve(options.cwd, path_));
+			const stat = statFn(path__default["default"].resolve(options.cwd, path_));
 
 			if (matchType(options.type, stat)) {
 				return path_;
@@ -28171,9 +28177,9 @@ var sync$3 = (paths, options) => {
 };
 locatePath.sync = sync$3;
 
-const {promisify: promisify$1} = require$$0__default['default'];
+const {promisify: promisify$1} = require$$0__default["default"];
 
-const pAccess = promisify$1(fs__default['default'].access);
+const pAccess = promisify$1(fs__default["default"].access);
 
 var pathExists = async path => {
 	try {
@@ -28186,7 +28192,7 @@ var pathExists = async path => {
 
 var sync$2 = path => {
 	try {
-		fs__default['default'].accessSync(path);
+		fs__default["default"].accessSync(path);
 		return true;
 	} catch (_) {
 		return false;
@@ -28202,8 +28208,8 @@ var findUp = createCommonjsModule(function (module) {
 const stop = Symbol('findUp.stop');
 
 module.exports = async (name, options = {}) => {
-	let directory = path__default['default'].resolve(options.cwd || '');
-	const {root} = path__default['default'].parse(directory);
+	let directory = path__default["default"].resolve(options.cwd || '');
+	const {root} = path__default["default"].parse(directory);
 	const paths = [].concat(name);
 
 	const runMatcher = async locateOptions => {
@@ -28229,20 +28235,20 @@ module.exports = async (name, options = {}) => {
 		}
 
 		if (foundPath) {
-			return path__default['default'].resolve(directory, foundPath);
+			return path__default["default"].resolve(directory, foundPath);
 		}
 
 		if (directory === root) {
 			return;
 		}
 
-		directory = path__default['default'].dirname(directory);
+		directory = path__default["default"].dirname(directory);
 	}
 };
 
 module.exports.sync = (name, options = {}) => {
-	let directory = path__default['default'].resolve(options.cwd || '');
-	const {root} = path__default['default'].parse(directory);
+	let directory = path__default["default"].resolve(options.cwd || '');
+	const {root} = path__default["default"].parse(directory);
 	const paths = [].concat(name);
 
 	const runMatcher = locateOptions => {
@@ -28267,14 +28273,14 @@ module.exports.sync = (name, options = {}) => {
 		}
 
 		if (foundPath) {
-			return path__default['default'].resolve(directory, foundPath);
+			return path__default["default"].resolve(directory, foundPath);
 		}
 
 		if (directory === root) {
 			return;
 		}
 
-		directory = path__default['default'].dirname(directory);
+		directory = path__default["default"].dirname(directory);
 	}
 };
 
@@ -28287,7 +28293,7 @@ module.exports.stop = stop;
 
 const pkgDir = async cwd => {
 	const filePath = await findUp('package.json', {cwd});
-	return filePath && path__default['default'].dirname(filePath);
+	return filePath && path__default["default"].dirname(filePath);
 };
 
 var pkgDir_1 = pkgDir;
@@ -28296,7 +28302,7 @@ var _default = pkgDir;
 
 var sync$1 = cwd => {
 	const filePath = findUp.sync('package.json', {cwd});
-	return filePath && path__default['default'].dirname(filePath);
+	return filePath && path__default["default"].dirname(filePath);
 };
 pkgDir_1.default = _default;
 pkgDir_1.sync = sync$1;
@@ -29900,7 +29906,7 @@ function coerce (version, options) {
 }
 });
 
-const {promisify} = require$$0__default['default'];
+const {promisify} = require$$0__default["default"];
 
 
 const useNativeRecursiveOption = semver.satisfies(process.version, '>=10.12.0');
@@ -29909,7 +29915,7 @@ const useNativeRecursiveOption = semver.satisfies(process.version, '>=10.12.0');
 // https://github.com/libuv/libuv/pull/1088
 const checkPath = pth => {
 	if (process.platform === 'win32') {
-		const pathHasInvalidWinCharacters = /[<>:"|?*]/.test(pth.replace(path__default['default'].parse(pth).root, ''));
+		const pathHasInvalidWinCharacters = /[<>:"|?*]/.test(pth.replace(path__default["default"].parse(pth).root, ''));
 
 		if (pathHasInvalidWinCharacters) {
 			const error = new Error(`Path contains invalid characters: ${pth}`);
@@ -29922,8 +29928,8 @@ const checkPath = pth => {
 const processOptions = options => {
 	// https://github.com/sindresorhus/make-dir/issues/18
 	const defaults = {
-		mode: 0o777 & (~process.umask()),
-		fs: fs__default['default']
+		mode: 0o777,
+		fs: fs__default["default"]
 	};
 
 	return {
@@ -29950,8 +29956,8 @@ const makeDir = async (input, options) => {
 	const mkdir = promisify(options.fs.mkdir);
 	const stat = promisify(options.fs.stat);
 
-	if (useNativeRecursiveOption && options.fs.mkdir === fs__default['default'].mkdir) {
-		const pth = path__default['default'].resolve(input);
+	if (useNativeRecursiveOption && options.fs.mkdir === fs__default["default"].mkdir) {
+		const pth = path__default["default"].resolve(input);
 
 		await mkdir(pth, {
 			mode: options.mode,
@@ -29972,7 +29978,7 @@ const makeDir = async (input, options) => {
 			}
 
 			if (error.code === 'ENOENT') {
-				if (path__default['default'].dirname(pth) === pth) {
+				if (path__default["default"].dirname(pth) === pth) {
 					throw permissionError(pth);
 				}
 
@@ -29980,7 +29986,7 @@ const makeDir = async (input, options) => {
 					throw error;
 				}
 
-				await make(path__default['default'].dirname(pth));
+				await make(path__default["default"].dirname(pth));
 
 				return make(pth);
 			}
@@ -29998,7 +30004,7 @@ const makeDir = async (input, options) => {
 		}
 	};
 
-	return make(path__default['default'].resolve(input));
+	return make(path__default["default"].resolve(input));
 };
 
 var makeDir_1 = makeDir;
@@ -30007,10 +30013,10 @@ var sync = (input, options) => {
 	checkPath(input);
 	options = processOptions(options);
 
-	if (useNativeRecursiveOption && options.fs.mkdirSync === fs__default['default'].mkdirSync) {
-		const pth = path__default['default'].resolve(input);
+	if (useNativeRecursiveOption && options.fs.mkdirSync === fs__default["default"].mkdirSync) {
+		const pth = path__default["default"].resolve(input);
 
-		fs__default['default'].mkdirSync(pth, {
+		fs__default["default"].mkdirSync(pth, {
 			mode: options.mode,
 			recursive: true
 		});
@@ -30027,7 +30033,7 @@ var sync = (input, options) => {
 			}
 
 			if (error.code === 'ENOENT') {
-				if (path__default['default'].dirname(pth) === pth) {
+				if (path__default["default"].dirname(pth) === pth) {
 					throw permissionError(pth);
 				}
 
@@ -30035,7 +30041,7 @@ var sync = (input, options) => {
 					throw error;
 				}
 
-				make(path__default['default'].dirname(pth));
+				make(path__default["default"].dirname(pth));
 				return make(pth);
 			}
 
@@ -30051,7 +30057,7 @@ var sync = (input, options) => {
 		return pth;
 	};
 
-	return make(path__default['default'].resolve(input));
+	return make(path__default["default"].resolve(input));
 };
 makeDir_1.sync = sync;
 
@@ -30059,7 +30065,7 @@ const {env, cwd} = process;
 
 const isWritable = path => {
 	try {
-		fs__default['default'].accessSync(path, fs__default['default'].constants.W_OK);
+		fs__default["default"].accessSync(path, fs__default["default"].constants.W_OK);
 		return true;
 	} catch (_) {
 		return false;
@@ -30072,18 +30078,18 @@ function useDirectory(directory, options) {
 	}
 
 	if (options.thunk) {
-		return (...arguments_) => path__default['default'].join(directory, ...arguments_);
+		return (...arguments_) => path__default["default"].join(directory, ...arguments_);
 	}
 
 	return directory;
 }
 
 function getNodeModuleDirectory(directory) {
-	const nodeModules = path__default['default'].join(directory, 'node_modules');
+	const nodeModules = path__default["default"].join(directory, 'node_modules');
 
 	if (
 		!isWritable(nodeModules) &&
-		(fs__default['default'].existsSync(nodeModules) || !isWritable(path__default['default'].join(directory)))
+		(fs__default["default"].existsSync(nodeModules) || !isWritable(path__default["default"].join(directory)))
 	) {
 		return;
 	}
@@ -30093,7 +30099,7 @@ function getNodeModuleDirectory(directory) {
 
 var findCacheDir = (options = {}) => {
 	if (env.CACHE_DIR && !['true', 'false', '1', '0'].includes(env.CACHE_DIR)) {
-		return useDirectory(path__default['default'].join(env.CACHE_DIR, 'find-cache-dir'), options);
+		return useDirectory(path__default["default"].join(env.CACHE_DIR, options.name), options);
 	}
 
 	let {cwd: directory = cwd()} = options;
@@ -30113,7 +30119,7 @@ var findCacheDir = (options = {}) => {
 		return undefined;
 	}
 
-	return useDirectory(path__default['default'].join(directory, 'node_modules', '.cache', options.name), options);
+	return useDirectory(path__default["default"].join(directory, 'node_modules', '.cache', options.name), options);
 };
 
 const typescript = (options) => {
