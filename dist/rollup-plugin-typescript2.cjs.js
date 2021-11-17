@@ -30173,7 +30173,7 @@ const typescript = (options) => {
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
                 if (!semver$1.satisfies(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-                context.info(`rollup-plugin-typescript2 version: 0.31.0`);
+                context.info(`rollup-plugin-typescript2 version: 0.32.0`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
