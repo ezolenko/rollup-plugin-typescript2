@@ -26754,8 +26754,6 @@ const forEachStep = (self, fn, node, thisp) => {
 
 var lruCache = LRUCache;
 
-var require$$26 = comparator;
-
 // hoisted class for cyclic dependency
 class Range {
   constructor (range, options) {
@@ -26772,7 +26770,7 @@ class Range {
       }
     }
 
-    if (range instanceof require$$26) {
+    if (range instanceof comparator) {
       // just put it in the set and return
       this.raw = range.value;
       this.set = [[range]];
@@ -26876,7 +26874,7 @@ class Range {
       .map(comp => replaceGTE0(comp, this.options))
       // in loose mode, throw out any that are not valid comparators
       .filter(this.options.loose ? comp => !!comp.match(compRe) : () => true)
-      .map(comp => new require$$26(comp, this.options));
+      .map(comp => new comparator(comp, this.options));
 
     // if any comparators are the null set, then replace with JUST null set
     // if more than one comparator, remove any * comparators
@@ -27246,7 +27244,7 @@ const testSet = (set, version, options) => {
     // even though it's within the range set by the comparators.
     for (let i = 0; i < set.length; i++) {
       debug_1(set[i].semver);
-      if (set[i].semver === require$$26.ANY) {
+      if (set[i].semver === comparator.ANY) {
         continue
       }
 
@@ -27530,7 +27528,7 @@ const validRange = (range$1, options) => {
 };
 var valid = validRange;
 
-const {ANY: ANY$1} = require$$26;
+const {ANY: ANY$1} = comparator;
 
 
 
@@ -27576,16 +27574,16 @@ const outside = (version, range$1, hilo, options) => {
     let high = null;
     let low = null;
 
-    comparators.forEach((comparator) => {
-      if (comparator.semver === ANY$1) {
-        comparator = new require$$26('>=0.0.0');
+    comparators.forEach((comparator$1) => {
+      if (comparator$1.semver === ANY$1) {
+        comparator$1 = new comparator('>=0.0.0');
       }
-      high = high || comparator;
-      low = low || comparator;
-      if (gtfn(comparator.semver, high.semver, options)) {
-        high = comparator;
-      } else if (ltfn(comparator.semver, low.semver, options)) {
-        low = comparator;
+      high = high || comparator$1;
+      low = low || comparator$1;
+      if (gtfn(comparator$1.semver, high.semver, options)) {
+        high = comparator$1;
+      } else if (ltfn(comparator$1.semver, low.semver, options)) {
+        low = comparator$1;
       }
     });
 
@@ -27670,7 +27668,7 @@ var simplify = (versions, range, options) => {
   return simplified.length < original.length ? simplified : range
 };
 
-const { ANY } = require$$26;
+const { ANY } = comparator;
 
 
 
@@ -27743,16 +27741,16 @@ const simpleSubset = (sub, dom, options) => {
     if (dom.length === 1 && dom[0].semver === ANY)
       return true
     else if (options.includePrerelease)
-      sub = [ new require$$26('>=0.0.0-0') ];
+      sub = [ new comparator('>=0.0.0-0') ];
     else
-      sub = [ new require$$26('>=0.0.0') ];
+      sub = [ new comparator('>=0.0.0') ];
   }
 
   if (dom.length === 1 && dom[0].semver === ANY) {
     if (options.includePrerelease)
       return true
     else
-      dom = [ new require$$26('>=0.0.0') ];
+      dom = [ new comparator('>=0.0.0') ];
   }
 
   const eqSet = new Set();
@@ -27924,7 +27922,7 @@ var semver$1 = {
   lte: lte_1,
   cmp: cmp_1,
   coerce: coerce_1,
-  Comparator: require$$26,
+  Comparator: comparator,
   Range: range,
   satisfies: satisfies_1,
   toComparators: toComparators_1,
@@ -28018,11 +28016,6 @@ const pLimit = concurrency => {
 		},
 		pendingCount: {
 			get: () => queue.length
-		},
-		clearQueue: {
-			value: () => {
-				queue.length = 0;
-			}
 		}
 	});
 
@@ -29899,7 +29892,7 @@ const checkPath = pth => {
 const processOptions = options => {
 	// https://github.com/sindresorhus/make-dir/issues/18
 	const defaults = {
-		mode: 0o777,
+		mode: 0o777 & (~process.umask()),
 		fs
 	};
 
@@ -30070,7 +30063,7 @@ function getNodeModuleDirectory(directory) {
 
 var findCacheDir = (options = {}) => {
 	if (env.CACHE_DIR && !['true', 'false', '1', '0'].includes(env.CACHE_DIR)) {
-		return useDirectory(path__default.join(env.CACHE_DIR, options.name), options);
+		return useDirectory(path__default.join(env.CACHE_DIR, 'find-cache-dir'), options);
 	}
 
 	let {cwd: directory = cwd()} = options;
@@ -30355,5 +30348,5 @@ const typescript = (options) => {
     return self;
 };
 
-export { typescript as default };
+export default typescript;
 //# sourceMappingURL=rollup-plugin-typescript2.es.js.map
