@@ -25241,8 +25241,9 @@ let tslibSource;
 let tslibVersion;
 try {
     // tslint:disable-next-line:no-string-literal no-var-requires
-    const tslibPackage = require("tslib/package.json");
-    const tslibPath = require.resolve("tslib/" + tslibPackage.module);
+    const _ = require("@yarn-tool/resolve-package").resolvePackage('tslib');
+    const tslibPackage = _.pkg;
+    const tslibPath = _.resolveLocation(tslibPackage.module);
     tslibSource = fs.readFileSync(tslibPath, "utf8");
     tslibVersion = tslibPackage.version;
 }
