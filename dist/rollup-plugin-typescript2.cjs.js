@@ -30097,7 +30097,7 @@ function getNodeModuleDirectory(directory) {
 
 var findCacheDir = (options = {}) => {
 	if (env.CACHE_DIR && !['true', 'false', '1', '0'].includes(env.CACHE_DIR)) {
-		return useDirectory(path__default['default'].join(env.CACHE_DIR, 'find-cache-dir'), options);
+		return useDirectory(path__default['default'].join(env.CACHE_DIR, options.name), options);
 	}
 
 	let {cwd: directory = cwd()} = options;
