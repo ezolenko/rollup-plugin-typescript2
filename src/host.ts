@@ -145,4 +145,8 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 		return transformer;
 	}
+
+	public trace(line: string) {
+		console.log(line)
+	}
 }
