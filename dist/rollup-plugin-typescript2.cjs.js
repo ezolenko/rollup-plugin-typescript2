@@ -17430,6 +17430,9 @@ class LanguageServiceHost {
         }
         return transformer;
     }
+    trace(line) {
+        console.log(line);
+    }
 }
 
 /**
