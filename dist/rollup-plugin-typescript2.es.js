@@ -25178,7 +25178,7 @@ function parseTsConfig(context, pluginOptions) {
     const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
     // if the value was provided, but no file, fail hard
     if (pluginOptions.tsconfig !== undefined && !fileName)
-        throw new Error(`failed to open '${fileName}'`);
+        throw new Error(`rpt2: failed to open '${fileName}'`);
     let loadedConfig = {};
     let baseDir = pluginOptions.cwd;
     let configFileName;
@@ -25186,12 +25186,12 @@ function parseTsConfig(context, pluginOptions) {
     if (fileName) {
         const text = tsModule.sys.readFile(fileName);
         if (text === undefined)
-            throw new Error(`failed to read '${fileName}'`);
+            throw new Error(`rpt2: failed to read '${fileName}'`);
         const result = tsModule.parseConfigFileTextToJson(fileName, text);
         pretty = lodash$1.get(result.config, "pretty", pretty);
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
-            throw new Error(`failed to parse '${fileName}'`);
+            throw new Error(`rpt2: failed to parse '${fileName}'`);
         }
         loadedConfig = result.config;
         baseDir = dirname(fileName);
@@ -30148,7 +30148,7 @@ const typescript = (options) => {
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
                 if (!semver$1.satisfies(tsModule.version, ">=2.4.0", { includePrerelease: true }))
                     throw new Error(`Installed typescript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-                context.info(`rollup-plugin-typescript2 version: 0.31.2`);
+                context.info(`rollup-plugin-typescript2 version: 0.31.3`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);

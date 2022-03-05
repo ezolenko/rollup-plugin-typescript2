@@ -14,7 +14,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 
 	// if the value was provided, but no file, fail hard
 	if (pluginOptions.tsconfig !== undefined && !fileName)
-		throw new Error(`failed to open '${fileName}'`);
+		throw new Error(`rpt2: failed to open '${fileName}'`);
 
 	let loadedConfig: any = {};
 	let baseDir = pluginOptions.cwd;
@@ -24,7 +24,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 	{
 		const text = tsModule.sys.readFile(fileName);
 		if (text === undefined)
-			throw new Error(`failed to read '${fileName}'`);
+			throw new Error(`rpt2: failed to read '${fileName}'`);
 
 		const result = tsModule.parseConfigFileTextToJson(fileName, text);
 		pretty = _.get(result.config, "pretty", pretty);
@@ -32,7 +32,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 		if (result.error !== undefined)
 		{
 			printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
-			throw new Error(`failed to parse '${fileName}'`);
+			throw new Error(`rpt2: failed to parse '${fileName}'`);
 		}
 
 		loadedConfig = result.config;
