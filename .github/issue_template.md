@@ -18,42 +18,50 @@
 
 ```
 
-#### rollup.config.js
-
 <!--- paste your rollup config below if relevant --->
 <details>
-  <summary>`rollup.config.js`: </summary>
+  <summary><h4><code>rollup.config.js</code></h4>: </summary>
 
-<!--- INSERT rollup.config.js HERE --->
+<!--- INSERT rollup.config.ts IN THE CODE SNIPPET BELOW --->
+
+```js
+
+```
 
 </details>
-
-#### tsconfig.json
 
 <!--- paste your tsconfig.json below if relevant --->
 <details>
-  <summary>`tsconfig.json`: </summary>
+  <summary><h4><code>tsconfig.json</code></h4>: </summary>
 
-<!--- INSERT tsconfig.json HERE --->
+<!--- INSERT tsconfig.json IN THE CODE SNIPPET BELOW --->
+
+```json5
+
+```
 
 </details>
-
-#### package.json
 
 <!--- paste your package.json below if relevant --->
 <details>
-  <summary>`package.json`: </summary>
+  <summary><h4><code>package.json</code></h4>: </summary>
 
-<!--- INSERT package.json HERE --->
+<!--- INSERT package.json IN THE CODE SNIPPET BELOW --->
+
+```json
+
+```
 
 </details>
 
-#### plugin output with verbosity 3
-
 <!--- add verbosity verbosity: 3 to plugin options and attach output if relevant (censor out anything sensitive) --->
 <details>
-  <summary>plugin output with verbosity 3: </summary>
+  <summary><h4>plugin output with verbosity 3</h4>: </summary>
 
-<!--- INSERT plugin output HERE or attach --->
+<!--- INSERT plugin output IN THE CODE SNIPPET BELOW or attach --->
+
+```text
+
+```
 
 </details>
