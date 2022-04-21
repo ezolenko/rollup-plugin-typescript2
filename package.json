@@ -53,7 +53,7 @@
     "colors": "1.4.0",
     "graphlib": "2.1.8",
     "lodash": "4.17.21",
-    "object-hash": "2.2.0",
+    "object-hash": "3.0.0",
     "rimraf": "3.0.2",
     "rollup": "^2.48.0",
     "@rollup/plugin-commonjs": "17.1.0",
