@@ -47,8 +47,8 @@ function createCommonjsModule(fn) {
 	return fn(module, module.exports), module.exports;
 }
 
-function commonjsRequire (target) {
-	throw new Error('Could not dynamically require "' + target + '". Please configure the dynamicRequireTargets option of @rollup/plugin-commonjs appropriately for this require call to behave properly.');
+function commonjsRequire (path) {
+	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
 }
 
 /**
