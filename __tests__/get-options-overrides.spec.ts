@@ -26,6 +26,7 @@ const makeDefaultConfig = () => ({
 	verbosity: 5,
 	clean: false,
 	cacheRoot: local("fixtures/options"),
+	cwd: local(""),
 	abortOnError: false,
 	rollupCommonJSResolveHack: false,
 	typescript: ts,
@@ -44,7 +45,7 @@ const makeDefaultConfig = () => ({
 
 test("getOptionsOverrides", () => {
 	const config = makeDefaultConfig();
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config))).toEqual(
+	expect(normalizePaths(["outDir"], getOptionsOverrides(config))).toStrictEqual(
 		{
 			allowNonTsExtensions: true,
 			importHelpers: true,
@@ -65,7 +66,7 @@ test("getOptionsOverrides - preParsedTsConfig", () => {
 		fileNames: [],
 		errors: [],
 	};
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toEqual(
+	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
 			allowNonTsExtensions: true,
 			declarationDir: undefined,
@@ -89,17 +90,10 @@ test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
 		fileNames: [],
 		errors: [],
 	};
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toEqual(
+	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
 			allowNonTsExtensions: true,
 			declarationDir: undefined,
-			importHelpers: true,
-			inlineSourceMap: false,
-			moduleResolution: 2,
-			noEmit: false,
-			noEmitHelpers: false,
-			noResolve: false,
-			outDir: "placeholder",
 			sourceRoot: undefined,
 		},
 	);
@@ -107,18 +101,15 @@ test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
 
 test("getOptionsOverrides - with declaration", () => {
 	const config = makeDefaultConfig();
-	config.useTsconfigDeclarationDir = false;
+	config.useTsconfigDeclarationDir = true;
 	const preParsedTsConfig = {
-		options: {
-			declaration: true,
-		},
+		options: {},
 		fileNames: [],
 		errors: [],
 	};
-	expect(normalizePaths(["outDir", "declarationDir"], getOptionsOverrides(config, preParsedTsConfig))).toEqual(
+	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
 			allowNonTsExtensions: true,
-			declarationDir: "rollup-plugin-typescript2",
 			importHelpers: true,
 			inlineSourceMap: false,
 			moduleResolution: 2,
@@ -134,7 +125,6 @@ test("getOptionsOverrides - with declaration", () => {
 
 test("getOptionsOverrides - with sourceMap", () => {
 	const config = makeDefaultConfig();
-	config.useTsconfigDeclarationDir = false;
 	const preParsedTsConfig = {
 		options: {
 			sourceMap: true,
@@ -142,9 +132,10 @@ test("getOptionsOverrides - with sourceMap", () => {
 		fileNames: [],
 		errors: [],
 	};
-	expect(normalizePaths(["outDir", "declarationDir"], getOptionsOverrides(config, preParsedTsConfig))).toEqual(
+	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
 			allowNonTsExtensions: true,
+			declarationDir: undefined,
 			importHelpers: true,
 			inlineSourceMap: false,
 			moduleResolution: 2,
@@ -153,7 +144,6 @@ test("getOptionsOverrides - with sourceMap", () => {
 			noEmitHelpers: false,
 			noResolve: false,
 			outDir: "placeholder",
-			sourceRoot: undefined,
 		},
 	);
 });
