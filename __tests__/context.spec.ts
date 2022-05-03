@@ -1,3 +1,5 @@
+import { jest, test, expect } from "@jest/globals";
+
 import { ConsoleContext } from "../src/context";
 
 (global as any).console = {log: jest.fn()};

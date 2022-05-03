@@ -1,3 +1,4 @@
+import { afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
 import * as ts from "typescript";
 import { remove } from "fs-extra";

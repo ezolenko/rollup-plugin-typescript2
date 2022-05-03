@@ -1,3 +1,4 @@
+import { test, expect } from "@jest/globals";
 import * as ts from "typescript";
 
 import { formatHost } from "../src/diagnostics-format-host";

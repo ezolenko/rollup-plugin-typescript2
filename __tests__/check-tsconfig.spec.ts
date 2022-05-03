@@ -1,3 +1,4 @@
+import { test, expect } from "@jest/globals";
 import * as ts from "typescript";
 
 import { checkTsConfig } from "../src/check-tsconfig";

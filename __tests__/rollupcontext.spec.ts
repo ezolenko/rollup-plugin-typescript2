@@ -1,3 +1,5 @@
+import { jest, test, expect } from "@jest/globals";
+
 import { RollupContext } from "../src/rollupcontext";
 
 (global as any).console = {
