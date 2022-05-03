@@ -112,7 +112,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 	]
 	```
 
-	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are concatenated, primitives are replaced, etc), increase `verbosity` to 3 and look for `parsed tsconfig` if you get something unexpected.
+	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are merged by index, primitives are replaced, etc), increase `verbosity` to 3 and look for `parsed tsconfig` if you get something unexpected.
 
 * `tsconfig`: `undefined`
 
