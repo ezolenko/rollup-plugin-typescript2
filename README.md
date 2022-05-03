@@ -58,22 +58,22 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 
 ### Compatibility
 
-#### rollup-plugin-node-resolve
+#### @rollup/plugin-node-resolve
 
 Must be before rollup-plugin-typescript2 in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)
 
-#### rollup-plugin-commonjs
+#### @rollup/plugin-commonjs
 
 See explanation for `rollupCommonJSResolveHack` option below.
 
-#### rollup-plugin-babel
+#### @rollup/plugin-babel
 
-This plugin transpiles code, but doesn't change file extension. Babel plugin, even though it claims it processes all files, only looks at code with those extensions by default: `.js,.jsx,.es6,.es,.mjs`. To workaround add `ts` and `tsx` to the list of babel extensions.
+This plugin transpiles code, but doesn't change file extensions. `@rollup/plugin-babel` only looks at code with these extensions [by default](https://github.com/rollup/plugins/tree/master/packages/babel#extensions): `.js,.jsx,.es6,.es,.mjs`. To workaround this, add `.ts` and `.tsx` to its list of extensions.
 
 ```js
-...
+// ...
 import { DEFAULT_EXTENSIONS } from '@babel/core';
-...
+// ...
 	babel({
 		extensions: [
 			...DEFAULT_EXTENSIONS,
@@ -81,7 +81,7 @@ import { DEFAULT_EXTENSIONS } from '@babel/core';
 			'.tsx'
 		]
 	}),
-...
+// ...
 ```
 
 See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
