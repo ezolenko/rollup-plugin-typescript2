@@ -1,7 +1,7 @@
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import * as _ from "lodash";
-import { normalize } from "./normalize";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 import { TransformerFactoryCreator } from "./ioptions";
 
 export class LanguageServiceHost implements tsTypes.LanguageServiceHost
