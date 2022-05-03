@@ -1,10 +1,14 @@
 import * as path from "path";
 import * as ts from "typescript";
-import {getOptionsOverrides} from "./get-options-overrides";
-import {remove} from "fs-extra";
+import { remove } from "fs-extra";
+
+import { getOptionsOverrides } from "../src/get-options-overrides";
+
 
 const local = (x: string) => path.resolve(__dirname, x);
+
 afterAll(() => remove(local("fixtures/options")));
+
 const normalizePaths = (props: string[], x: any) => {
 	props.map((prop: string) => {
 		if (x[prop]) {

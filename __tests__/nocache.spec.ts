@@ -1,7 +1,8 @@
-import {NoCache} from "./nocache";
+import { NoCache } from "../src/nocache";
 
 test("NoCache", () => {
 	const noCache = new NoCache();
+
 	expect(noCache.exists("")).toBeFalsy();
 	expect(noCache.path("x")).toEqual("x");
 	expect(noCache.match([])).toBeFalsy();

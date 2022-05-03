@@ -1,10 +1,11 @@
-// import * as ts from "typescript";
-// import * as fs from "fs";
-import { LanguageServiceHost } from "./host";
 import * as path from "path";
 import { readFile, remove, ensureDir, writeFile } from "fs-extra";
+
+import { LanguageServiceHost } from "../src/host";
+
 const local = (x: string) => path.resolve(__dirname, x);
 const unaryFunctionExample = "const unary = (x: string): string => x.reverse()";
+
 afterAll(() =>
 	Promise.all([
 		remove(local("does-exist.ts")),
@@ -31,6 +32,7 @@ test("LanguageServiceHost", done => {
 	};
 	const transformers = [() => ({})];
 	const host = new LanguageServiceHost(config, transformers);
+
 	expect(host).toBeTruthy();
 	expect(Object.keys(host)).toEqual([
 		"parsedConfig",
@@ -40,18 +42,22 @@ test("LanguageServiceHost", done => {
 		"versions",
 		"fileNames"
 	]);
+
 	host.reset();
 	expect((host as any).snapshots).toEqual({});
 	expect((host as any).versions).toEqual({});
+
 	const testFile = local("test.ts");
 	host.setLanguageService({ pretend: "language-service" } as any);
 	expect((host as any).service).toEqual({ pretend: "language-service" });
+
 	const snap = host.setSnapshot(testFile, unaryFunctionExample);
 	expect(snap).toEqual({ text: unaryFunctionExample });
 	expect((host as any).snapshots[testFile]).toEqual({
 		text: unaryFunctionExample
 	});
 	expect((host as any).versions[testFile]).toEqual(1);
+
 	const truncateName = (till: number) => (z: string) =>
 		z
 			.split(path.sep)
@@ -111,6 +117,7 @@ test("LanguageServiceHost.readFile", () => {
 	};
 	const transformers = [() => ({})];
 	const host = new LanguageServiceHost(config, transformers);
+
 	expect(
 		host.readFile(local("src/host-test-dir/host-test-file.js"))
 	).toBeFalsy();
@@ -121,6 +128,7 @@ test.skip("LanguageServiceHost.readFile", done => {
 	return readFile(local("host-test-dir/host-test-file.ts"), "utf8").then(
 		data => {
 			expect(data).toEqual(unaryFunctionExample);
+
 			const config = {
 				fileNames: [],
 				errors: [],
@@ -128,12 +136,14 @@ test.skip("LanguageServiceHost.readFile", done => {
 			};
 			const transformers = [() => ({})];
 			const host = new LanguageServiceHost(config, transformers);
+
 			// const file = host.readFile(local("host-test-dir/host-test-file.js"));
 			// expect(file).toEqual(unaryFunctionExample);
 			// const file2 = host.readFile("host-test-dir/host-test-file.js");
 			// expect(file2).toEqual(unaryFunctionExample);
 			const file3 = host.readFile("src/host-test-dir/host-test-file.js");
 			expect(file3).toEqual(unaryFunctionExample);
+
 			done();
 		}
 	);
@@ -148,6 +158,7 @@ test("LanguageServiceHost - getCustomTransformers", () => {
 	const transformers = [() => ({ before: () => "test" })];
 	const host = new LanguageServiceHost(config, transformers as any);
 	const customTransformers = host.getCustomTransformers();
+
 	expect(customTransformers).toBeFalsy();
 });
 
@@ -163,5 +174,6 @@ test.skip("LanguageServiceHost - getCustomTransformers with no service", () => {
 	host.setLanguageService(I as any);
 	const customTransformers = host.getCustomTransformers();
 	console.warn(customTransformers);
+
 	expect(typeof (customTransformers as any)[0][0]).toEqual("function");
 });
