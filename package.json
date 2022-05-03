@@ -72,27 +72,5 @@
   },
   "bugs": {
     "url": "https://github.com/ezolenko/rollup-plugin-typescript2/issues"
-  },
-  "jest": {
-    "restoreMocks": true,
-    "transform": {
-      "^.+\\.ts?$": "ts-jest"
-    },
-    "modulePaths": [
-      "src"
-    ],
-    "moduleDirectories": [
-      "node_modules",
-      "src"
-    ],
-    "coveragePathIgnorePatterns": [],
-    "moduleFileExtensions": [
-      "js",
-      "ts",
-      "json"
-    ],
-    "testMatch": [
-      "**/*.spec.ts"
-    ]
   }
 }
