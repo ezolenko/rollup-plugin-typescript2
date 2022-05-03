@@ -168,12 +168,12 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 * `useTsconfigDeclarationDir`: false
 
 	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
-	
+
 	Set to false if any other rollup plugins need access to declaration files.
 
-* `typescript`: typescript module installed with the plugin
+* `typescript`: peerDependency
 
-	When typescript version installed by the plugin (latest 2.x) is unacceptable, you can import your own typescript module and pass it in as `typescript: require("path/to/other/typescript")`. Must be 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
+	If you'd like to use a different version of TS than the peerDependency, you can import a different TypeScript module and pass it in as `typescript: require("path/to/other/typescript")`. Must be TS 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
 
 * `transformers`: `undefined`
 
