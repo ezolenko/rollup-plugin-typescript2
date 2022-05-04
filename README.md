@@ -1,7 +1,7 @@
 # rollup-plugin-typescript2
 
 [![npm-version](https://img.shields.io/npm/v/rollup-plugin-typescript2.svg?maxAge=259200)](https://npmjs.org/package/rollup-plugin-typescript2)
-![npm-monthly-downloads](https://img.shields.io/npm/dm/rollup-plugin-typescript2.svg?maxAge=259200)
+[![npm-monthly-downloads](https://img.shields.io/npm/dm/rollup-plugin-typescript2.svg?maxAge=259200)](https://npmjs.org/package/rollup-plugin-typescript2)
 [![Node.js CI](https://github.com/ezolenko/rollup-plugin-typescript2/workflows/Node.js%20CI/badge.svg)](https://github.com/ezolenko/rollup-plugin-typescript2/actions?query=workflow%3A"Node.js+CI")
 
 Rollup plugin for typescript with compiler errors.
