@@ -3,23 +3,24 @@ import * as path from "path";
 import * as ts from "typescript";
 import { remove } from "fs-extra";
 
+import { IOptions } from "../src/ioptions";
 import { getOptionsOverrides } from "../src/get-options-overrides";
-
 
 const local = (x: string) => path.resolve(__dirname, x);
 
 afterAll(() => remove(local("fixtures/options")));
 
 const normalizePaths = (props: string[], x: any) => {
-	props.map((prop: string) => {
-		if (x[prop]) {
-			x[prop] = x[prop].substr(x[prop].lastIndexOf("/") + 1);
-		}
-	});
+	for (const prop of props) {
+		if (!x[prop]) continue
+
+		x[prop] = x[prop].substr(x[prop].lastIndexOf("/") + 1);
+	}
+
 	return x;
 };
 
-const makeDefaultConfig = () => ({
+const defaultConfig: IOptions = {
 	include: [],
 	exclude: [],
 	check: false,
@@ -41,58 +42,58 @@ const makeDefaultConfig = () => ({
 		console.log(ls);
 		return {};
 	}],
-});
+};
+
+const forcedOptions: ts.CompilerOptions = {
+	allowNonTsExtensions: true,
+	importHelpers: true,
+	inlineSourceMap: false,
+	moduleResolution: ts.ModuleResolutionKind.NodeJs,
+	noEmit: false,
+	noEmitHelpers: false,
+	noResolve: false,
+	outDir: "placeholder", // normalized
+}
+
+const defaultPreParsedTsConfig: ts.ParsedCommandLine = {
+	options: {},
+	fileNames: [],
+	errors: [],
+};
 
 test("getOptionsOverrides", () => {
-	const config = makeDefaultConfig();
+	const config = { ...defaultConfig };
 	expect(normalizePaths(["outDir"], getOptionsOverrides(config))).toStrictEqual(
 		{
-			allowNonTsExtensions: true,
-			importHelpers: true,
-			inlineSourceMap: false,
-			moduleResolution: 2,
-			noEmit: false,
-			noEmitHelpers: false,
-			noResolve: false,
-			outDir: "placeholder",
+			...forcedOptions,
 		},
 	);
 });
 
 test("getOptionsOverrides - preParsedTsConfig", () => {
-	const config = makeDefaultConfig();
-	const preParsedTsConfig = {
-		options: {},
-		fileNames: [],
-		errors: [],
-	};
+	const config = { ...defaultConfig };
+	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
 	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
-			allowNonTsExtensions: true,
+			...forcedOptions,
 			declarationDir: undefined,
-			importHelpers: true,
-			inlineSourceMap: false,
-			moduleResolution: 2,
-			module: 5,
-			noEmit: false,
-			noEmitHelpers: false,
-			noResolve: false,
-			outDir: "placeholder",
+			module: ts.ModuleKind.ES2015,
 			sourceRoot: undefined,
 		},
 	);
 });
 
 test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
-	const config = makeDefaultConfig();
+	const config = { ...defaultConfig };
 	const preParsedTsConfig = {
-		options: {module: 2},
-		fileNames: [],
-		errors: [],
+		...defaultPreParsedTsConfig,
+		options: {
+			module: ts.ModuleKind.AMD,
+		},
 	};
 	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
-			allowNonTsExtensions: true,
+			...forcedOptions,
 			declarationDir: undefined,
 			sourceRoot: undefined,
 		},
@@ -100,50 +101,30 @@ test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
 });
 
 test("getOptionsOverrides - with declaration", () => {
-	const config = makeDefaultConfig();
-	config.useTsconfigDeclarationDir = true;
-	const preParsedTsConfig = {
-		options: {},
-		fileNames: [],
-		errors: [],
-	};
+	const config = { ...defaultConfig, useTsconfigDeclarationDir: true };
+	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
 	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
-			allowNonTsExtensions: true,
-			importHelpers: true,
-			inlineSourceMap: false,
-			moduleResolution: 2,
-			module: 5,
-			noEmit: false,
-			noEmitHelpers: false,
-			noResolve: false,
-			outDir: "placeholder",
+			...forcedOptions,
+			module: ts.ModuleKind.ES2015,
 			sourceRoot: undefined,
 		},
 	);
 });
 
 test("getOptionsOverrides - with sourceMap", () => {
-	const config = makeDefaultConfig();
+	const config = { ...defaultConfig }
 	const preParsedTsConfig = {
+		...defaultPreParsedTsConfig,
 		options: {
 			sourceMap: true,
 		},
-		fileNames: [],
-		errors: [],
 	};
 	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
 		{
-			allowNonTsExtensions: true,
+			...forcedOptions,
 			declarationDir: undefined,
-			importHelpers: true,
-			inlineSourceMap: false,
-			moduleResolution: 2,
-			module: 5,
-			noEmit: false,
-			noEmitHelpers: false,
-			noResolve: false,
-			outDir: "placeholder",
+			module: ts.ModuleKind.ES2015,
 		},
 	);
 });
