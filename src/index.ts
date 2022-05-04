@@ -13,7 +13,7 @@ import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { blue, red, yellow, green } from "colors/safe";
 import { relative, dirname, normalize as pathNormalize, resolve as pathResolve } from "path";
-import { normalize } from "./normalize";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 import findCacheDir from "find-cache-dir";
 
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
