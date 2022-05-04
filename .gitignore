@@ -9,3 +9,4 @@
 *.swp
 *.swo
 coverage
+__tests__/__temp/

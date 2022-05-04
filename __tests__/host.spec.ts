@@ -5,22 +5,21 @@ import { readFile, remove, ensureDir, writeFile } from "fs-extra";
 import { LanguageServiceHost } from "../src/host";
 
 const local = (x: string) => path.resolve(__dirname, x);
-const cwd = local("");
-const unaryFunctionExample = "const unary = (x: string): string => x.reverse()";
 
-afterAll(() =>
-	Promise.all([
-		remove(local("does-exist.ts")),
-		remove(local("host-test-dir"))
-	])
-);
+const unaryFunc = "const unary = (x: string): string => x.reverse()";
+const unaryFuncSnap = { text: unaryFunc };
+
+const testDir = local("__temp/host");
+const testFileNoExt = `${testDir}/file`;
+const testFile = `${testFileNoExt}.ts`;
+const testFileJs = `${testFileNoExt}.js`;
+
+const nonExistent = `${testDir}/this-does-not-exist.ts`;
+
+afterAll(() => remove(testDir));
 beforeAll(async () => {
-	await ensureDir(local("host-test-dir"));
-	await writeFile(
-		local("host-test-dir/host-test-file.ts"),
-		unaryFunctionExample,
-		"utf8"
-	);
+	await ensureDir(testDir);
+	await writeFile(testFile, unaryFunc, "utf8");
 });
 
 test("LanguageServiceHost", async () => {
@@ -30,7 +29,7 @@ test("LanguageServiceHost", async () => {
 		options: { test: "this is a test" }
 	};
 	const transformers = [() => ({})];
-	const host = new LanguageServiceHost(config, transformers, cwd);
+	const host = new LanguageServiceHost(config, transformers, testDir);
 
 	expect(host).toBeTruthy();
 	expect(Object.keys(host)).toEqual([
@@ -46,26 +45,21 @@ test("LanguageServiceHost", async () => {
 	expect((host as any).snapshots).toEqual({});
 	expect((host as any).versions).toEqual({});
 
-	const testFile = local("test.ts");
 	host.setLanguageService({ pretend: "language-service" } as any);
 	expect((host as any).service).toEqual({ pretend: "language-service" });
 
-	const snap = host.setSnapshot(testFile, unaryFunctionExample);
-	expect(snap).toEqual({ text: unaryFunctionExample });
-	expect((host as any).snapshots[testFile]).toEqual({
-		text: unaryFunctionExample
-	});
+	const snap = host.setSnapshot(testFile, unaryFunc);
+	expect(snap).toEqual(unaryFuncSnap);
+	expect((host as any).snapshots[testFile]).toEqual(unaryFuncSnap);
 	expect((host as any).versions[testFile]).toEqual(1);
 
-	expect([...(host as any).fileNames]).toEqual([local("test.ts")]);
-	expect(host.getScriptSnapshot(testFile)).toEqual({
-		text: unaryFunctionExample
-	});
-	expect(host.getScriptSnapshot(local("does-not-exist.ts"))).toBeFalsy();
-	expect(host.getCurrentDirectory()).toEqual(cwd);
+	expect([...(host as any).fileNames]).toEqual([testFile]);
+	expect(host.getScriptSnapshot(testFile)).toEqual(unaryFuncSnap);
+	expect(host.getScriptSnapshot(nonExistent)).toBeFalsy();
+	expect(host.getCurrentDirectory()).toEqual(testDir);
 	expect(host.getScriptVersion(testFile)).toEqual("1");
-	expect(host.getScriptVersion("nothing")).toEqual("0");
-	expect(host.getScriptFileNames()).toEqual([local("test.ts")]);
+	expect(host.getScriptVersion(nonExistent)).toEqual("0");
+	expect(host.getScriptFileNames()).toEqual([testFile]);
 	expect(host.getCompilationSettings()).toEqual({ test: "this is a test" });
 	expect(host.getDefaultLibFileName({})).toEqual(
 		local("../node_modules/typescript/lib/lib.d.ts")
@@ -76,7 +70,7 @@ test("LanguageServiceHost", async () => {
 		expect(host.useCaseSensitiveFileNames()).toBeFalsy();
 	}
 	expect(host.getTypeRootsVersion()).toEqual(0);
-	expect(host.directoryExists("no-it-does-not")).toBeFalsy();
+	expect(host.directoryExists(nonExistent)).toBeFalsy();
 	expect(host.getDirectories(".")).toEqual(expect.arrayContaining([
 		".git",
 		".github",
@@ -86,16 +80,9 @@ test("LanguageServiceHost", async () => {
 		"src"
 	]));
 	expect(host.getCustomTransformers()).toEqual({ after: [], afterDeclarations: [], before: [] });
-	expect(host.fileExists("no-it-does.not")).toBeFalsy();
-
-	await writeFile(local("does-exist.ts"), unaryFunctionExample, "utf8");
-	expect(
-		host.readDirectory(local("host-test-dir"))
-	).toEqual([local("host-test-dir/host-test-file.ts")]);
-	expect(host.fileExists(local("does-exist.ts"))).toBeTruthy();
-	expect(host.getScriptSnapshot(local("does-exist.ts"))).toEqual({
-		text: unaryFunctionExample
-	});
+	expect(host.fileExists(nonExistent)).toBeFalsy();
+	expect(host.readDirectory(testDir)).toEqual([testFile]);
+	expect(host.fileExists(testFile)).toBeTruthy();
 });
 
 test("LanguageServiceHost.readFile", () => {
@@ -105,17 +92,15 @@ test("LanguageServiceHost.readFile", () => {
 		options: { test: "this is a test" }
 	};
 	const transformers = [() => ({})];
-	const host = new LanguageServiceHost(config, transformers, cwd);
+	const host = new LanguageServiceHost(config, transformers, testDir);
 
-	expect(
-		host.readFile(local("src/host-test-dir/host-test-file.js"))
-	).toBeFalsy();
+	expect(host.readFile(testFileJs)).toBeFalsy();
 });
 
 // ts.sys.readFile() doesn't ever appear to return anything, so skipping this test for now
 test.skip("LanguageServiceHost.readFile", async () => {
-	const data = await readFile(local("host-test-dir/host-test-file.ts"), "utf8");
-	expect(data).toEqual(unaryFunctionExample);
+	const data = await readFile(testFile, "utf8");
+	expect(data).toEqual(unaryFunc);
 
 	const config = {
 		fileNames: [],
@@ -123,10 +108,10 @@ test.skip("LanguageServiceHost.readFile", async () => {
 		options: { test: "this is a test" }
 	};
 	const transformers = [() => ({})];
-	const host = new LanguageServiceHost(config, transformers, cwd);
+	const host = new LanguageServiceHost(config, transformers, testDir);
 
-	const file = host.readFile(local("host-test-dir/host-test-file.js"));
-	expect(file).toEqual(unaryFunctionExample);
+	const file = host.readFile(testFileJs);
+	expect(file).toEqual(unaryFunc);
 });
 
 test("LanguageServiceHost - getCustomTransformers", () => {
@@ -136,7 +121,7 @@ test("LanguageServiceHost - getCustomTransformers", () => {
 		options: {}
 	};
 	const transformers = [() => ({ before: () => "test" })];
-	const host = new LanguageServiceHost(config, transformers as any, cwd);
+	const host = new LanguageServiceHost(config, transformers as any, testDir);
 	const customTransformers = host.getCustomTransformers();
 
 	expect(customTransformers).toBeFalsy();
@@ -149,7 +134,7 @@ test.skip("LanguageServiceHost - getCustomTransformers with no service", () => {
 		options: {}
 	};
 	const transformers = [() => ({ before: () => "test" })];
-	const host = new LanguageServiceHost(config, transformers as any, cwd);
+	const host = new LanguageServiceHost(config, transformers as any, testDir);
 	const I = (x: any) => x;
 	host.setLanguageService(I as any);
 	const customTransformers = host.getCustomTransformers();
