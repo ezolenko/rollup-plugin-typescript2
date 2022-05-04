@@ -43,7 +43,7 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 * `noResolve`: false
 * `noEmit`: false
 * `inlineSourceMap`: false (see [#71](https://github.com/ezolenko/rollup-plugin-typescript2/issues/71))
-* `outDir`: `./placeholder` in cache root, see [83](https://github.com/ezolenko/rollup-plugin-typescript2/issues/83) and [Microsoft/TypeScript/issues/24715](https://github.com/Microsoft/TypeScript/issues/24715)
+* `outDir`: `./placeholder` in cache root, see [#83](https://github.com/ezolenko/rollup-plugin-typescript2/issues/83) and [Microsoft/TypeScript#24715](https://github.com/Microsoft/TypeScript/issues/24715)
 * `declarationDir`: Rollup's `output.file` or `output.dir` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
 * `moduleResolution`: `node` (*`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
 * `allowNonTsExtensions`: true to let other plugins on the chain generate typescript, update plugin's include filter to pick them up (see [#111](https://github.com/ezolenko/rollup-plugin-typescript2/issues/111))
@@ -156,10 +156,10 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 * `rollupCommonJSResolveHack`: false
 
 	On windows typescript resolver favors POSIX path, while commonjs plugin (and maybe others?) uses native path as module id. This can result in `namedExports` being ignored if rollup happened to use typescript's resolution. Set to true to pass resolved module path through `resolve()` to match up with `rollup-plugin-commonjs`.
-	
+
 	`rollup-plugin-commonjs` fixed this in `10.1.0`, so projects using this option who update to new version will be broken again.
-	
-	This also works around the similar bug affecting code splitting (see [rollup/issues/3094](https://github.com/rollup/rollup/issues/3094)).
+
+	This also works around the similar bug affecting code splitting (see [rollup/rollup#3094](https://github.com/rollup/rollup/issues/3094)).
 
 * `objectHashIgnoreUnknownHack`: false
 
@@ -179,7 +179,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 	**experimental**, typescript 2.4.1+
 
-	Transformers will likely be available in tsconfig eventually, so this is not a stable interface, see [Microsoft/TypeScript/issues/14419](https://github.com/Microsoft/TypeScript/issues/14419).
+	Transformers will likely be available in tsconfig eventually, so this is not a stable interface, see [Microsoft/TypeScript#14419](https://github.com/Microsoft/TypeScript/issues/14419).
 
 	For example, integrating [kimamula/ts-transformer-keys](https://github.com/kimamula/ts-transformer-keys):
 
