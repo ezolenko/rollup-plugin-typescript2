@@ -14,19 +14,16 @@ afterAll(() =>
 		remove(local("host-test-dir"))
 	])
 );
-beforeAll(
-	() =>
-		ensureDir(local("host-test-dir")).then(() =>
-			writeFile(
-				local("host-test-dir/host-test-file.ts"),
-				unaryFunctionExample,
-				"utf8"
-			)
-		)
-	// ).then(() => readFile(local("host-test-dir/host-test-file.ts"), "utf8").then((uhhh) => console.warn(">>>", uhhh)),
-);
+beforeAll(async () => {
+	await ensureDir(local("host-test-dir"));
+	await writeFile(
+		local("host-test-dir/host-test-file.ts"),
+		unaryFunctionExample,
+		"utf8"
+	);
+});
 
-test("LanguageServiceHost", done => {
+test("LanguageServiceHost", async () => {
 	const config = {
 		fileNames: [],
 		errors: [],
@@ -60,15 +57,7 @@ test("LanguageServiceHost", done => {
 	});
 	expect((host as any).versions[testFile]).toEqual(1);
 
-	const truncateName = (till: number) => (z: string) =>
-		z
-			.split(path.sep)
-			.slice(till)
-			.join(path.sep);
-	const truncate3 = truncateName(-3);
-	expect([...(host as any).fileNames].map(truncate3)).toEqual([
-		"rollup-plugin-typescript2/__tests__/test.ts"
-	]);
+	expect([...(host as any).fileNames]).toEqual([local("test.ts")]);
 	expect(host.getScriptSnapshot(testFile)).toEqual({
 		text: unaryFunctionExample
 	});
@@ -76,12 +65,10 @@ test("LanguageServiceHost", done => {
 	expect(host.getCurrentDirectory()).toEqual(cwd);
 	expect(host.getScriptVersion(testFile)).toEqual("1");
 	expect(host.getScriptVersion("nothing")).toEqual("0");
-	expect(host.getScriptFileNames().map(truncate3)).toEqual([
-		"rollup-plugin-typescript2/__tests__/test.ts"
-	]);
+	expect(host.getScriptFileNames()).toEqual([local("test.ts")]);
 	expect(host.getCompilationSettings()).toEqual({ test: "this is a test" });
-	expect(truncateName(-5)(host.getDefaultLibFileName({}))).toEqual(
-		"rollup-plugin-typescript2/node_modules/typescript/lib/lib.d.ts"
+	expect(host.getDefaultLibFileName({})).toEqual(
+		local("../node_modules/typescript/lib/lib.d.ts")
 	);
 	if (process.platform === "win32") {
 		expect(host.useCaseSensitiveFileNames()).toBeTruthy();
@@ -100,15 +87,14 @@ test("LanguageServiceHost", done => {
 	]));
 	expect(host.getCustomTransformers()).toEqual({ after: [], afterDeclarations: [], before: [] });
 	expect(host.fileExists("no-it-does.not")).toBeFalsy();
-	writeFile(local("does-exist.ts"), unaryFunctionExample, "utf8").then(() => {
-		expect(
-			host.readDirectory(local("host-test-dir")).map(truncate3)
-		).toEqual(["__tests__/host-test-dir/host-test-file.ts"]);
-		expect(host.fileExists(local("does-exist.ts"))).toBeTruthy();
-		expect(host.getScriptSnapshot(local("does-exist.ts"))).toEqual({
-			text: unaryFunctionExample
-		});
-		done();
+
+	await writeFile(local("does-exist.ts"), unaryFunctionExample, "utf8");
+	expect(
+		host.readDirectory(local("host-test-dir"))
+	).toEqual([local("host-test-dir/host-test-file.ts")]);
+	expect(host.fileExists(local("does-exist.ts"))).toBeTruthy();
+	expect(host.getScriptSnapshot(local("does-exist.ts"))).toEqual({
+		text: unaryFunctionExample
 	});
 });
 
@@ -128,26 +114,19 @@ test("LanguageServiceHost.readFile", () => {
 
 // ts.sys.readFile() doesn't ever appear to return anything, so skipping this test for now
 test.skip("LanguageServiceHost.readFile", async () => {
-	await readFile(local("host-test-dir/host-test-file.ts"), "utf8").then(
-		data => {
-			expect(data).toEqual(unaryFunctionExample);
+	const data = await readFile(local("host-test-dir/host-test-file.ts"), "utf8");
+	expect(data).toEqual(unaryFunctionExample);
 
-			const config = {
-				fileNames: [],
-				errors: [],
-				options: { test: "this is a test" }
-			};
-			const transformers = [() => ({})];
-			const host = new LanguageServiceHost(config, transformers, cwd);
+	const config = {
+		fileNames: [],
+		errors: [],
+		options: { test: "this is a test" }
+	};
+	const transformers = [() => ({})];
+	const host = new LanguageServiceHost(config, transformers, cwd);
 
-			// const file = host.readFile(local("host-test-dir/host-test-file.js"));
-			// expect(file).toEqual(unaryFunctionExample);
-			// const file2 = host.readFile("host-test-dir/host-test-file.js");
-			// expect(file2).toEqual(unaryFunctionExample);
-			const file3 = host.readFile("src/host-test-dir/host-test-file.js");
-			expect(file3).toEqual(unaryFunctionExample);
-		}
-	);
+	const file = host.readFile(local("host-test-dir/host-test-file.js"));
+	expect(file).toEqual(unaryFunctionExample);
 });
 
 test("LanguageServiceHost - getCustomTransformers", () => {
