@@ -26,7 +26,7 @@
     "build": "rimraf dist/* && rollup -c",
     "watch": "rollup -c rollup.config.self.js -w ",
     "build-self": "rimraf dist/* && rollup -c rollup.config.self.js",
-    "lint": "tslint -c ./tslint.json src/*.ts ./*.js",
+    "lint": "tslint -c ./tslint.json src/*.ts __tests__/*.ts ./*.js",
     "test": "jest --verbose"
   },
   "dependencies": {
