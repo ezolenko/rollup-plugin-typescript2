@@ -27,7 +27,9 @@
     "watch": "rollup -c rollup.config.self.js -w ",
     "build-self": "rimraf dist/* && rollup -c rollup.config.self.js",
     "lint": "tslint -c ./tslint.json src/*.ts __tests__/*.ts ./*.js",
-    "test": "jest --verbose"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@rollup/pluginutils": "^4.1.2",

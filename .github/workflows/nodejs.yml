@@ -10,7 +10,7 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-and-test:
 
     runs-on: ubuntu-latest
 
@@ -30,3 +30,4 @@ jobs:
     - run: npm run build-self
       env:
         CI: true
+    - run: npm run test:coverage
