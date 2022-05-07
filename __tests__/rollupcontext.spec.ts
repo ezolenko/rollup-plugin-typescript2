@@ -1,5 +1,7 @@
 import { jest, test, expect } from "@jest/globals";
+import { PluginContext } from "rollup";
 
+import { IContext } from "../src/context";
 import { RollupContext } from "../src/rollupcontext";
 
 (global as any).console = {
@@ -9,7 +11,7 @@ import { RollupContext } from "../src/rollupcontext";
 };
 
 const stub = (x: any) => x;
-const contextualLogger = (data: any) => {
+const contextualLogger = (data: any): IContext => {
 	return {
 		warn: (x: any) => {
 			data.warn = x;
@@ -20,40 +22,37 @@ const contextualLogger = (data: any) => {
 		info: (x: any) => {
 			data.info = x;
 		},
+		debug: (x: any) => {
+			data.debug = x;
+		},
 	};
 };
-const makeStubbedContext = (data: any) => {
-	const {info, warn, error} = contextualLogger(data);
+const makeStubbedContext = (data: any): PluginContext & IContext => {
+	const { warn, error, info, debug } = contextualLogger(data);
 	return {
 		addWatchFile: stub as any,
+		getWatchFiles: stub as any,
 		cache: stub as any,
+		load: stub as any,
+		resolve: stub as any,
 		resolveId: stub as any,
 		isExternal: stub as any,
 		meta: stub as any,
 		emitAsset: stub as any,
+		emitChunk: stub as any,
+		emitFile: stub as any,
 		setAssetSource: stub as any,
 		getAssetFileName: stub as any,
+		getChunkFileName: stub as any,
+		getFileName: stub as any,
 		parse: stub as any,
-		warn,
-		error,
-		info,
+		warn: warn as any,
+		error: error as any,
+		info: info as any,
+		debug: debug as any,
 		moduleIds: stub as any,
-		getModuleInfo: stub as any,
-		watcher: {
-			addListener: stub as any,
-			on: stub as any,
-			once: stub as any,
-			prependListener: stub as any,
-			prependOnceListener: stub as any,
-			removeListener: stub as any,
-			removeAllListeners: stub as any,
-			setMaxListeners: stub as any,
-			getMaxListeners: stub as any,
-			listeners: stub as any,
-			emit: stub as any,
-			eventNames: stub as any,
-			listenerCount: stub as any,
-		},
+		getModuleIds: stub as any,
+		getModuleInfo: stub as any
 	};
 };
 
@@ -80,9 +79,10 @@ test("RollupContext", () => {
 test("RollupContext with no logger", () => {
 	const data = {};
 	const stubbedContext = makeStubbedContext(data);
-	delete stubbedContext.warn;
-	delete stubbedContext.error;
-	delete stubbedContext.info;
+	delete (stubbedContext as any).warn;
+	delete (stubbedContext as any).error;
+	delete (stubbedContext as any).info;
+	delete (stubbedContext as any).debug;
 
 	const context = new RollupContext(5, false, stubbedContext);
 
@@ -108,10 +108,11 @@ test("RollupContext with no logger", () => {
 test("RollupContext with 0 verbosity", () => {
 	const data = {};
 	const stubbedContext = makeStubbedContext(data);
-	const context2 = new RollupContext(0, false, stubbedContext);
+	const context = new RollupContext(0, false, stubbedContext);
 
-	expect(context2.info("verbosity is too low here")).toBeFalsy();
-	expect(context2.warn("verbosity is too low here")).toBeFalsy();
+	expect(context.debug("verbosity is too low here")).toBeFalsy();
+	expect(context.info("verbosity is too low here")).toBeFalsy();
+	expect(context.warn("verbosity is too low here")).toBeFalsy();
 });
 
 test("RollupContext.error + debug negative verbosity", () => {
