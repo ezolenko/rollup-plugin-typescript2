@@ -131,7 +131,7 @@ test("LanguageServiceHost - getCustomTransformers", () => {
 	expect(customTransformers).toBeFalsy();
 });
 
-test.skip("LanguageServiceHost - getCustomTransformers with no service", () => {
+test("LanguageServiceHost - getCustomTransformers with no service", () => {
 	const config = {
 		fileNames: [],
 		errors: [],
@@ -142,7 +142,8 @@ test.skip("LanguageServiceHost - getCustomTransformers with no service", () => {
 	const I = (x: any) => x;
 	host.setLanguageService(I as any);
 	const customTransformers = host.getCustomTransformers();
-	console.warn(customTransformers);
 
-	expect(typeof (customTransformers as any)[0][0]).toEqual("function");
+	expect(customTransformers?.before?.[0].toString()).toEqual(
+		transformers[0]().before.toString()
+	);
 });
