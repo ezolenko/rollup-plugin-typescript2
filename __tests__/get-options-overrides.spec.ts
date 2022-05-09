@@ -11,8 +11,9 @@ import { getOptionsOverrides, createFilter } from "../src/get-options-overrides"
 setTypescriptModule(ts);
 
 const local = (x: string) => path.resolve(__dirname, x);
+const cacheDir = local("__temp/get-options-overrides");
 
-afterAll(() => remove(local("fixtures/options")));
+afterAll(() => remove(cacheDir));
 
 const normalizePaths = (props: string[], x: any) => {
 	for (const prop of props) {
@@ -30,7 +31,7 @@ const defaultConfig: IOptions = {
 	check: false,
 	verbosity: 5,
 	clean: false,
-	cacheRoot: local("fixtures/options"),
+	cacheRoot: cacheDir,
 	cwd: local(""),
 	abortOnError: false,
 	rollupCommonJSResolveHack: false,
