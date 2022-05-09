@@ -7,9 +7,7 @@ import { formatHost } from "../src/diagnostics-format-host";
 setTypescriptModule(ts);
 
 test("formatHost", () => {
-	const current = formatHost.getCurrentDirectory();
-	expect(current.substr(current.lastIndexOf("/"))).toEqual("/rollup-plugin-typescript2");
-
+	expect(formatHost.getCurrentDirectory()).toEqual(process.cwd());
 	expect(formatHost.getCanonicalFileName("package.json")).toEqual("package.json");
 	expect(formatHost.getNewLine()).toEqual(ts.sys.newLine);
 });

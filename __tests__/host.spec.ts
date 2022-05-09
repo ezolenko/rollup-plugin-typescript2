@@ -1,6 +1,7 @@
 import { afterAll, beforeAll, test, expect, jest } from "@jest/globals";
 import * as ts from "typescript";
 import * as path from "path";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 import { remove, ensureDir, writeFile } from "fs-extra";
 
 import { setTypescriptModule } from "../src/tsproxy";
@@ -13,7 +14,8 @@ const defaultConfig = { fileNames: [], errors: [], options: {} };
 const unaryFunc = "const unary = (x: string): string => x.reverse()";
 const unaryFuncSnap = { text: unaryFunc };
 
-const local = (x: string) => path.resolve(__dirname, x);
+// host.ts uses `/` normalized path, as does TS itself (https://github.com/microsoft/TypeScript/blob/7f022c58fb8b7253f23c49f0d9eee6fde82b477b/src/compiler/path.ts#L4)
+const local = (x: string) => normalize(path.resolve(__dirname, x));
 const testDir = local("__temp/host");
 const testFile = `${testDir}/file.ts`;
 const nonExistent = `${testDir}/this-does-not-exist.ts`;
@@ -56,13 +58,12 @@ test("LanguageServiceHost", async () => {
 	expect(host.readDirectory(testDir)).toEqual([testFile]);
 	expect(host.readFile(nonExistent)).toBeFalsy();
 	expect(host.readFile(testFile)).toEqual(unaryFunc);
-	expect(host.useCaseSensitiveFileNames()).toBe(process.platform === "win32");
+	expect(host.useCaseSensitiveFileNames()).toBe(process.platform === "linux");
 
 	// test misc functionality
 	expect(host.getCompilationSettings()).toEqual(testOpts);
-	expect(host.getDefaultLibFileName({})).toEqual(
-		local("../node_modules/typescript/lib/lib.d.ts")
-	);
+	// TODO: check against `normalize(require.resolve("typescript/lib/lib.dts"))` once https://github.com/microsoft/TypeScript/issues/49050 is fixed -- endsWith is just a workaround for now
+	expect(host.getDefaultLibFileName({}).endsWith("lib.d.ts")).toBeTruthy();
 	expect(host.getTypeRootsVersion()).toEqual(0);
 
 	// mock out trace
