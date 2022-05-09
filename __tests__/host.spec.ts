@@ -1,8 +1,12 @@
 import { afterAll, beforeAll, test, expect } from "@jest/globals";
+import * as ts from "typescript";
 import * as path from "path";
 import { readFile, remove, ensureDir, writeFile } from "fs-extra";
 
+import { setTypescriptModule } from "../src/tsproxy";
 import { LanguageServiceHost } from "../src/host";
+
+setTypescriptModule(ts);
 
 const local = (x: string) => path.resolve(__dirname, x);
 

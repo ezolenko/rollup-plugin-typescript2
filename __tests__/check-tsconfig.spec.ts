@@ -1,7 +1,10 @@
 import { test, expect } from "@jest/globals";
 import * as ts from "typescript";
 
+import { setTypescriptModule } from "../src/tsproxy";
 import { checkTsConfig } from "../src/check-tsconfig";
+
+setTypescriptModule(ts);
 
 test("checkTsConfig", () => {
 	expect(() =>

@@ -4,8 +4,11 @@ import * as ts from "typescript";
 import { remove } from "fs-extra";
 
 import { makeStubbedContext } from "./fixtures/context";
+import { setTypescriptModule } from "../src/tsproxy";
 import { IOptions } from "../src/ioptions";
 import { getOptionsOverrides, createFilter } from "../src/get-options-overrides";
+
+setTypescriptModule(ts);
 
 const local = (x: string) => path.resolve(__dirname, x);
 

@@ -1,7 +1,10 @@
 import { test, expect } from "@jest/globals";
 import * as ts from "typescript";
 
+import { setTypescriptModule } from "../src/tsproxy";
 import { formatHost } from "../src/diagnostics-format-host";
+
+setTypescriptModule(ts);
 
 test("formatHost", () => {
 	const current = formatHost.getCurrentDirectory();
