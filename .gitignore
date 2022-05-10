@@ -6,3 +6,7 @@
 /build-self
 /build
 .rpt2_cache
+*.swp
+*.swo
+coverage
+__tests__/__temp/

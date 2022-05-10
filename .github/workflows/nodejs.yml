@@ -10,13 +10,14 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  build-and-test:
+    name: Build & Test on Node ${{ matrix.node-version }} and ${{ matrix.os }}
 
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node-version: [10.x, 12.x]
+        node-version: [12.x, 14.x, 16.x, 18.x]
+        os: [ubuntu-latest, windows-latest, macOS-latest]
 
     steps:
     - uses: actions/checkout@v2
@@ -30,3 +31,4 @@ jobs:
     - run: npm run build-self
       env:
         CI: true
+    - run: npm run test:coverage
