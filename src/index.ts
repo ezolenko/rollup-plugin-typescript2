@@ -7,7 +7,6 @@ import * as tsTypes from "typescript";
 import * as resolve from "resolve";
 import * as _ from "lodash";
 import { IOptions } from "./ioptions";
-import { Partial } from "./partial";
 import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
