@@ -30,8 +30,6 @@ test("ConsoleContext", () => {
 
 	proxy.debug(() => "ftest4");
 	expect(console.log).toHaveBeenLastCalledWith("=>ftest4");
-
-	expect((proxy as any).prefix).toEqual("=>");
 });
 
 test("ConsoleContext 0 verbosity", () => {
@@ -48,6 +46,4 @@ test("ConsoleContext 0 verbosity", () => {
 
 	proxy.error("no-test4");
 	expect(console.log).not.toHaveBeenLastCalledWith("no-test4");
-
-	expect((proxy as any).prefix).toEqual("");
 });
