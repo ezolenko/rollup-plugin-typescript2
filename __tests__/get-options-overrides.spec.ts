@@ -15,16 +15,6 @@ const cacheDir = local("__temp/get-options-overrides");
 
 afterAll(() => remove(cacheDir));
 
-const normalizePaths = (props: string[], x: any) => {
-	for (const prop of props) {
-		if (!x[prop]) continue
-
-		x[prop] = x[prop].substr(x[prop].lastIndexOf("/") + 1);
-	}
-
-	return x;
-};
-
 const defaultConfig: IOptions = {
 	include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 	exclude: ["*.d.ts", "**/*.d.ts"],
@@ -57,8 +47,8 @@ const forcedOptions: ts.CompilerOptions = {
 	noEmit: false,
 	noEmitHelpers: false,
 	noResolve: false,
-	outDir: "placeholder", // normalized
-}
+	outDir: `${cacheDir}/placeholder`, // TODO: fix get-options-overrides.ts on Windows by normalizing the path: https://github.com/ezolenko/rollup-plugin-typescript2/pull/321#discussion_r869710856
+};
 
 const defaultPreParsedTsConfig: ts.ParsedCommandLine = {
 	options: {},
@@ -68,24 +58,20 @@ const defaultPreParsedTsConfig: ts.ParsedCommandLine = {
 
 test("getOptionsOverrides", () => {
 	const config = { ...defaultConfig };
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config))).toStrictEqual(
-		{
-			...forcedOptions,
-		},
-	);
+
+	expect(getOptionsOverrides(config)).toStrictEqual(forcedOptions);
 });
 
 test("getOptionsOverrides - preParsedTsConfig", () => {
 	const config = { ...defaultConfig };
 	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
-		{
-			...forcedOptions,
-			declarationDir: undefined,
-			module: ts.ModuleKind.ES2015,
-			sourceRoot: undefined,
-		},
-	);
+
+	expect(getOptionsOverrides(config, preParsedTsConfig)).toStrictEqual({
+		...forcedOptions,
+		declarationDir: undefined,
+		module: ts.ModuleKind.ES2015,
+		sourceRoot: undefined,
+	});
 });
 
 test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
@@ -96,25 +82,23 @@ test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
 			module: ts.ModuleKind.AMD,
 		},
 	};
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
-		{
-			...forcedOptions,
-			declarationDir: undefined,
-			sourceRoot: undefined,
-		},
-	);
+
+	expect(getOptionsOverrides(config, preParsedTsConfig)).toStrictEqual({
+		...forcedOptions,
+		declarationDir: undefined,
+		sourceRoot: undefined,
+	});
 });
 
 test("getOptionsOverrides - with declaration", () => {
 	const config = { ...defaultConfig, useTsconfigDeclarationDir: true };
 	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
-		{
-			...forcedOptions,
-			module: ts.ModuleKind.ES2015,
-			sourceRoot: undefined,
-		},
-	);
+
+	expect(getOptionsOverrides(config, preParsedTsConfig)).toStrictEqual({
+		...forcedOptions,
+		module: ts.ModuleKind.ES2015,
+		sourceRoot: undefined,
+	});
 });
 
 test("getOptionsOverrides - with sourceMap", () => {
@@ -125,13 +109,12 @@ test("getOptionsOverrides - with sourceMap", () => {
 			sourceMap: true,
 		},
 	};
-	expect(normalizePaths(["outDir"], getOptionsOverrides(config, preParsedTsConfig))).toStrictEqual(
-		{
-			...forcedOptions,
-			declarationDir: undefined,
-			module: ts.ModuleKind.ES2015,
-		},
-	);
+
+	expect(getOptionsOverrides(config, preParsedTsConfig)).toStrictEqual({
+		...forcedOptions,
+		declarationDir: undefined,
+		module: ts.ModuleKind.ES2015,
+	});
 });
 
 test("createFilter", () => {
