@@ -1,6 +1,5 @@
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
-import * as _ from "lodash";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { TransformerFactoryCreator } from "./ioptions";
 
@@ -44,7 +43,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	{
 		fileName = normalize(fileName);
 
-		if (_.has(this.snapshots, fileName))
+		if (fileName in this.snapshots)
 			return this.snapshots[fileName];
 
 		const source = tsModule.sys.readFile(fileName);
@@ -136,11 +135,11 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		{
 			const factory = creator(this.service);
 			if (factory.before)
-				transformer.before = _.concat(transformer.before!, factory.before);
+				transformer.before = transformer.before!.concat(factory.before);
 			if (factory.after)
-				transformer.after = _.concat(transformer.after!, factory.after);
+				transformer.after = transformer.after!.concat(factory.after);
 			if (factory.afterDeclarations)
-				transformer.afterDeclarations = _.concat(transformer.afterDeclarations!, factory.afterDeclarations);
+				transformer.afterDeclarations = transformer.afterDeclarations!.concat(factory.afterDeclarations);
 		}
 
 		return transformer;

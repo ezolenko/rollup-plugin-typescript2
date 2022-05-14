@@ -46,9 +46,18 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		return _cache;
 	};
 
-	const pluginOptions = { ...options } as IOptions;
+	const getDiagnostics = (id: string, snapshot: tsTypes.IScriptSnapshot) =>
+	{
+		return cache().getSyntacticDiagnostics(id, snapshot, () =>
+		{
+			return service.getSyntacticDiagnostics(id);
+		}).concat(cache().getSemanticDiagnostics(id, snapshot, () =>
+		{
+			return service.getSemanticDiagnostics(id);
+		}));
+	}
 
-	_.defaults(pluginOptions,
+	const pluginOptions: IOptions = Object.assign({},
 		{
 			check: true,
 			verbosity: VerbosityLevel.Warning,
@@ -65,7 +74,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			tsconfigDefaults: {},
 			objectHashIgnoreUnknownHack: false,
 			cwd: process.cwd(),
-		});
+		}, options as IOptions);
 
 	if (!pluginOptions.typescript) {
 		pluginOptions.typescript = require("typescript");
@@ -87,7 +96,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (generateRound === 0)
 			{
-				parsedConfig.fileNames.forEach((fileName) => { allImportedFiles.add(fileName); });
+				parsedConfig.fileNames.map(allImportedFiles.add, allImportedFiles);
 
 				context.info(`typescript version: ${tsModule.version}`);
 				context.info(`tslib version: ${tslibVersion}`);
@@ -151,7 +160,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				if (filter(result.resolvedModule.resolvedFileName))
 					cache().setDependency(result.resolvedModule.resolvedFileName, importer);
 
-				if (_.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
+				if (result.resolvedModule.resolvedFileName.endsWith(".d.ts"))
 					return;
 
 				const resolved = pluginOptions.rollupCommonJSResolveHack
@@ -198,16 +207,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					noErrors = false;
 
 					// always checking on fatal errors, even if options.check is set to false
-					const diagnostics = _.concat(
-						cache().getSyntacticDiagnostics(id, snapshot, () =>
-						{
-							return service.getSyntacticDiagnostics(id);
-						}),
-						cache().getSemanticDiagnostics(id, snapshot, () =>
-						{
-							return service.getSemanticDiagnostics(id);
-						}),
-					);
+					const diagnostics = getDiagnostics(id, snapshot);
 					printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 
 					// since no output was generated, aborting compilation
@@ -222,17 +222,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (pluginOptions.check)
 			{
-				const diagnostics = _.concat(
-					cache().getSyntacticDiagnostics(id, snapshot, () =>
-					{
-						return service.getSyntacticDiagnostics(id);
-					}),
-					cache().getSemanticDiagnostics(id, snapshot, () =>
-					{
-						return service.getSemanticDiagnostics(id);
-					}),
-				);
-
+				const diagnostics = getDiagnostics(id, snapshot);
 				if (diagnostics.length > 0)
 					noErrors = false;
 
@@ -295,17 +285,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					if (!snapshot)
 						return;
 
-					const diagnostics = _.concat(
-						cache().getSyntacticDiagnostics(id, snapshot, () =>
-						{
-							return service.getSyntacticDiagnostics(id);
-						}),
-						cache().getSemanticDiagnostics(id, snapshot, () =>
-						{
-							return service.getSemanticDiagnostics(id);
-						}),
-					);
-
+					const diagnostics = getDiagnostics(id, snapshot);
 					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
 				});
 			}
@@ -323,10 +303,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!parsedConfig.options.declaration)
 				return;
 
-			_.each(parsedConfig.fileNames, (name) =>
+			parsedConfig.fileNames.forEach((name) =>
 			{
 				const key = normalize(name);
-				if (_.has(declarations, key))
+				if (key in declarations)
 					return;
 				if (!allImportedFiles.has(key))
 				{
@@ -390,8 +370,9 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				}
 			};
 
-			_.each(declarations, ({ type, map }, key) =>
+			Object.keys(declarations).forEach((key) =>
 			{
+				const { type, map } = declarations[key];
 				emitDeclaration(key, ".d.ts", type);
 				emitDeclaration(key, ".d.ts.map", map);
 			});

@@ -27,7 +27,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 			throw new Error(`rpt2: failed to read '${fileName}'`);
 
 		const result = tsModule.parseConfigFileTextToJson(fileName, text);
-		pretty = _.get(result.config, "pretty", pretty);
+		pretty = result.config?.pretty ?? pretty;
 
 		if (result.error !== undefined)
 		{
