@@ -1,6 +1,7 @@
 import { afterAll, test, expect, jest } from "@jest/globals";
 import * as path from "path";
 import * as ts from "typescript";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 import { remove } from "fs-extra";
 
 import { makeStubbedContext } from "./fixtures/context";
@@ -13,8 +14,8 @@ setTypescriptModule(ts);
 const local = (x: string) => path.resolve(__dirname, x);
 const cacheDir = local("__temp/get-options-overrides");
 
-// filter expects an absolute path and resolve include/exclude to process.cwd() by default: https://github.com/ezolenko/rollup-plugin-typescript2/pull/321#discussion_r873077874
-const filtPath = (path: string) => `${process.cwd()}/${path}`;
+// filter expects an absolute path and resolves include/exclude to process.cwd() by default: https://github.com/ezolenko/rollup-plugin-typescript2/pull/321#discussion_r873077874
+const filtPath = (relPath: string) => normalize(`${process.cwd()}/${relPath}`);
 
 afterAll(() => remove(cacheDir));
 
