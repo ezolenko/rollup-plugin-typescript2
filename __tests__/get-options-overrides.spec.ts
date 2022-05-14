@@ -1,4 +1,4 @@
-import { afterAll, test, expect } from "@jest/globals";
+import { afterAll, test, expect, jest } from "@jest/globals";
 import * as path from "path";
 import * as ts from "typescript";
 import { remove } from "fs-extra";
@@ -12,6 +12,9 @@ setTypescriptModule(ts);
 
 const local = (x: string) => path.resolve(__dirname, x);
 const cacheDir = local("__temp/get-options-overrides");
+
+// filter expects an absolute path and resolve include/exclude to process.cwd() by default: https://github.com/ezolenko/rollup-plugin-typescript2/pull/321#discussion_r873077874
+const filtPath = (path: string) => `${process.cwd()}/${path}`;
 
 afterAll(() => remove(cacheDir));
 
@@ -124,13 +127,25 @@ test("createFilter", () => {
 	const stubbedContext = makeStubbedContext({});
 	const filter = createFilter(stubbedContext, config, preParsedTsConfig);
 
-	expect(filter("src/test.ts")).toBe(true);
-	expect(filter("src/test.js")).toBe(false);
-	expect(filter("src/test.d.ts")).toBe(false);
+	expect(filter(filtPath("src/test.ts"))).toBe(true);
+	expect(filter(filtPath("src/test.js"))).toBe(false);
+	expect(filter(filtPath("src/test.d.ts"))).toBe(false);
 });
 
-// not totally sure why this is failing
-test.skip("createFilter -- rootDirs", () => {
+test("createFilter - context.debug", () => {
+	const config = { ...defaultConfig };
+	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
+
+	// test context.debug() statements
+	const debug = jest.fn(x => x());
+	const data = { set debug(x: any) { debug(x) } };
+	const stubbedContext = makeStubbedContext(data);
+
+	createFilter(stubbedContext, config, preParsedTsConfig);
+	expect(debug.mock.calls.length).toBe(2);
+});
+
+test("createFilter - rootDirs", () => {
 	const config = { ...defaultConfig };
 	const preParsedTsConfig = {
 		...defaultPreParsedTsConfig,
@@ -142,10 +157,38 @@ test.skip("createFilter -- rootDirs", () => {
 	const stubbedContext = makeStubbedContext({});
 	const filter = createFilter(stubbedContext, config, preParsedTsConfig);
 
-	expect(filter("src/test.ts")).toBe(true);
-	expect(filter("src/test.js")).toBe(false);
-	expect(filter("src/test.d.ts")).toBe(false);
-	expect(filter("lib/test.ts")).toBe(true);
-	expect(filter("lib/test.js")).toBe(false);
-	expect(filter("lib/test.d.ts")).toBe(false);
+	expect(filter(filtPath("src/test.ts"))).toBe(true);
+	expect(filter(filtPath("src/test.js"))).toBe(false);
+	expect(filter(filtPath("src/test.d.ts"))).toBe(false);
+
+	expect(filter(filtPath("lib/test.ts"))).toBe(true);
+	expect(filter(filtPath("lib/test.js"))).toBe(false);
+	expect(filter(filtPath("lib/test.d.ts"))).toBe(false);
+
+	expect(filter(filtPath("not-src/test.ts"))).toBe(false);
+});
+
+test("createFilter - projectReferences", () => {
+	// test string include and also don't match with "**"
+	const config = { ...defaultConfig, include: "*.ts+(|x)" };
+	const preParsedTsConfig = {
+		...defaultPreParsedTsConfig,
+		projectReferences: [
+			{ path: "src" },
+			{ path: "lib" },
+		],
+	};
+
+	const stubbedContext = makeStubbedContext({});
+	const filter = createFilter(stubbedContext, config, preParsedTsConfig);
+
+	expect(filter(filtPath("src/test.ts"))).toBe(true);
+	expect(filter(filtPath("src/test.js"))).toBe(false);
+	expect(filter(filtPath("src/test.d.ts"))).toBe(false);
+
+	expect(filter(filtPath("lib/test.ts"))).toBe(true);
+	expect(filter(filtPath("lib/test.js"))).toBe(false);
+	expect(filter(filtPath("lib/test.d.ts"))).toBe(false);
+
+	expect(filter(filtPath("not-src/test.ts"))).toBe(false);
 });
