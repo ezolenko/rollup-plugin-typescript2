@@ -2,7 +2,6 @@ import { createFilter as createRollupFilter} from "@rollup/pluginutils";
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { IOptions } from "./ioptions";
-import * as _ from "lodash";
 import { join } from "path";
 import { IContext } from "./context";
 
@@ -39,17 +38,15 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 
 function expandIncludeWithDirs(include: string | string[], dirs: string[])
 {
-	return _
-		.chain(dirs)
-		.flatMap((root) =>
-		{
-			if (include instanceof Array)
-				return include.map((x) => join(root, x));
-			else
-				return join(root, include);
-		})
-		.uniq()
-		.value();
+	const newDirs: string[] = [];
+
+	dirs.forEach(root => {
+		if (include instanceof Array)
+			include.forEach(x => newDirs.push(join(root, x)));
+		else
+			newDirs.push(join(root, include));
+	});
+	return newDirs;
 }
 
 export function createFilter(context: IContext, pluginOptions: IOptions, parsedConfig: tsTypes.ParsedCommandLine)
@@ -65,8 +62,8 @@ export function createFilter(context: IContext, pluginOptions: IOptions, parsedC
 
 	if (parsedConfig.projectReferences)
 	{
-		included = _.concat(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
-		excluded = _.concat(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
+		included = expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)).concat(included);
+		excluded = expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)).concat(excluded);
 	}
 
 	context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);

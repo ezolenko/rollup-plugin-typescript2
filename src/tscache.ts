@@ -47,11 +47,11 @@ export function convertEmitOutput(output: tsTypes.EmitOutput, references?: strin
 
 	output.outputFiles.forEach((e) =>
 	{
-		if (_.endsWith(e.name, ".d.ts"))
+		if (e.name.endsWith(".d.ts"))
 			out.dts = e;
-		else if (_.endsWith(e.name, ".d.ts.map"))
+		else if (e.name.endsWith(".d.ts.map"))
 			out.dtsmap = e;
-		else if (_.endsWith(e.name, ".map"))
+		else if (e.name.endsWith(".map"))
 			out.map = e.text;
 		else
 			out.code = e.text;
@@ -67,7 +67,7 @@ export function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnap
 
 	const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
 
-	return _.compact(_.concat(info.referencedFiles, info.importedFiles).map((reference) =>
+	return _.compact(info.referencedFiles.concat(info.importedFiles).map((reference) =>
 	{
 		const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
 		return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
@@ -76,7 +76,7 @@ export function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnap
 
 export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[]
 {
-	return _.map(data, (diagnostic) =>
+	return data.map((diagnostic) =>
 	{
 		const entry: IDiagnostics =
 			{
@@ -131,11 +131,11 @@ export class TsCache
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
 
-		const automaticTypes = _.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+		const automaticTypes = tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys).map((entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
 			.filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
 			.map((entry) => entry.resolvedTypeReferenceDirective!.resolvedFileName!);
 
-		this.ambientTypes = _.filter(rootFilenames, (file) => _.endsWith(file, ".d.ts"))
+		this.ambientTypes = rootFilenames.filter(file => file.endsWith(".d.ts"))
 			.concat(automaticTypes)
 			.map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
 
@@ -180,13 +180,13 @@ export class TsCache
 
 		if (acyclic)
 		{
-			_.each(alg.topsort(this.dependencyTree), (id: string) => cb(id));
+			alg.topsort(this.dependencyTree).forEach(id => cb(id));
 			return;
 		}
 
 		this.context.info(yellow("import tree has cycles"));
 
-		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
+		this.dependencyTree.nodes().forEach(id => cb(id));
 	}
 
 	public done()
@@ -252,7 +252,7 @@ export class TsCache
 		}
 
 		this.context.debug(blue("Ambient types:"));
-		const typeNames = _.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
+		const typeNames = this.ambientTypes.filter((snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
 			{
 				this.context.debug(`    ${snapshot.id}`);
@@ -264,7 +264,7 @@ export class TsCache
 		if (this.ambientTypesDirty)
 			this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
 
-		_.each(typeNames, (name) => this.typesCache.touch(name));
+		typeNames.forEach(this.typesCache.touch, this);
 	}
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -342,8 +342,9 @@ export class TsCache
 
 		const dependencies = alg.dijkstra(this.dependencyTree, id);
 
-		return _.some(dependencies, (dependency, node) =>
+		return Object.keys(dependencies).some(node =>
 		{
+			const dependency = dependencies[node];
 			if (!node || dependency.distance === Infinity)
 				return false;
 
