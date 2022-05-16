@@ -10,8 +10,8 @@ on:
     branches: [ master ]
 
 jobs:
-  build-and-test:
-    name: Build & Test on Node ${{ matrix.node-version }} and ${{ matrix.os }}
+  lint-build-test:
+    name: Lint, Build, Test - Node ${{ matrix.node-version }}, ${{ matrix.os }}
 
     runs-on: ${{ matrix.os }}
     strategy:
@@ -27,6 +27,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
         cache: 'npm'
     - run: npm ci
+    - run: npm run lint
     - run: npm run build
     - run: npm run build-self
     - run: npm run build-self
