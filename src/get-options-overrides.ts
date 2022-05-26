@@ -1,8 +1,8 @@
-import { createFilter as createRollupFilter} from "@rollup/pluginutils";
+import { createFilter as createRollupFilter, normalizePath as normalize } from "@rollup/pluginutils";
 import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { IOptions } from "./ioptions";
-import { join } from "path";
+import * as path from "path";
 import { IContext } from "./context";
 
 export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
@@ -13,7 +13,7 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		noResolve: false,
 		noEmit: false,
 		inlineSourceMap: false,
-		outDir: `${cacheRoot}/placeholder`, // need an outdir that is different from source or tsconfig parsing trips up. https://github.com/Microsoft/TypeScript/issues/24715
+		outDir: normalize(`${cacheRoot}/placeholder`), // need an outdir that is different from source or tsconfig parsing trips up. https://github.com/Microsoft/TypeScript/issues/24715
 		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
 		allowNonTsExtensions: true,
 	};
@@ -42,9 +42,9 @@ function expandIncludeWithDirs(include: string | string[], dirs: string[])
 
 	dirs.forEach(root => {
 		if (include instanceof Array)
-			include.forEach(x => newDirs.push(join(root, x)));
+			include.forEach(x => newDirs.push(normalize(path.join(root, x))));
 		else
-			newDirs.push(join(root, include));
+			newDirs.push(normalize(path.join(root, include)));
 	});
 	return newDirs;
 }

@@ -11,7 +11,7 @@ import { getOptionsOverrides, createFilter } from "../src/get-options-overrides"
 
 setTypescriptModule(ts);
 
-const local = (x: string) => path.resolve(__dirname, x);
+const local = (x: string) => normalize(path.resolve(__dirname, x));
 const cacheDir = local("__temp/get-options-overrides");
 
 // filter expects an absolute path and resolves include/exclude to process.cwd() by default: https://github.com/ezolenko/rollup-plugin-typescript2/pull/321#discussion_r873077874
@@ -51,7 +51,7 @@ const forcedOptions: ts.CompilerOptions = {
 	noEmit: false,
 	noEmitHelpers: false,
 	noResolve: false,
-	outDir: `${cacheDir}/placeholder`, // TODO: fix get-options-overrides.ts on Windows by normalizing the path: https://github.com/ezolenko/rollup-plugin-typescript2/pull/321#discussion_r869710856
+	outDir: `${cacheDir}/placeholder`,
 };
 
 const defaultPreParsedTsConfig: ts.ParsedCommandLine = {
