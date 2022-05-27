@@ -61,8 +61,9 @@ test("LanguageServiceHost", async () => {
 	expect(host.readFile(nonExistent)).toBeFalsy();
 	expect(host.readFile(testFile)).toEqual(unaryFunc);
 	expect(host.useCaseSensitiveFileNames()).toBe(process.platform === "linux");
-	expect(host.realpath(testFile)).toEqual(testFile);
-	expect(host.realpath(linkedTestFile)).toEqual(testFile);
+	// test realpath w/ symlinks. this returns a host path, so expect path.normalize()
+	expect(host.realpath(testFile)).toEqual(path.normalize(testFile));
+	expect(host.realpath(linkedTestFile)).toEqual(path.normalize(testFile));
 
 	// test misc functionality
 	expect(host.getCompilationSettings()).toEqual(testOpts);
