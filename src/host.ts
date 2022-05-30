@@ -104,6 +104,11 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		return tsModule.sys.fileExists(path);
 	}
 
+	public realpath(path: string): string
+	{
+		return tsModule.sys.realpath!(path); // this exists in the default implementation: https://github.com/microsoft/TypeScript/blob/ab2523bbe0352d4486f67b73473d2143ad64d03d/src/compiler/sys.ts#L1288
+	}
+
 	public getTypeRootsVersion(): number
 	{
 		return 0;

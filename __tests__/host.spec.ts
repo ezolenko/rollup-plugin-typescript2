@@ -2,7 +2,7 @@ import { afterAll, beforeAll, test, expect, jest } from "@jest/globals";
 import * as ts from "typescript";
 import * as path from "path";
 import { normalizePath as normalize } from "@rollup/pluginutils";
-import { remove, ensureDir, writeFile } from "fs-extra";
+import { remove, ensureDir, writeFile, ensureSymlink } from "fs-extra";
 
 import { setTypescriptModule } from "../src/tsproxy";
 import { LanguageServiceHost } from "../src/host";
@@ -18,12 +18,14 @@ const unaryFuncSnap = { text: unaryFunc };
 const local = (x: string) => normalize(path.resolve(__dirname, x));
 const testDir = local("__temp/host");
 const testFile = `${testDir}/file.ts`;
+const linkedTestFile = `${testDir}/link.ts`;
 const nonExistent = `${testDir}/this-does-not-exist.ts`;
 
 afterAll(() => remove(testDir));
 beforeAll(async () => {
 	await ensureDir(testDir);
 	await writeFile(testFile, unaryFunc, "utf8");
+	await ensureSymlink(testFile, linkedTestFile);
 });
 
 test("LanguageServiceHost", async () => {
@@ -55,10 +57,13 @@ test("LanguageServiceHost", async () => {
 	expect(host.directoryExists(nonExistent)).toBeFalsy();
 	expect(host.fileExists(nonExistent)).toBeFalsy();
 	expect(host.fileExists(testFile)).toBeTruthy();
-	expect(host.readDirectory(testDir)).toEqual([testFile]);
+	expect(host.readDirectory(testDir)).toEqual([testFile, linkedTestFile]);
 	expect(host.readFile(nonExistent)).toBeFalsy();
 	expect(host.readFile(testFile)).toEqual(unaryFunc);
 	expect(host.useCaseSensitiveFileNames()).toBe(process.platform === "linux");
+	// test realpath w/ symlinks. this returns a host path, so expect path.normalize()
+	expect(host.realpath(testFile)).toEqual(path.normalize(testFile));
+	expect(host.realpath(linkedTestFile)).toEqual(path.normalize(testFile));
 
 	// test misc functionality
 	expect(host.getCompilationSettings()).toEqual(testOpts);
