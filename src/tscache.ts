@@ -180,13 +180,13 @@ export class TsCache
 
 		if (acyclic)
 		{
-			alg.topsort(this.dependencyTree).forEach(id => cb(id));
+			_.each(alg.topsort(this.dependencyTree), (id: string) => cb(id));
 			return;
 		}
 
 		this.context.info(yellow("import tree has cycles"));
 
-		this.dependencyTree.nodes().forEach(id => cb(id));
+		_.each(this.dependencyTree.nodes(), (id: string) => cb(id));
 	}
 
 	public done()
@@ -264,7 +264,7 @@ export class TsCache
 		if (this.ambientTypesDirty)
 			this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
 
-		typeNames.forEach(this.typesCache.touch, this);
+		_.each(typeNames, (name) => this.typesCache.touch(name));
 	}
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -342,9 +342,8 @@ export class TsCache
 
 		const dependencies = alg.dijkstra(this.dependencyTree, id);
 
-		return Object.keys(dependencies).some(node =>
+		return _.some(dependencies, (dependency, node) =>
 		{
-			const dependency = dependencies[node];
 			if (!node || dependency.distance === Infinity)
 				return false;
 

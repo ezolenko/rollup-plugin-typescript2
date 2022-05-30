@@ -303,7 +303,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!parsedConfig.options.declaration)
 				return;
 
-			parsedConfig.fileNames.forEach((name) =>
+			_.each(parsedConfig.fileNames, (name) =>
 			{
 				const key = normalize(name);
 				if (key in declarations)
@@ -370,9 +370,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				}
 			};
 
-			Object.keys(declarations).forEach((key) =>
+			_.each(declarations, ({ type, map }, key) =>
 			{
-				const { type, map } = declarations[key];
 				emitDeclaration(key, ".d.ts", type);
 				emitDeclaration(key, ".d.ts.map", map);
 			});

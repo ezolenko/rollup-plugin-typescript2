@@ -3,6 +3,7 @@ import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
 import { IOptions } from "./ioptions";
 import * as path from "path";
+import * as _ from "lodash";
 import { IContext } from "./context";
 
 export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
