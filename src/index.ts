@@ -154,26 +154,24 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			// TODO: use module resolution cache
 			const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
+			let resolved = result.resolvedModule?.resolvedFileName;
 
-			if (result.resolvedModule && result.resolvedModule.resolvedFileName)
-			{
-				if (filter(result.resolvedModule.resolvedFileName))
-					cache().setDependency(result.resolvedModule.resolvedFileName, importer);
+			if (!resolved)
+				return;
 
-				if (result.resolvedModule.resolvedFileName.endsWith(".d.ts"))
-					return;
+			if (filter(resolved))
+				cache().setDependency(resolved, importer);
 
-				const resolved = pluginOptions.rollupCommonJSResolveHack
-					? resolve.sync(result.resolvedModule.resolvedFileName)
-					: result.resolvedModule.resolvedFileName;
+			if (resolved.endsWith(".d.ts"))
+				return;
 
-				context.debug(() => `${blue("resolving")} '${importee}' imported by '${importer}'`);
-				context.debug(() => `    to '${resolved}'`);
+			if (pluginOptions.rollupCommonJSResolveHack)
+				resolved = resolve.sync(resolved);
 
-				return pathNormalize(resolved);
-			}
+			context.debug(() => `${blue("resolving")} '${importee}' imported by '${importer}'`);
+			context.debug(() => `    to '${resolved}'`);
 
-			return;
+			return pathNormalize(resolved); // use host OS separators to fix Windows issue: https://github.com/ezolenko/rollup-plugin-typescript2/pull/251
 		},
 
 		load(id)
@@ -229,39 +227,37 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
 			}
 
-			if (result)
+			if (!result)
+				return undefined;
+
+			if (result.references)
+				result.references.map(normalize).map(allImportedFiles.add, allImportedFiles);
+
+			if (watchMode && this.addWatchFile && result.references)
 			{
-				if (result.references)
-					result.references.map(normalize).map(allImportedFiles.add, allImportedFiles);
-
-				if (watchMode && this.addWatchFile && result.references)
-				{
-					if (tsConfigPath)
-						this.addWatchFile(tsConfigPath);
-					result.references.map(this.addWatchFile, this);
-					context.debug(() => `${green("    watching")}: ${result.references!.join("\nrpt2:               ")}`);
-				}
-
-				if (result.dts)
-				{
-					const key = normalize(id);
-					declarations[key] = { type: result.dts, map: result.dtsmap };
-					context.debug(() => `${blue("generated declarations")} for '${key}'`);
-				}
-
-				const transformResult: TransformResult = { code: result.code, map: { mappings: "" } };
-
-				if (result.map)
-				{
-					if (pluginOptions.sourceMapCallback)
-						pluginOptions.sourceMapCallback(id, result.map);
-					transformResult.map = JSON.parse(result.map);
-				}
-
-				return transformResult;
+				if (tsConfigPath)
+					this.addWatchFile(tsConfigPath);
+				result.references.map(this.addWatchFile, this);
+				context.debug(() => `${green("    watching")}: ${result.references!.join("\nrpt2:               ")}`);
 			}
 
-			return undefined;
+			if (result.dts)
+			{
+				const key = normalize(id);
+				declarations[key] = { type: result.dts, map: result.dtsmap };
+				context.debug(() => `${blue("generated declarations")} for '${key}'`);
+			}
+
+			const transformResult: TransformResult = { code: result.code, map: { mappings: "" } };
+
+			if (result.map)
+			{
+				if (pluginOptions.sourceMapCallback)
+					pluginOptions.sourceMapCallback(id, result.map);
+				transformResult.map = JSON.parse(result.map);
+			}
+
+			return transformResult;
 		},
 
 		generateBundle(bundleOptions)
@@ -330,44 +326,40 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
 					fileName = fileName.split("?", 1) + extension;
 
-				// If 'useTsconfigDeclarationDir' is given in the
-				// plugin options, directly write to the path provided
-				// by Typescript's LanguageService (which may not be
-				// under Rollup's output directory, and thus can't be
-				// emitted as an asset).
+				// If 'useTsconfigDeclarationDir' is in plugin options, directly write to 'declarationDir'.
+				// This may not be under Rollup's output directory, and thus can't be emitted as an asset.
 				if (pluginOptions.useTsconfigDeclarationDir)
 				{
 					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${fileName}'`);
 					tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
+					return;
 				}
-				else
+
+				// don't mutate the entry because generateBundle gets called multiple times
+				let entryText = entry.text
+				const declarationDir = (_output.file ? dirname(_output.file) : _output.dir) as string;
+				const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`
+
+				// modify declaration map sources to correct relative path
+				if (extension === ".d.ts.map")
 				{
-					// don't mutate the entry because generateBundle gets called multiple times
-					let entryText = entry.text
-					const declarationDir = (_output.file ? dirname(_output.file) : _output.dir) as string;
-					const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`
-
-					// modify declaration map sources to correct relative path
-					if (extension === ".d.ts.map")
+					const parsedText = JSON.parse(entryText) as SourceMap;
+					// invert back to absolute, then make relative to declarationDir
+					parsedText.sources = parsedText.sources.map(source =>
 					{
-						const parsedText = JSON.parse(entryText) as SourceMap;
-						// invert back to absolute, then make relative to declarationDir
-						parsedText.sources = parsedText.sources.map(source =>
-						{
-							const absolutePath = pathResolve(cachePlaceholder, source);
-							return normalize(relative(declarationDir, absolutePath));
-						});
-						entryText = JSON.stringify(parsedText);
-					}
-
-					const relativePath = normalize(relative(cachePlaceholder, fileName));
-					context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
-					this.emitFile({
-						type: "asset",
-						source: entryText,
-						fileName: relativePath,
+						const absolutePath = pathResolve(cachePlaceholder, source);
+						return normalize(relative(declarationDir, absolutePath));
 					});
+					entryText = JSON.stringify(parsedText);
 				}
+
+				const relativePath = normalize(relative(cachePlaceholder, fileName));
+				context.debug(() => `${blue("emitting declarations")} for '${key}' to '${relativePath}'`);
+				this.emitFile({
+					type: "asset",
+					source: entryText,
+					fileName: relativePath,
+				});
 			};
 
 			Object.keys(declarations).forEach((key) =>
