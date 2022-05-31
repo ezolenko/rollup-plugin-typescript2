@@ -328,7 +328,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				let fileName = entry.name;
 				if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
-					fileName = fileName.split("vue?", 1) + extension;
+					fileName = fileName.split(".vue?", 1) + extension;
 
 				// If 'useTsconfigDeclarationDir' is given in the
 				// plugin options, directly write to the path provided
