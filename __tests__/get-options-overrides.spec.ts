@@ -49,6 +49,7 @@ const forcedOptions: ts.CompilerOptions = {
 	inlineSourceMap: false,
 	moduleResolution: ts.ModuleResolutionKind.NodeJs,
 	noEmit: false,
+	noEmitOnError: false,
 	noEmitHelpers: false,
 	noResolve: false,
 	outDir: `${cacheDir}/placeholder`,
