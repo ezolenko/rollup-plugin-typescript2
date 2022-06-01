@@ -22533,7 +22533,7 @@ const typescript = (options) => {
                 context.info(`tslib version: ${tslibVersion}`);
                 if (this.meta)
                     context.info(`rollup version: ${this.meta.rollupVersion}`);
-                context.info(`rollup-plugin-typescript2 version: 0.32.0`);
+                context.info(`rollup-plugin-typescript2 version: 0.32.1`);
                 context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
                 context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
                 context.debug(() => `tsconfig path: ${tsConfigPath}`);
