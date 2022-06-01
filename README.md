@@ -41,7 +41,8 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 * `noEmitHelpers`: false
 * `importHelpers`: true
 * `noResolve`: false
-* `noEmit`: false
+* `noEmit`: false (Rollup controls emit)
+* `noEmitOnError`: false (Rollup controls emit. See [#254](https://github.com/ezolenko/rollup-plugin-typescript2/issues/254) and the `abortOnError` plugin option below)
 * `inlineSourceMap`: false (see [#71](https://github.com/ezolenko/rollup-plugin-typescript2/issues/71))
 * `outDir`: `./placeholder` in cache root, see [#83](https://github.com/ezolenko/rollup-plugin-typescript2/issues/83) and [Microsoft/TypeScript#24715](https://github.com/Microsoft/TypeScript/issues/24715)
 * `declarationDir`: Rollup's `output.file` or `output.dir` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
