@@ -337,12 +337,12 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				// don't mutate the entry because generateBundle gets called multiple times
 				let entryText = entry.text
-				const declarationDir = (_output.file ? dirname(_output.file) : _output.dir) as string;
 				const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`
 
-				// modify declaration map sources to correct relative path
-				if (extension === ".d.ts.map")
+				// modify declaration map sources to correct relative path (only if outputting)
+				if (extension === ".d.ts.map" && (_output?.file || _output?.dir))
 				{
+					const declarationDir = (_output.file ? dirname(_output.file) : _output.dir) as string;
 					const parsedText = JSON.parse(entryText) as SourceMap;
 					// invert back to absolute, then make relative to declarationDir
 					parsedText.sources = parsedText.sources.map(source =>
