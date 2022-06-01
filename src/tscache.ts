@@ -264,7 +264,7 @@ export class TsCache
 		if (this.ambientTypesDirty)
 			this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
 
-		typeNames.forEach(this.typesCache.touch, this);
+		typeNames.forEach(this.typesCache.touch, this.typesCache);
 	}
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
