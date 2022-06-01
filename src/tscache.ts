@@ -70,7 +70,7 @@ export function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnap
 	return _.compact(info.referencedFiles.concat(info.importedFiles).map((reference) =>
 	{
 		const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
-		return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
+		return resolved.resolvedModule?.resolvedFileName;
 	}));
 }
 
