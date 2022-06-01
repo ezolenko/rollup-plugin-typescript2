@@ -22,6 +22,7 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[];
     readFile(path: string, encoding?: string): string | undefined;
     fileExists(path: string): boolean;
+    realpath(path: string): string;
     getTypeRootsVersion(): number;
     directoryExists(directoryName: string): boolean;
     getDirectories(directoryName: string): string[];

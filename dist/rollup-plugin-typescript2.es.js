@@ -1,13 +1,13 @@
 /* eslint-disable */
-import require$$0$1 from 'crypto';
-import { emptyDirSync, readJsonSync, writeJsonSync, ensureFileSync, removeSync, pathExistsSync, readdirSync as readdirSync$1, statSync } from 'fs-extra';
-import require$$0$3, { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
-import require$$2 from 'util';
-import require$$0$2 from 'os';
 import * as require$$0 from 'path';
-import require$$0__default, { join, dirname, normalize as normalize$1, resolve as resolve$1, relative } from 'path';
+import require$$0__default, { dirname, normalize, resolve as resolve$1, relative } from 'path';
+import { normalizePath, createFilter as createFilter$1 } from '@rollup/pluginutils';
+import require$$2 from 'util';
+import require$$0$1 from 'os';
 import * as resolve from 'resolve';
-import { createFilter as createFilter$1 } from '@rollup/pluginutils';
+import require$$0$2, { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
+import { emptyDirSync, readJsonSync, writeJsonSync, ensureFileSync, removeSync, pathExistsSync, readdirSync as readdirSync$1, statSync } from 'fs-extra';
+import require$$0$3 from 'crypto';
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -17216,1939 +17216,6 @@ var lodash$1 = {exports: {}};
 }.call(commonjsGlobal));
 }(lodash$1, lodash$1.exports));
 
-var VerbosityLevel;
-(function (VerbosityLevel) {
-    VerbosityLevel[VerbosityLevel["Error"] = 0] = "Error";
-    VerbosityLevel[VerbosityLevel["Warning"] = 1] = "Warning";
-    VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
-    VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
-})(VerbosityLevel || (VerbosityLevel = {}));
-class ConsoleContext {
-    constructor(verbosity, prefix = "") {
-        this.verbosity = verbosity;
-        this.prefix = prefix;
-    }
-    warn(message) {
-        if (this.verbosity < VerbosityLevel.Warning)
-            return;
-        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
-    }
-    error(message) {
-        if (this.verbosity < VerbosityLevel.Error)
-            return;
-        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
-    }
-    info(message) {
-        if (this.verbosity < VerbosityLevel.Info)
-            return;
-        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
-    }
-    debug(message) {
-        if (this.verbosity < VerbosityLevel.Debug)
-            return;
-        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
-    }
-}
-
-class RollupContext {
-    constructor(verbosity, bail, context, prefix = "") {
-        this.verbosity = verbosity;
-        this.bail = bail;
-        this.context = context;
-        this.prefix = prefix;
-        this.hasContext = true;
-        this.hasContext = lodash$1.exports.isFunction(this.context.warn) && lodash$1.exports.isFunction(this.context.error);
-    }
-    warn(message) {
-        if (this.verbosity < VerbosityLevel.Warning)
-            return;
-        const text = lodash$1.exports.isFunction(message) ? message() : message;
-        if (this.hasContext)
-            this.context.warn(`${text}`);
-        else
-            console.log(`${this.prefix}${text}`);
-    }
-    error(message) {
-        if (this.verbosity < VerbosityLevel.Error)
-            return;
-        const text = lodash$1.exports.isFunction(message) ? message() : message;
-        if (this.hasContext) {
-            if (this.bail)
-                this.context.error(`${text}`);
-            else
-                this.context.warn(`${text}`);
-        }
-        else
-            console.log(`${this.prefix}${text}`);
-    }
-    info(message) {
-        if (this.verbosity < VerbosityLevel.Info)
-            return;
-        const text = lodash$1.exports.isFunction(message) ? message() : message;
-        console.log(`${this.prefix}${text}`);
-    }
-    debug(message) {
-        if (this.verbosity < VerbosityLevel.Debug)
-            return;
-        const text = lodash$1.exports.isFunction(message) ? message() : message;
-        console.log(`${this.prefix}${text}`);
-    }
-}
-
-let tsModule;
-function setTypescriptModule(override) {
-    tsModule = override;
-}
-
-function normalize(fileName) {
-    return fileName.split("\\").join("/");
-}
-
-class LanguageServiceHost {
-    constructor(parsedConfig, transformers, cwd) {
-        this.parsedConfig = parsedConfig;
-        this.transformers = transformers;
-        this.snapshots = {};
-        this.versions = {};
-        this.fileNames = new Set(parsedConfig.fileNames);
-        this.cwd = cwd;
-    }
-    reset() {
-        this.snapshots = {};
-        this.versions = {};
-    }
-    setLanguageService(service) {
-        this.service = service;
-    }
-    setSnapshot(fileName, data) {
-        fileName = normalize(fileName);
-        const snapshot = tsModule.ScriptSnapshot.fromString(data);
-        this.snapshots[fileName] = snapshot;
-        this.versions[fileName] = (this.versions[fileName] || 0) + 1;
-        this.fileNames.add(fileName);
-        return snapshot;
-    }
-    getScriptSnapshot(fileName) {
-        fileName = normalize(fileName);
-        if (lodash$1.exports.has(this.snapshots, fileName))
-            return this.snapshots[fileName];
-        const source = tsModule.sys.readFile(fileName);
-        if (source) {
-            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
-            this.versions[fileName] = (this.versions[fileName] || 0) + 1;
-            return this.snapshots[fileName];
-        }
-        return undefined;
-    }
-    getCurrentDirectory() {
-        return this.cwd;
-    }
-    getScriptVersion(fileName) {
-        fileName = normalize(fileName);
-        return (this.versions[fileName] || 0).toString();
-    }
-    getScriptFileNames() {
-        return Array.from(this.fileNames.values());
-    }
-    getCompilationSettings() {
-        return this.parsedConfig.options;
-    }
-    getDefaultLibFileName(opts) {
-        return tsModule.getDefaultLibFilePath(opts);
-    }
-    useCaseSensitiveFileNames() {
-        return tsModule.sys.useCaseSensitiveFileNames;
-    }
-    readDirectory(path, extensions, exclude, include) {
-        return tsModule.sys.readDirectory(path, extensions, exclude, include);
-    }
-    readFile(path, encoding) {
-        return tsModule.sys.readFile(path, encoding);
-    }
-    fileExists(path) {
-        return tsModule.sys.fileExists(path);
-    }
-    getTypeRootsVersion() {
-        return 0;
-    }
-    directoryExists(directoryName) {
-        return tsModule.sys.directoryExists(directoryName);
-    }
-    getDirectories(directoryName) {
-        return tsModule.sys.getDirectories(directoryName);
-    }
-    getCustomTransformers() {
-        if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
-            return undefined;
-        const transformer = {
-            before: [],
-            after: [],
-            afterDeclarations: [],
-        };
-        for (const creator of this.transformers) {
-            const factory = creator(this.service);
-            if (factory.before)
-                transformer.before = lodash$1.exports.concat(transformer.before, factory.before);
-            if (factory.after)
-                transformer.after = lodash$1.exports.concat(transformer.after, factory.after);
-            if (factory.afterDeclarations)
-                transformer.afterDeclarations = lodash$1.exports.concat(transformer.afterDeclarations, factory.afterDeclarations);
-        }
-        return transformer;
-    }
-    trace(line) {
-        console.log(line);
-    }
-}
-
-/* global window */
-
-var lodash;
-
-if (typeof commonjsRequire === "function") {
-  try {
-    lodash = {
-      clone: require("lodash/clone"),
-      constant: require("lodash/constant"),
-      each: require("lodash/each"),
-      filter: require("lodash/filter"),
-      has:  require("lodash/has"),
-      isArray: require("lodash/isArray"),
-      isEmpty: require("lodash/isEmpty"),
-      isFunction: require("lodash/isFunction"),
-      isUndefined: require("lodash/isUndefined"),
-      keys: require("lodash/keys"),
-      map: require("lodash/map"),
-      reduce: require("lodash/reduce"),
-      size: require("lodash/size"),
-      transform: require("lodash/transform"),
-      union: require("lodash/union"),
-      values: require("lodash/values")
-    };
-  } catch (e) {
-    // continue regardless of error
-  }
-}
-
-if (!lodash) {
-  lodash = window._;
-}
-
-var lodash_1 = lodash;
-
-var _$b = lodash_1;
-
-var graph = Graph$2;
-
-var DEFAULT_EDGE_NAME = "\x00";
-var GRAPH_NODE = "\x00";
-var EDGE_KEY_DELIM = "\x01";
-
-// Implementation notes:
-//
-//  * Node id query functions should return string ids for the nodes
-//  * Edge id query functions should return an "edgeObj", edge object, that is
-//    composed of enough information to uniquely identify an edge: {v, w, name}.
-//  * Internally we use an "edgeId", a stringified form of the edgeObj, to
-//    reference edges. This is because we need a performant way to look these
-//    edges up and, object properties, which have string keys, are the closest
-//    we're going to get to a performant hashtable in JavaScript.
-
-function Graph$2(opts) {
-  this._isDirected = _$b.has(opts, "directed") ? opts.directed : true;
-  this._isMultigraph = _$b.has(opts, "multigraph") ? opts.multigraph : false;
-  this._isCompound = _$b.has(opts, "compound") ? opts.compound : false;
-
-  // Label for the graph itself
-  this._label = undefined;
-
-  // Defaults to be set when creating a new node
-  this._defaultNodeLabelFn = _$b.constant(undefined);
-
-  // Defaults to be set when creating a new edge
-  this._defaultEdgeLabelFn = _$b.constant(undefined);
-
-  // v -> label
-  this._nodes = {};
-
-  if (this._isCompound) {
-    // v -> parent
-    this._parent = {};
-
-    // v -> children
-    this._children = {};
-    this._children[GRAPH_NODE] = {};
-  }
-
-  // v -> edgeObj
-  this._in = {};
-
-  // u -> v -> Number
-  this._preds = {};
-
-  // v -> edgeObj
-  this._out = {};
-
-  // v -> w -> Number
-  this._sucs = {};
-
-  // e -> edgeObj
-  this._edgeObjs = {};
-
-  // e -> label
-  this._edgeLabels = {};
-}
-
-/* Number of nodes in the graph. Should only be changed by the implementation. */
-Graph$2.prototype._nodeCount = 0;
-
-/* Number of edges in the graph. Should only be changed by the implementation. */
-Graph$2.prototype._edgeCount = 0;
-
-
-/* === Graph functions ========= */
-
-Graph$2.prototype.isDirected = function() {
-  return this._isDirected;
-};
-
-Graph$2.prototype.isMultigraph = function() {
-  return this._isMultigraph;
-};
-
-Graph$2.prototype.isCompound = function() {
-  return this._isCompound;
-};
-
-Graph$2.prototype.setGraph = function(label) {
-  this._label = label;
-  return this;
-};
-
-Graph$2.prototype.graph = function() {
-  return this._label;
-};
-
-
-/* === Node functions ========== */
-
-Graph$2.prototype.setDefaultNodeLabel = function(newDefault) {
-  if (!_$b.isFunction(newDefault)) {
-    newDefault = _$b.constant(newDefault);
-  }
-  this._defaultNodeLabelFn = newDefault;
-  return this;
-};
-
-Graph$2.prototype.nodeCount = function() {
-  return this._nodeCount;
-};
-
-Graph$2.prototype.nodes = function() {
-  return _$b.keys(this._nodes);
-};
-
-Graph$2.prototype.sources = function() {
-  var self = this;
-  return _$b.filter(this.nodes(), function(v) {
-    return _$b.isEmpty(self._in[v]);
-  });
-};
-
-Graph$2.prototype.sinks = function() {
-  var self = this;
-  return _$b.filter(this.nodes(), function(v) {
-    return _$b.isEmpty(self._out[v]);
-  });
-};
-
-Graph$2.prototype.setNodes = function(vs, value) {
-  var args = arguments;
-  var self = this;
-  _$b.each(vs, function(v) {
-    if (args.length > 1) {
-      self.setNode(v, value);
-    } else {
-      self.setNode(v);
-    }
-  });
-  return this;
-};
-
-Graph$2.prototype.setNode = function(v, value) {
-  if (_$b.has(this._nodes, v)) {
-    if (arguments.length > 1) {
-      this._nodes[v] = value;
-    }
-    return this;
-  }
-
-  this._nodes[v] = arguments.length > 1 ? value : this._defaultNodeLabelFn(v);
-  if (this._isCompound) {
-    this._parent[v] = GRAPH_NODE;
-    this._children[v] = {};
-    this._children[GRAPH_NODE][v] = true;
-  }
-  this._in[v] = {};
-  this._preds[v] = {};
-  this._out[v] = {};
-  this._sucs[v] = {};
-  ++this._nodeCount;
-  return this;
-};
-
-Graph$2.prototype.node = function(v) {
-  return this._nodes[v];
-};
-
-Graph$2.prototype.hasNode = function(v) {
-  return _$b.has(this._nodes, v);
-};
-
-Graph$2.prototype.removeNode =  function(v) {
-  var self = this;
-  if (_$b.has(this._nodes, v)) {
-    var removeEdge = function(e) { self.removeEdge(self._edgeObjs[e]); };
-    delete this._nodes[v];
-    if (this._isCompound) {
-      this._removeFromParentsChildList(v);
-      delete this._parent[v];
-      _$b.each(this.children(v), function(child) {
-        self.setParent(child);
-      });
-      delete this._children[v];
-    }
-    _$b.each(_$b.keys(this._in[v]), removeEdge);
-    delete this._in[v];
-    delete this._preds[v];
-    _$b.each(_$b.keys(this._out[v]), removeEdge);
-    delete this._out[v];
-    delete this._sucs[v];
-    --this._nodeCount;
-  }
-  return this;
-};
-
-Graph$2.prototype.setParent = function(v, parent) {
-  if (!this._isCompound) {
-    throw new Error("Cannot set parent in a non-compound graph");
-  }
-
-  if (_$b.isUndefined(parent)) {
-    parent = GRAPH_NODE;
-  } else {
-    // Coerce parent to string
-    parent += "";
-    for (var ancestor = parent;
-      !_$b.isUndefined(ancestor);
-      ancestor = this.parent(ancestor)) {
-      if (ancestor === v) {
-        throw new Error("Setting " + parent+ " as parent of " + v +
-                        " would create a cycle");
-      }
-    }
-
-    this.setNode(parent);
-  }
-
-  this.setNode(v);
-  this._removeFromParentsChildList(v);
-  this._parent[v] = parent;
-  this._children[parent][v] = true;
-  return this;
-};
-
-Graph$2.prototype._removeFromParentsChildList = function(v) {
-  delete this._children[this._parent[v]][v];
-};
-
-Graph$2.prototype.parent = function(v) {
-  if (this._isCompound) {
-    var parent = this._parent[v];
-    if (parent !== GRAPH_NODE) {
-      return parent;
-    }
-  }
-};
-
-Graph$2.prototype.children = function(v) {
-  if (_$b.isUndefined(v)) {
-    v = GRAPH_NODE;
-  }
-
-  if (this._isCompound) {
-    var children = this._children[v];
-    if (children) {
-      return _$b.keys(children);
-    }
-  } else if (v === GRAPH_NODE) {
-    return this.nodes();
-  } else if (this.hasNode(v)) {
-    return [];
-  }
-};
-
-Graph$2.prototype.predecessors = function(v) {
-  var predsV = this._preds[v];
-  if (predsV) {
-    return _$b.keys(predsV);
-  }
-};
-
-Graph$2.prototype.successors = function(v) {
-  var sucsV = this._sucs[v];
-  if (sucsV) {
-    return _$b.keys(sucsV);
-  }
-};
-
-Graph$2.prototype.neighbors = function(v) {
-  var preds = this.predecessors(v);
-  if (preds) {
-    return _$b.union(preds, this.successors(v));
-  }
-};
-
-Graph$2.prototype.isLeaf = function (v) {
-  var neighbors;
-  if (this.isDirected()) {
-    neighbors = this.successors(v);
-  } else {
-    neighbors = this.neighbors(v);
-  }
-  return neighbors.length === 0;
-};
-
-Graph$2.prototype.filterNodes = function(filter) {
-  var copy = new this.constructor({
-    directed: this._isDirected,
-    multigraph: this._isMultigraph,
-    compound: this._isCompound
-  });
-
-  copy.setGraph(this.graph());
-
-  var self = this;
-  _$b.each(this._nodes, function(value, v) {
-    if (filter(v)) {
-      copy.setNode(v, value);
-    }
-  });
-
-  _$b.each(this._edgeObjs, function(e) {
-    if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
-      copy.setEdge(e, self.edge(e));
-    }
-  });
-
-  var parents = {};
-  function findParent(v) {
-    var parent = self.parent(v);
-    if (parent === undefined || copy.hasNode(parent)) {
-      parents[v] = parent;
-      return parent;
-    } else if (parent in parents) {
-      return parents[parent];
-    } else {
-      return findParent(parent);
-    }
-  }
-
-  if (this._isCompound) {
-    _$b.each(copy.nodes(), function(v) {
-      copy.setParent(v, findParent(v));
-    });
-  }
-
-  return copy;
-};
-
-/* === Edge functions ========== */
-
-Graph$2.prototype.setDefaultEdgeLabel = function(newDefault) {
-  if (!_$b.isFunction(newDefault)) {
-    newDefault = _$b.constant(newDefault);
-  }
-  this._defaultEdgeLabelFn = newDefault;
-  return this;
-};
-
-Graph$2.prototype.edgeCount = function() {
-  return this._edgeCount;
-};
-
-Graph$2.prototype.edges = function() {
-  return _$b.values(this._edgeObjs);
-};
-
-Graph$2.prototype.setPath = function(vs, value) {
-  var self = this;
-  var args = arguments;
-  _$b.reduce(vs, function(v, w) {
-    if (args.length > 1) {
-      self.setEdge(v, w, value);
-    } else {
-      self.setEdge(v, w);
-    }
-    return w;
-  });
-  return this;
-};
-
-/*
- * setEdge(v, w, [value, [name]])
- * setEdge({ v, w, [name] }, [value])
- */
-Graph$2.prototype.setEdge = function() {
-  var v, w, name, value;
-  var valueSpecified = false;
-  var arg0 = arguments[0];
-
-  if (typeof arg0 === "object" && arg0 !== null && "v" in arg0) {
-    v = arg0.v;
-    w = arg0.w;
-    name = arg0.name;
-    if (arguments.length === 2) {
-      value = arguments[1];
-      valueSpecified = true;
-    }
-  } else {
-    v = arg0;
-    w = arguments[1];
-    name = arguments[3];
-    if (arguments.length > 2) {
-      value = arguments[2];
-      valueSpecified = true;
-    }
-  }
-
-  v = "" + v;
-  w = "" + w;
-  if (!_$b.isUndefined(name)) {
-    name = "" + name;
-  }
-
-  var e = edgeArgsToId(this._isDirected, v, w, name);
-  if (_$b.has(this._edgeLabels, e)) {
-    if (valueSpecified) {
-      this._edgeLabels[e] = value;
-    }
-    return this;
-  }
-
-  if (!_$b.isUndefined(name) && !this._isMultigraph) {
-    throw new Error("Cannot set a named edge when isMultigraph = false");
-  }
-
-  // It didn't exist, so we need to create it.
-  // First ensure the nodes exist.
-  this.setNode(v);
-  this.setNode(w);
-
-  this._edgeLabels[e] = valueSpecified ? value : this._defaultEdgeLabelFn(v, w, name);
-
-  var edgeObj = edgeArgsToObj(this._isDirected, v, w, name);
-  // Ensure we add undirected edges in a consistent way.
-  v = edgeObj.v;
-  w = edgeObj.w;
-
-  Object.freeze(edgeObj);
-  this._edgeObjs[e] = edgeObj;
-  incrementOrInitEntry(this._preds[w], v);
-  incrementOrInitEntry(this._sucs[v], w);
-  this._in[w][e] = edgeObj;
-  this._out[v][e] = edgeObj;
-  this._edgeCount++;
-  return this;
-};
-
-Graph$2.prototype.edge = function(v, w, name) {
-  var e = (arguments.length === 1
-    ? edgeObjToId(this._isDirected, arguments[0])
-    : edgeArgsToId(this._isDirected, v, w, name));
-  return this._edgeLabels[e];
-};
-
-Graph$2.prototype.hasEdge = function(v, w, name) {
-  var e = (arguments.length === 1
-    ? edgeObjToId(this._isDirected, arguments[0])
-    : edgeArgsToId(this._isDirected, v, w, name));
-  return _$b.has(this._edgeLabels, e);
-};
-
-Graph$2.prototype.removeEdge = function(v, w, name) {
-  var e = (arguments.length === 1
-    ? edgeObjToId(this._isDirected, arguments[0])
-    : edgeArgsToId(this._isDirected, v, w, name));
-  var edge = this._edgeObjs[e];
-  if (edge) {
-    v = edge.v;
-    w = edge.w;
-    delete this._edgeLabels[e];
-    delete this._edgeObjs[e];
-    decrementOrRemoveEntry(this._preds[w], v);
-    decrementOrRemoveEntry(this._sucs[v], w);
-    delete this._in[w][e];
-    delete this._out[v][e];
-    this._edgeCount--;
-  }
-  return this;
-};
-
-Graph$2.prototype.inEdges = function(v, u) {
-  var inV = this._in[v];
-  if (inV) {
-    var edges = _$b.values(inV);
-    if (!u) {
-      return edges;
-    }
-    return _$b.filter(edges, function(edge) { return edge.v === u; });
-  }
-};
-
-Graph$2.prototype.outEdges = function(v, w) {
-  var outV = this._out[v];
-  if (outV) {
-    var edges = _$b.values(outV);
-    if (!w) {
-      return edges;
-    }
-    return _$b.filter(edges, function(edge) { return edge.w === w; });
-  }
-};
-
-Graph$2.prototype.nodeEdges = function(v, w) {
-  var inEdges = this.inEdges(v, w);
-  if (inEdges) {
-    return inEdges.concat(this.outEdges(v, w));
-  }
-};
-
-function incrementOrInitEntry(map, k) {
-  if (map[k]) {
-    map[k]++;
-  } else {
-    map[k] = 1;
-  }
-}
-
-function decrementOrRemoveEntry(map, k) {
-  if (!--map[k]) { delete map[k]; }
-}
-
-function edgeArgsToId(isDirected, v_, w_, name) {
-  var v = "" + v_;
-  var w = "" + w_;
-  if (!isDirected && v > w) {
-    var tmp = v;
-    v = w;
-    w = tmp;
-  }
-  return v + EDGE_KEY_DELIM + w + EDGE_KEY_DELIM +
-             (_$b.isUndefined(name) ? DEFAULT_EDGE_NAME : name);
-}
-
-function edgeArgsToObj(isDirected, v_, w_, name) {
-  var v = "" + v_;
-  var w = "" + w_;
-  if (!isDirected && v > w) {
-    var tmp = v;
-    v = w;
-    w = tmp;
-  }
-  var edgeObj =  { v: v, w: w };
-  if (name) {
-    edgeObj.name = name;
-  }
-  return edgeObj;
-}
-
-function edgeObjToId(isDirected, edgeObj) {
-  return edgeArgsToId(isDirected, edgeObj.v, edgeObj.w, edgeObj.name);
-}
-
-var version = '2.1.8';
-
-// Includes only the "core" of graphlib
-var lib$1 = {
-  Graph: graph,
-  version: version
-};
-
-var _$a = lodash_1;
-var Graph$1 = graph;
-
-var json = {
-  write: write,
-  read: read
-};
-
-function write(g) {
-  var json = {
-    options: {
-      directed: g.isDirected(),
-      multigraph: g.isMultigraph(),
-      compound: g.isCompound()
-    },
-    nodes: writeNodes(g),
-    edges: writeEdges(g)
-  };
-  if (!_$a.isUndefined(g.graph())) {
-    json.value = _$a.clone(g.graph());
-  }
-  return json;
-}
-
-function writeNodes(g) {
-  return _$a.map(g.nodes(), function(v) {
-    var nodeValue = g.node(v);
-    var parent = g.parent(v);
-    var node = { v: v };
-    if (!_$a.isUndefined(nodeValue)) {
-      node.value = nodeValue;
-    }
-    if (!_$a.isUndefined(parent)) {
-      node.parent = parent;
-    }
-    return node;
-  });
-}
-
-function writeEdges(g) {
-  return _$a.map(g.edges(), function(e) {
-    var edgeValue = g.edge(e);
-    var edge = { v: e.v, w: e.w };
-    if (!_$a.isUndefined(e.name)) {
-      edge.name = e.name;
-    }
-    if (!_$a.isUndefined(edgeValue)) {
-      edge.value = edgeValue;
-    }
-    return edge;
-  });
-}
-
-function read(json) {
-  var g = new Graph$1(json.options).setGraph(json.value);
-  _$a.each(json.nodes, function(entry) {
-    g.setNode(entry.v, entry.value);
-    if (entry.parent) {
-      g.setParent(entry.v, entry.parent);
-    }
-  });
-  _$a.each(json.edges, function(entry) {
-    g.setEdge({ v: entry.v, w: entry.w, name: entry.name }, entry.value);
-  });
-  return g;
-}
-
-var _$9 = lodash_1;
-
-var components_1 = components;
-
-function components(g) {
-  var visited = {};
-  var cmpts = [];
-  var cmpt;
-
-  function dfs(v) {
-    if (_$9.has(visited, v)) return;
-    visited[v] = true;
-    cmpt.push(v);
-    _$9.each(g.successors(v), dfs);
-    _$9.each(g.predecessors(v), dfs);
-  }
-
-  _$9.each(g.nodes(), function(v) {
-    cmpt = [];
-    dfs(v);
-    if (cmpt.length) {
-      cmpts.push(cmpt);
-    }
-  });
-
-  return cmpts;
-}
-
-var _$8 = lodash_1;
-
-var priorityQueue = PriorityQueue$2;
-
-/**
- * A min-priority queue data structure. This algorithm is derived from Cormen,
- * et al., "Introduction to Algorithms". The basic idea of a min-priority
- * queue is that you can efficiently (in O(1) time) get the smallest key in
- * the queue. Adding and removing elements takes O(log n) time. A key can
- * have its priority decreased in O(log n) time.
- */
-function PriorityQueue$2() {
-  this._arr = [];
-  this._keyIndices = {};
-}
-
-/**
- * Returns the number of elements in the queue. Takes `O(1)` time.
- */
-PriorityQueue$2.prototype.size = function() {
-  return this._arr.length;
-};
-
-/**
- * Returns the keys that are in the queue. Takes `O(n)` time.
- */
-PriorityQueue$2.prototype.keys = function() {
-  return this._arr.map(function(x) { return x.key; });
-};
-
-/**
- * Returns `true` if **key** is in the queue and `false` if not.
- */
-PriorityQueue$2.prototype.has = function(key) {
-  return _$8.has(this._keyIndices, key);
-};
-
-/**
- * Returns the priority for **key**. If **key** is not present in the queue
- * then this function returns `undefined`. Takes `O(1)` time.
- *
- * @param {Object} key
- */
-PriorityQueue$2.prototype.priority = function(key) {
-  var index = this._keyIndices[key];
-  if (index !== undefined) {
-    return this._arr[index].priority;
-  }
-};
-
-/**
- * Returns the key for the minimum element in this queue. If the queue is
- * empty this function throws an Error. Takes `O(1)` time.
- */
-PriorityQueue$2.prototype.min = function() {
-  if (this.size() === 0) {
-    throw new Error("Queue underflow");
-  }
-  return this._arr[0].key;
-};
-
-/**
- * Inserts a new key into the priority queue. If the key already exists in
- * the queue this function returns `false`; otherwise it will return `true`.
- * Takes `O(n)` time.
- *
- * @param {Object} key the key to add
- * @param {Number} priority the initial priority for the key
- */
-PriorityQueue$2.prototype.add = function(key, priority) {
-  var keyIndices = this._keyIndices;
-  key = String(key);
-  if (!_$8.has(keyIndices, key)) {
-    var arr = this._arr;
-    var index = arr.length;
-    keyIndices[key] = index;
-    arr.push({key: key, priority: priority});
-    this._decrease(index);
-    return true;
-  }
-  return false;
-};
-
-/**
- * Removes and returns the smallest key in the queue. Takes `O(log n)` time.
- */
-PriorityQueue$2.prototype.removeMin = function() {
-  this._swap(0, this._arr.length - 1);
-  var min = this._arr.pop();
-  delete this._keyIndices[min.key];
-  this._heapify(0);
-  return min.key;
-};
-
-/**
- * Decreases the priority for **key** to **priority**. If the new priority is
- * greater than the previous priority, this function will throw an Error.
- *
- * @param {Object} key the key for which to raise priority
- * @param {Number} priority the new priority for the key
- */
-PriorityQueue$2.prototype.decrease = function(key, priority) {
-  var index = this._keyIndices[key];
-  if (priority > this._arr[index].priority) {
-    throw new Error("New priority is greater than current priority. " +
-        "Key: " + key + " Old: " + this._arr[index].priority + " New: " + priority);
-  }
-  this._arr[index].priority = priority;
-  this._decrease(index);
-};
-
-PriorityQueue$2.prototype._heapify = function(i) {
-  var arr = this._arr;
-  var l = 2 * i;
-  var r = l + 1;
-  var largest = i;
-  if (l < arr.length) {
-    largest = arr[l].priority < arr[largest].priority ? l : largest;
-    if (r < arr.length) {
-      largest = arr[r].priority < arr[largest].priority ? r : largest;
-    }
-    if (largest !== i) {
-      this._swap(i, largest);
-      this._heapify(largest);
-    }
-  }
-};
-
-PriorityQueue$2.prototype._decrease = function(index) {
-  var arr = this._arr;
-  var priority = arr[index].priority;
-  var parent;
-  while (index !== 0) {
-    parent = index >> 1;
-    if (arr[parent].priority < priority) {
-      break;
-    }
-    this._swap(index, parent);
-    index = parent;
-  }
-};
-
-PriorityQueue$2.prototype._swap = function(i, j) {
-  var arr = this._arr;
-  var keyIndices = this._keyIndices;
-  var origArrI = arr[i];
-  var origArrJ = arr[j];
-  arr[i] = origArrJ;
-  arr[j] = origArrI;
-  keyIndices[origArrJ.key] = i;
-  keyIndices[origArrI.key] = j;
-};
-
-var _$7 = lodash_1;
-var PriorityQueue$1 = priorityQueue;
-
-var dijkstra_1 = dijkstra$1;
-
-var DEFAULT_WEIGHT_FUNC$1 = _$7.constant(1);
-
-function dijkstra$1(g, source, weightFn, edgeFn) {
-  return runDijkstra(g, String(source),
-    weightFn || DEFAULT_WEIGHT_FUNC$1,
-    edgeFn || function(v) { return g.outEdges(v); });
-}
-
-function runDijkstra(g, source, weightFn, edgeFn) {
-  var results = {};
-  var pq = new PriorityQueue$1();
-  var v, vEntry;
-
-  var updateNeighbors = function(edge) {
-    var w = edge.v !== v ? edge.v : edge.w;
-    var wEntry = results[w];
-    var weight = weightFn(edge);
-    var distance = vEntry.distance + weight;
-
-    if (weight < 0) {
-      throw new Error("dijkstra does not allow negative edge weights. " +
-                      "Bad edge: " + edge + " Weight: " + weight);
-    }
-
-    if (distance < wEntry.distance) {
-      wEntry.distance = distance;
-      wEntry.predecessor = v;
-      pq.decrease(w, distance);
-    }
-  };
-
-  g.nodes().forEach(function(v) {
-    var distance = v === source ? 0 : Number.POSITIVE_INFINITY;
-    results[v] = { distance: distance };
-    pq.add(v, distance);
-  });
-
-  while (pq.size() > 0) {
-    v = pq.removeMin();
-    vEntry = results[v];
-    if (vEntry.distance === Number.POSITIVE_INFINITY) {
-      break;
-    }
-
-    edgeFn(v).forEach(updateNeighbors);
-  }
-
-  return results;
-}
-
-var dijkstra = dijkstra_1;
-var _$6 = lodash_1;
-
-var dijkstraAll_1 = dijkstraAll;
-
-function dijkstraAll(g, weightFunc, edgeFunc) {
-  return _$6.transform(g.nodes(), function(acc, v) {
-    acc[v] = dijkstra(g, v, weightFunc, edgeFunc);
-  }, {});
-}
-
-var _$5 = lodash_1;
-
-var tarjan_1 = tarjan$1;
-
-function tarjan$1(g) {
-  var index = 0;
-  var stack = [];
-  var visited = {}; // node id -> { onStack, lowlink, index }
-  var results = [];
-
-  function dfs(v) {
-    var entry = visited[v] = {
-      onStack: true,
-      lowlink: index,
-      index: index++
-    };
-    stack.push(v);
-
-    g.successors(v).forEach(function(w) {
-      if (!_$5.has(visited, w)) {
-        dfs(w);
-        entry.lowlink = Math.min(entry.lowlink, visited[w].lowlink);
-      } else if (visited[w].onStack) {
-        entry.lowlink = Math.min(entry.lowlink, visited[w].index);
-      }
-    });
-
-    if (entry.lowlink === entry.index) {
-      var cmpt = [];
-      var w;
-      do {
-        w = stack.pop();
-        visited[w].onStack = false;
-        cmpt.push(w);
-      } while (v !== w);
-      results.push(cmpt);
-    }
-  }
-
-  g.nodes().forEach(function(v) {
-    if (!_$5.has(visited, v)) {
-      dfs(v);
-    }
-  });
-
-  return results;
-}
-
-var _$4 = lodash_1;
-var tarjan = tarjan_1;
-
-var findCycles_1 = findCycles;
-
-function findCycles(g) {
-  return _$4.filter(tarjan(g), function(cmpt) {
-    return cmpt.length > 1 || (cmpt.length === 1 && g.hasEdge(cmpt[0], cmpt[0]));
-  });
-}
-
-var _$3 = lodash_1;
-
-var floydWarshall_1 = floydWarshall;
-
-var DEFAULT_WEIGHT_FUNC = _$3.constant(1);
-
-function floydWarshall(g, weightFn, edgeFn) {
-  return runFloydWarshall(g,
-    weightFn || DEFAULT_WEIGHT_FUNC,
-    edgeFn || function(v) { return g.outEdges(v); });
-}
-
-function runFloydWarshall(g, weightFn, edgeFn) {
-  var results = {};
-  var nodes = g.nodes();
-
-  nodes.forEach(function(v) {
-    results[v] = {};
-    results[v][v] = { distance: 0 };
-    nodes.forEach(function(w) {
-      if (v !== w) {
-        results[v][w] = { distance: Number.POSITIVE_INFINITY };
-      }
-    });
-    edgeFn(v).forEach(function(edge) {
-      var w = edge.v === v ? edge.w : edge.v;
-      var d = weightFn(edge);
-      results[v][w] = { distance: d, predecessor: v };
-    });
-  });
-
-  nodes.forEach(function(k) {
-    var rowK = results[k];
-    nodes.forEach(function(i) {
-      var rowI = results[i];
-      nodes.forEach(function(j) {
-        var ik = rowI[k];
-        var kj = rowK[j];
-        var ij = rowI[j];
-        var altDistance = ik.distance + kj.distance;
-        if (altDistance < ij.distance) {
-          ij.distance = altDistance;
-          ij.predecessor = kj.predecessor;
-        }
-      });
-    });
-  });
-
-  return results;
-}
-
-var _$2 = lodash_1;
-
-var topsort_1 = topsort$1;
-topsort$1.CycleException = CycleException;
-
-function topsort$1(g) {
-  var visited = {};
-  var stack = {};
-  var results = [];
-
-  function visit(node) {
-    if (_$2.has(stack, node)) {
-      throw new CycleException();
-    }
-
-    if (!_$2.has(visited, node)) {
-      stack[node] = true;
-      visited[node] = true;
-      _$2.each(g.predecessors(node), visit);
-      delete stack[node];
-      results.push(node);
-    }
-  }
-
-  _$2.each(g.sinks(), visit);
-
-  if (_$2.size(visited) !== g.nodeCount()) {
-    throw new CycleException();
-  }
-
-  return results;
-}
-
-function CycleException() {}
-CycleException.prototype = new Error(); // must be an instance of Error to pass testing
-
-var topsort = topsort_1;
-
-var isAcyclic_1 = isAcyclic;
-
-function isAcyclic(g) {
-  try {
-    topsort(g);
-  } catch (e) {
-    if (e instanceof topsort.CycleException) {
-      return false;
-    }
-    throw e;
-  }
-  return true;
-}
-
-var _$1 = lodash_1;
-
-var dfs_1 = dfs$2;
-
-/*
- * A helper that preforms a pre- or post-order traversal on the input graph
- * and returns the nodes in the order they were visited. If the graph is
- * undirected then this algorithm will navigate using neighbors. If the graph
- * is directed then this algorithm will navigate using successors.
- *
- * Order must be one of "pre" or "post".
- */
-function dfs$2(g, vs, order) {
-  if (!_$1.isArray(vs)) {
-    vs = [vs];
-  }
-
-  var navigation = (g.isDirected() ? g.successors : g.neighbors).bind(g);
-
-  var acc = [];
-  var visited = {};
-  _$1.each(vs, function(v) {
-    if (!g.hasNode(v)) {
-      throw new Error("Graph does not have node: " + v);
-    }
-
-    doDfs(g, v, order === "post", visited, navigation, acc);
-  });
-  return acc;
-}
-
-function doDfs(g, v, postorder, visited, navigation, acc) {
-  if (!_$1.has(visited, v)) {
-    visited[v] = true;
-
-    if (!postorder) { acc.push(v); }
-    _$1.each(navigation(v), function(w) {
-      doDfs(g, w, postorder, visited, navigation, acc);
-    });
-    if (postorder) { acc.push(v); }
-  }
-}
-
-var dfs$1 = dfs_1;
-
-var postorder_1 = postorder;
-
-function postorder(g, vs) {
-  return dfs$1(g, vs, "post");
-}
-
-var dfs = dfs_1;
-
-var preorder_1 = preorder;
-
-function preorder(g, vs) {
-  return dfs(g, vs, "pre");
-}
-
-var _ = lodash_1;
-var Graph = graph;
-var PriorityQueue = priorityQueue;
-
-var prim_1 = prim;
-
-function prim(g, weightFunc) {
-  var result = new Graph();
-  var parents = {};
-  var pq = new PriorityQueue();
-  var v;
-
-  function updateNeighbors(edge) {
-    var w = edge.v === v ? edge.w : edge.v;
-    var pri = pq.priority(w);
-    if (pri !== undefined) {
-      var edgeWeight = weightFunc(edge);
-      if (edgeWeight < pri) {
-        parents[w] = v;
-        pq.decrease(w, edgeWeight);
-      }
-    }
-  }
-
-  if (g.nodeCount() === 0) {
-    return result;
-  }
-
-  _.each(g.nodes(), function(v) {
-    pq.add(v, Number.POSITIVE_INFINITY);
-    result.setNode(v);
-  });
-
-  // Start from an arbitrary node
-  pq.decrease(g.nodes()[0], 0);
-
-  var init = false;
-  while (pq.size() > 0) {
-    v = pq.removeMin();
-    if (_.has(parents, v)) {
-      result.setEdge(v, parents[v]);
-    } else if (init) {
-      throw new Error("Input graph is not connected: " + g);
-    } else {
-      init = true;
-    }
-
-    g.nodeEdges(v).forEach(updateNeighbors);
-  }
-
-  return result;
-}
-
-var alg = {
-  components: components_1,
-  dijkstra: dijkstra_1,
-  dijkstraAll: dijkstraAll_1,
-  findCycles: findCycles_1,
-  floydWarshall: floydWarshall_1,
-  isAcyclic: isAcyclic_1,
-  postorder: postorder_1,
-  preorder: preorder_1,
-  prim: prim_1,
-  tarjan: tarjan_1,
-  topsort: topsort_1
-};
-
-/**
- * Copyright (c) 2014, Chris Pettitt
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice, this
- * list of conditions and the following disclaimer.
- *
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- * this list of conditions and the following disclaimer in the documentation
- * and/or other materials provided with the distribution.
- *
- * 3. Neither the name of the copyright holder nor the names of its contributors
- * may be used to endorse or promote products derived from this software without
- * specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
- * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
- * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
- * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-var lib = lib$1;
-
-var graphlib = {
-  Graph: lib.Graph,
-  json: json,
-  alg: alg,
-  version: lib.version
-};
-
-var objectHash = {exports: {}};
-
-(function (module, exports) {
-
-var crypto = require$$0$1;
-
-/**
- * Exported function
- *
- * Options:
- *
- *  - `algorithm` hash algo to be used by this instance: *'sha1', 'md5'
- *  - `excludeValues` {true|*false} hash object keys, values ignored
- *  - `encoding` hash encoding, supports 'buffer', '*hex', 'binary', 'base64'
- *  - `ignoreUnknown` {true|*false} ignore unknown object types
- *  - `replacer` optional function that replaces values before hashing
- *  - `respectFunctionProperties` {*true|false} consider function properties when hashing
- *  - `respectFunctionNames` {*true|false} consider 'name' property of functions for hashing
- *  - `respectType` {*true|false} Respect special properties (prototype, constructor)
- *    when hashing to distinguish between types
- *  - `unorderedArrays` {true|*false} Sort all arrays before hashing
- *  - `unorderedSets` {*true|false} Sort `Set` and `Map` instances before hashing
- *  * = default
- *
- * @param {object} object value to hash
- * @param {object} options hashing options
- * @return {string} hash value
- * @api public
- */
-exports = module.exports = objectHash;
-
-function objectHash(object, options){
-  options = applyDefaults(object, options);
-
-  return hash(object, options);
-}
-
-/**
- * Exported sugar methods
- *
- * @param {object} object value to hash
- * @return {string} hash value
- * @api public
- */
-exports.sha1 = function(object){
-  return objectHash(object);
-};
-exports.keys = function(object){
-  return objectHash(object, {excludeValues: true, algorithm: 'sha1', encoding: 'hex'});
-};
-exports.MD5 = function(object){
-  return objectHash(object, {algorithm: 'md5', encoding: 'hex'});
-};
-exports.keysMD5 = function(object){
-  return objectHash(object, {algorithm: 'md5', encoding: 'hex', excludeValues: true});
-};
-
-// Internals
-var hashes = crypto.getHashes ? crypto.getHashes().slice() : ['sha1', 'md5'];
-hashes.push('passthrough');
-var encodings = ['buffer', 'hex', 'binary', 'base64'];
-
-function applyDefaults(object, sourceOptions){
-  sourceOptions = sourceOptions || {};
-
-  // create a copy rather than mutating
-  var options = {};
-  options.algorithm = sourceOptions.algorithm || 'sha1';
-  options.encoding = sourceOptions.encoding || 'hex';
-  options.excludeValues = sourceOptions.excludeValues ? true : false;
-  options.algorithm = options.algorithm.toLowerCase();
-  options.encoding = options.encoding.toLowerCase();
-  options.ignoreUnknown = sourceOptions.ignoreUnknown !== true ? false : true; // default to false
-  options.respectType = sourceOptions.respectType === false ? false : true; // default to true
-  options.respectFunctionNames = sourceOptions.respectFunctionNames === false ? false : true;
-  options.respectFunctionProperties = sourceOptions.respectFunctionProperties === false ? false : true;
-  options.unorderedArrays = sourceOptions.unorderedArrays !== true ? false : true; // default to false
-  options.unorderedSets = sourceOptions.unorderedSets === false ? false : true; // default to false
-  options.unorderedObjects = sourceOptions.unorderedObjects === false ? false : true; // default to true
-  options.replacer = sourceOptions.replacer || undefined;
-  options.excludeKeys = sourceOptions.excludeKeys || undefined;
-
-  if(typeof object === 'undefined') {
-    throw new Error('Object argument required.');
-  }
-
-  // if there is a case-insensitive match in the hashes list, accept it
-  // (i.e. SHA256 for sha256)
-  for (var i = 0; i < hashes.length; ++i) {
-    if (hashes[i].toLowerCase() === options.algorithm.toLowerCase()) {
-      options.algorithm = hashes[i];
-    }
-  }
-
-  if(hashes.indexOf(options.algorithm) === -1){
-    throw new Error('Algorithm "' + options.algorithm + '"  not supported. ' +
-      'supported values: ' + hashes.join(', '));
-  }
-
-  if(encodings.indexOf(options.encoding) === -1 &&
-     options.algorithm !== 'passthrough'){
-    throw new Error('Encoding "' + options.encoding + '"  not supported. ' +
-      'supported values: ' + encodings.join(', '));
-  }
-
-  return options;
-}
-
-/** Check if the given function is a native function */
-function isNativeFunction(f) {
-  if ((typeof f) !== 'function') {
-    return false;
-  }
-  var exp = /^function\s+\w*\s*\(\s*\)\s*{\s+\[native code\]\s+}$/i;
-  return exp.exec(Function.prototype.toString.call(f)) != null;
-}
-
-function hash(object, options) {
-  var hashingStream;
-
-  if (options.algorithm !== 'passthrough') {
-    hashingStream = crypto.createHash(options.algorithm);
-  } else {
-    hashingStream = new PassThrough();
-  }
-
-  if (typeof hashingStream.write === 'undefined') {
-    hashingStream.write = hashingStream.update;
-    hashingStream.end   = hashingStream.update;
-  }
-
-  var hasher = typeHasher(options, hashingStream);
-  hasher.dispatch(object);
-  if (!hashingStream.update) {
-    hashingStream.end('');
-  }
-
-  if (hashingStream.digest) {
-    return hashingStream.digest(options.encoding === 'buffer' ? undefined : options.encoding);
-  }
-
-  var buf = hashingStream.read();
-  if (options.encoding === 'buffer') {
-    return buf;
-  }
-
-  return buf.toString(options.encoding);
-}
-
-/**
- * Expose streaming API
- *
- * @param {object} object  Value to serialize
- * @param {object} options  Options, as for hash()
- * @param {object} stream  A stream to write the serializiation to
- * @api public
- */
-exports.writeToStream = function(object, options, stream) {
-  if (typeof stream === 'undefined') {
-    stream = options;
-    options = {};
-  }
-
-  options = applyDefaults(object, options);
-
-  return typeHasher(options, stream).dispatch(object);
-};
-
-function typeHasher(options, writeTo, context){
-  context = context || [];
-  var write = function(str) {
-    if (writeTo.update) {
-      return writeTo.update(str, 'utf8');
-    } else {
-      return writeTo.write(str, 'utf8');
-    }
-  };
-
-  return {
-    dispatch: function(value){
-      if (options.replacer) {
-        value = options.replacer(value);
-      }
-
-      var type = typeof value;
-      if (value === null) {
-        type = 'null';
-      }
-
-      //console.log("[DEBUG] Dispatch: ", value, "->", type, " -> ", "_" + type);
-
-      return this['_' + type](value);
-    },
-    _object: function(object) {
-      var pattern = (/\[object (.*)\]/i);
-      var objString = Object.prototype.toString.call(object);
-      var objType = pattern.exec(objString);
-      if (!objType) { // object type did not match [object ...]
-        objType = 'unknown:[' + objString + ']';
-      } else {
-        objType = objType[1]; // take only the class name
-      }
-
-      objType = objType.toLowerCase();
-
-      var objectNumber = null;
-
-      if ((objectNumber = context.indexOf(object)) >= 0) {
-        return this.dispatch('[CIRCULAR:' + objectNumber + ']');
-      } else {
-        context.push(object);
-      }
-
-      if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(object)) {
-        write('buffer:');
-        return write(object);
-      }
-
-      if(objType !== 'object' && objType !== 'function' && objType !== 'asyncfunction') {
-        if(this['_' + objType]) {
-          this['_' + objType](object);
-        } else if (options.ignoreUnknown) {
-          return write('[' + objType + ']');
-        } else {
-          throw new Error('Unknown object type "' + objType + '"');
-        }
-      }else {
-        var keys = Object.keys(object);
-        if (options.unorderedObjects) {
-          keys = keys.sort();
-        }
-        // Make sure to incorporate special properties, so
-        // Types with different prototypes will produce
-        // a different hash and objects derived from
-        // different functions (`new Foo`, `new Bar`) will
-        // produce different hashes.
-        // We never do this for native functions since some
-        // seem to break because of that.
-        if (options.respectType !== false && !isNativeFunction(object)) {
-          keys.splice(0, 0, 'prototype', '__proto__', 'constructor');
-        }
-
-        if (options.excludeKeys) {
-          keys = keys.filter(function(key) { return !options.excludeKeys(key); });
-        }
-
-        write('object:' + keys.length + ':');
-        var self = this;
-        return keys.forEach(function(key){
-          self.dispatch(key);
-          write(':');
-          if(!options.excludeValues) {
-            self.dispatch(object[key]);
-          }
-          write(',');
-        });
-      }
-    },
-    _array: function(arr, unordered){
-      unordered = typeof unordered !== 'undefined' ? unordered :
-        options.unorderedArrays !== false; // default to options.unorderedArrays
-
-      var self = this;
-      write('array:' + arr.length + ':');
-      if (!unordered || arr.length <= 1) {
-        return arr.forEach(function(entry) {
-          return self.dispatch(entry);
-        });
-      }
-
-      // the unordered case is a little more complicated:
-      // since there is no canonical ordering on objects,
-      // i.e. {a:1} < {a:2} and {a:1} > {a:2} are both false,
-      // we first serialize each entry using a PassThrough stream
-      // before sorting.
-      // also: we can’t use the same context array for all entries
-      // since the order of hashing should *not* matter. instead,
-      // we keep track of the additions to a copy of the context array
-      // and add all of them to the global context array when we’re done
-      var contextAdditions = [];
-      var entries = arr.map(function(entry) {
-        var strm = new PassThrough();
-        var localContext = context.slice(); // make copy
-        var hasher = typeHasher(options, strm, localContext);
-        hasher.dispatch(entry);
-        // take only what was added to localContext and append it to contextAdditions
-        contextAdditions = contextAdditions.concat(localContext.slice(context.length));
-        return strm.read().toString();
-      });
-      context = context.concat(contextAdditions);
-      entries.sort();
-      return this._array(entries, false);
-    },
-    _date: function(date){
-      return write('date:' + date.toJSON());
-    },
-    _symbol: function(sym){
-      return write('symbol:' + sym.toString());
-    },
-    _error: function(err){
-      return write('error:' + err.toString());
-    },
-    _boolean: function(bool){
-      return write('bool:' + bool.toString());
-    },
-    _string: function(string){
-      write('string:' + string.length + ':');
-      write(string.toString());
-    },
-    _function: function(fn){
-      write('fn:');
-      if (isNativeFunction(fn)) {
-        this.dispatch('[native]');
-      } else {
-        this.dispatch(fn.toString());
-      }
-
-      if (options.respectFunctionNames !== false) {
-        // Make sure we can still distinguish native functions
-        // by their name, otherwise String and Function will
-        // have the same hash
-        this.dispatch("function-name:" + String(fn.name));
-      }
-
-      if (options.respectFunctionProperties) {
-        this._object(fn);
-      }
-    },
-    _number: function(number){
-      return write('number:' + number.toString());
-    },
-    _xml: function(xml){
-      return write('xml:' + xml.toString());
-    },
-    _null: function() {
-      return write('Null');
-    },
-    _undefined: function() {
-      return write('Undefined');
-    },
-    _regexp: function(regex){
-      return write('regex:' + regex.toString());
-    },
-    _uint8array: function(arr){
-      write('uint8array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _uint8clampedarray: function(arr){
-      write('uint8clampedarray:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _int8array: function(arr){
-      write('int8array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _uint16array: function(arr){
-      write('uint16array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _int16array: function(arr){
-      write('int16array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _uint32array: function(arr){
-      write('uint32array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _int32array: function(arr){
-      write('int32array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _float32array: function(arr){
-      write('float32array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _float64array: function(arr){
-      write('float64array:');
-      return this.dispatch(Array.prototype.slice.call(arr));
-    },
-    _arraybuffer: function(arr){
-      write('arraybuffer:');
-      return this.dispatch(new Uint8Array(arr));
-    },
-    _url: function(url) {
-      return write('url:' + url.toString());
-    },
-    _map: function(map) {
-      write('map:');
-      var arr = Array.from(map);
-      return this._array(arr, options.unorderedSets !== false);
-    },
-    _set: function(set) {
-      write('set:');
-      var arr = Array.from(set);
-      return this._array(arr, options.unorderedSets !== false);
-    },
-    _file: function(file) {
-      write('file:');
-      return this.dispatch([file.name, file.size, file.type, file.lastModfied]);
-    },
-    _blob: function() {
-      if (options.ignoreUnknown) {
-        return write('[blob]');
-      }
-
-      throw Error('Hashing Blob objects is currently not supported\n' +
-        '(see https://github.com/puleos/object-hash/issues/26)\n' +
-        'Use "options.replacer" or "options.ignoreUnknown"\n');
-    },
-    _domwindow: function() { return write('domwindow'); },
-    _bigint: function(number){
-      return write('bigint:' + number.toString());
-    },
-    /* Node.js standard native objects */
-    _process: function() { return write('process'); },
-    _timer: function() { return write('timer'); },
-    _pipe: function() { return write('pipe'); },
-    _tcp: function() { return write('tcp'); },
-    _udp: function() { return write('udp'); },
-    _tty: function() { return write('tty'); },
-    _statwatcher: function() { return write('statwatcher'); },
-    _securecontext: function() { return write('securecontext'); },
-    _connection: function() { return write('connection'); },
-    _zlib: function() { return write('zlib'); },
-    _context: function() { return write('context'); },
-    _nodescript: function() { return write('nodescript'); },
-    _httpparser: function() { return write('httpparser'); },
-    _dataview: function() { return write('dataview'); },
-    _signal: function() { return write('signal'); },
-    _fsevent: function() { return write('fsevent'); },
-    _tlswrap: function() { return write('tlswrap'); },
-  };
-}
-
-// Mini-implementation of stream.PassThrough
-// We are far from having need for the full implementation, and we can
-// make assumptions like "many writes, then only one final read"
-// and we can ignore encoding specifics
-function PassThrough() {
-  return {
-    buf: '',
-
-    write: function(b) {
-      this.buf += b;
-    },
-
-    end: function(b) {
-      this.buf += b;
-    },
-
-    read: function() {
-      return this.buf;
-    }
-  };
-}
-}(objectHash, objectHash.exports));
-
-var hash = objectHash.exports;
-
-/**
- * Saves data in new cache folder or reads it from old one.
- * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
- */
-class RollingCache {
-    /**
-     * @param cacheRoot: root folder for the cache
-     * @param checkNewCache: whether to also look in new cache when reading from cache
-     */
-    constructor(cacheRoot, checkNewCache) {
-        this.cacheRoot = cacheRoot;
-        this.checkNewCache = checkNewCache;
-        this.rolled = false;
-        this.oldCacheRoot = `${this.cacheRoot}/cache`;
-        this.newCacheRoot = `${this.cacheRoot}/cache_`;
-        emptyDirSync(this.newCacheRoot);
-    }
-    /**
-     * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
-     */
-    exists(name) {
-        if (this.rolled)
-            return false;
-        if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
-            return true;
-        return existsSync(`${this.oldCacheRoot}/${name}`);
-    }
-    path(name) {
-        return `${this.oldCacheRoot}/${name}`;
-    }
-    /**
-     * @returns true if old cache contains all names and nothing more
-     */
-    match(names) {
-        if (this.rolled)
-            return false;
-        if (!existsSync(this.oldCacheRoot))
-            return names.length === 0; // empty folder matches
-        return lodash$1.exports.isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
-    }
-    /**
-     * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
-     */
-    read(name) {
-        if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
-            return readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8", throws: false });
-        return readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8", throws: false });
-    }
-    write(name, data) {
-        if (this.rolled)
-            return;
-        if (data === undefined)
-            return;
-        writeJsonSync(`${this.newCacheRoot}/${name}`, data);
-    }
-    touch(name) {
-        if (this.rolled)
-            return;
-        ensureFileSync(`${this.newCacheRoot}/${name}`);
-    }
-    /**
-     * clears old cache and moves new in its place
-     */
-    roll() {
-        if (this.rolled)
-            return;
-        this.rolled = true;
-        removeSync(this.oldCacheRoot);
-        if (existsSync(this.newCacheRoot)) {
-            renameSync(this.newCacheRoot, this.oldCacheRoot);
-        }
-    }
-}
-
 var safe = {exports: {}};
 
 var colors = {exports: {}};
@@ -19312,7 +17379,7 @@ THE SOFTWARE.
 
 */
 
-var os = require$$0$2;
+var os = require$$0$1;
 var hasFlag = hasFlag$1;
 
 var env$1 = process.env;
@@ -19886,414 +17953,6 @@ var colors$1 = colors.exports;
 module['exports'] = colors$1;
 }(safe));
 
-class FormatHost {
-    getCurrentDirectory() {
-        return tsModule.sys.getCurrentDirectory();
-    }
-    getCanonicalFileName(fileName) {
-        return require$$0.normalize(fileName);
-    }
-    getNewLine() {
-        return tsModule.sys.newLine;
-    }
-}
-const formatHost = new FormatHost();
-
-class NoCache {
-    exists(_name) {
-        return false;
-    }
-    path(name) {
-        return name;
-    }
-    match(_names) {
-        return false;
-    }
-    read(_name) {
-        return undefined;
-    }
-    write(_name, _data) {
-        return;
-    }
-    touch(_name) {
-        return;
-    }
-    roll() {
-        return;
-    }
-}
-
-function convertEmitOutput(output, references) {
-    const out = { code: "", references };
-    output.outputFiles.forEach((e) => {
-        if (lodash$1.exports.endsWith(e.name, ".d.ts"))
-            out.dts = e;
-        else if (lodash$1.exports.endsWith(e.name, ".d.ts.map"))
-            out.dtsmap = e;
-        else if (lodash$1.exports.endsWith(e.name, ".map"))
-            out.map = e.text;
-        else
-            out.code = e.text;
-    });
-    return out;
-}
-function getAllReferences(importer, snapshot, options) {
-    if (!snapshot)
-        return [];
-    const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
-    return lodash$1.exports.compact(lodash$1.exports.concat(info.referencedFiles, info.importedFiles).map((reference) => {
-        const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
-        return resolved.resolvedModule ? resolved.resolvedModule.resolvedFileName : undefined;
-    }));
-}
-function convertDiagnostic(type, data) {
-    return lodash$1.exports.map(data, (diagnostic) => {
-        const entry = {
-            flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-            formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
-            category: diagnostic.category,
-            code: diagnostic.code,
-            type,
-        };
-        if (diagnostic.file && diagnostic.start !== undefined) {
-            const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-            entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
-        }
-        return entry;
-    });
-}
-class TsCache {
-    constructor(noCache, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
-        this.noCache = noCache;
-        this.host = host;
-        this.cacheRoot = cacheRoot;
-        this.options = options;
-        this.rollupConfig = rollupConfig;
-        this.context = context;
-        this.cacheVersion = "9";
-        this.cachePrefix = "rpt2_";
-        this.ambientTypesDirty = false;
-        this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
-        this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
-        if (!noCache) {
-            this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${hash({
-                version: this.cacheVersion,
-                rootFilenames,
-                options: this.options,
-                rollupConfig: this.rollupConfig,
-                tsVersion: tsModule.version,
-            }, this.hashOptions)}`;
-        }
-        this.dependencyTree = new graphlib.Graph({ directed: true });
-        this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        const automaticTypes = lodash$1.exports.map(tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys), (entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
-            .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
-            .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
-        this.ambientTypes = lodash$1.exports.filter(rootFilenames, (file) => lodash$1.exports.endsWith(file, ".d.ts"))
-            .concat(automaticTypes)
-            .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
-        this.init();
-        this.checkAmbientTypes();
-    }
-    clean() {
-        if (pathExistsSync(this.cacheRoot)) {
-            const entries = readdirSync$1(this.cacheRoot);
-            entries.forEach((e) => {
-                const dir = `${this.cacheRoot}/${e}`;
-                if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory) {
-                    this.context.info(safe.exports.blue(`cleaning cache: ${dir}`));
-                    emptyDirSync(`${dir}`);
-                    removeSync(`${dir}`);
-                }
-                else
-                    this.context.debug(`not cleaning ${dir}`);
-            });
-        }
-        this.init();
-    }
-    setDependency(importee, importer) {
-        // importee -> importer
-        this.context.debug(`${safe.exports.blue("dependency")} '${importee}'`);
-        this.context.debug(`    imported by '${importer}'`);
-        this.dependencyTree.setEdge(importer, importee);
-    }
-    walkTree(cb) {
-        const acyclic = graphlib.alg.isAcyclic(this.dependencyTree);
-        if (acyclic) {
-            lodash$1.exports.each(graphlib.alg.topsort(this.dependencyTree), (id) => cb(id));
-            return;
-        }
-        this.context.info(safe.exports.yellow("import tree has cycles"));
-        lodash$1.exports.each(this.dependencyTree.nodes(), (id) => cb(id));
-    }
-    done() {
-        this.context.info(safe.exports.blue("rolling caches"));
-        this.codeCache.roll();
-        this.semanticDiagnosticsCache.roll();
-        this.syntacticDiagnosticsCache.roll();
-        this.typesCache.roll();
-    }
-    getCompiled(id, snapshot, transform) {
-        if (this.noCache) {
-            this.context.info(`${safe.exports.blue("transpiling")} '${id}'`);
-            this.markAsDirty(id);
-            return transform();
-        }
-        const name = this.makeName(id, snapshot);
-        this.context.info(`${safe.exports.blue("transpiling")} '${id}'`);
-        this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
-        if (this.codeCache.exists(name) && !this.isDirty(id, false)) {
-            this.context.debug(safe.exports.green("    cache hit"));
-            const data = this.codeCache.read(name);
-            if (data) {
-                this.codeCache.write(name, data);
-                return data;
-            }
-            else
-                this.context.warn(safe.exports.yellow("    cache broken, discarding"));
-        }
-        this.context.debug(safe.exports.yellow("    cache miss"));
-        const transformedData = transform();
-        this.codeCache.write(name, transformedData);
-        this.markAsDirty(id);
-        return transformedData;
-    }
-    getSyntacticDiagnostics(id, snapshot, check) {
-        return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
-    }
-    getSemanticDiagnostics(id, snapshot, check) {
-        return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
-    }
-    checkAmbientTypes() {
-        if (this.noCache) {
-            this.ambientTypesDirty = true;
-            return;
-        }
-        this.context.debug(safe.exports.blue("Ambient types:"));
-        const typeNames = lodash$1.exports.filter(this.ambientTypes, (snapshot) => snapshot.snapshot !== undefined)
-            .map((snapshot) => {
-            this.context.debug(`    ${snapshot.id}`);
-            return this.makeName(snapshot.id, snapshot.snapshot);
-        });
-        // types dirty if any d.ts changed, added or removed
-        this.ambientTypesDirty = !this.typesCache.match(typeNames);
-        if (this.ambientTypesDirty)
-            this.context.info(safe.exports.yellow("ambient types changed, redoing all semantic diagnostics"));
-        lodash$1.exports.each(typeNames, (name) => this.typesCache.touch(name));
-    }
-    getDiagnostics(type, cache, id, snapshot, check) {
-        if (this.noCache) {
-            this.markAsDirty(id);
-            return convertDiagnostic(type, check());
-        }
-        const name = this.makeName(id, snapshot);
-        this.context.debug(`    cache: '${cache.path(name)}'`);
-        if (cache.exists(name) && !this.isDirty(id, true)) {
-            this.context.debug(safe.exports.green("    cache hit"));
-            const data = cache.read(name);
-            if (data) {
-                cache.write(name, data);
-                return data;
-            }
-            else
-                this.context.warn(safe.exports.yellow("    cache broken, discarding"));
-        }
-        this.context.debug(safe.exports.yellow("    cache miss"));
-        const convertedData = convertDiagnostic(type, check());
-        cache.write(name, convertedData);
-        this.markAsDirty(id);
-        return convertedData;
-    }
-    init() {
-        if (this.noCache) {
-            this.codeCache = new NoCache();
-            this.typesCache = new NoCache();
-            this.syntacticDiagnosticsCache = new NoCache();
-            this.semanticDiagnosticsCache = new NoCache();
-        }
-        else {
-            if (this.cacheDir === undefined)
-                throw new Error(`this.cacheDir undefined`);
-            this.codeCache = new RollingCache(`${this.cacheDir}/code`, true);
-            this.typesCache = new RollingCache(`${this.cacheDir}/types`, true);
-            this.syntacticDiagnosticsCache = new RollingCache(`${this.cacheDir}/syntacticDiagnostics`, true);
-            this.semanticDiagnosticsCache = new RollingCache(`${this.cacheDir}/semanticDiagnostics`, true);
-        }
-    }
-    markAsDirty(id) {
-        this.dependencyTree.setNode(id, { dirty: true });
-    }
-    // returns true if node or any of its imports or any of global types changed
-    isDirty(id, checkImports) {
-        const label = this.dependencyTree.node(id);
-        if (!label)
-            return false;
-        if (!checkImports || label.dirty)
-            return label.dirty;
-        if (this.ambientTypesDirty)
-            return true;
-        const dependencies = graphlib.alg.dijkstra(this.dependencyTree, id);
-        return lodash$1.exports.some(dependencies, (dependency, node) => {
-            if (!node || dependency.distance === Infinity)
-                return false;
-            const l = this.dependencyTree.node(node);
-            const dirty = l === undefined ? true : l.dirty;
-            if (dirty)
-                this.context.debug(`    import changed: ${node}`);
-            return dirty;
-        });
-    }
-    makeName(id, snapshot) {
-        const data = snapshot.getText(0, snapshot.getLength());
-        return hash({ data, id }, this.hashOptions);
-    }
-}
-
-function printDiagnostics(context, diagnostics, pretty) {
-    lodash$1.exports.each(diagnostics, (diagnostic) => {
-        let print;
-        let color;
-        let category;
-        switch (diagnostic.category) {
-            case tsModule.DiagnosticCategory.Message:
-                print = context.info;
-                color = safe.exports.white;
-                category = "";
-                break;
-            case tsModule.DiagnosticCategory.Error:
-                print = context.error;
-                color = safe.exports.red;
-                category = "error";
-                break;
-            case tsModule.DiagnosticCategory.Warning:
-            default:
-                print = context.warn;
-                color = safe.exports.yellow;
-                category = "warning";
-                break;
-        }
-        const type = diagnostic.type + " ";
-        if (pretty)
-            print.call(context, `${diagnostic.formatted}`);
-        else {
-            if (diagnostic.fileLine !== undefined)
-                print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
-            else
-                print.call(context, `${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
-        }
-    });
-}
-
-function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
-    const overrides = {
-        noEmitHelpers: false,
-        importHelpers: true,
-        noResolve: false,
-        noEmit: false,
-        inlineSourceMap: false,
-        outDir: `${cacheRoot}/placeholder`,
-        moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
-        allowNonTsExtensions: true,
-    };
-    if (preParsedTsconfig) {
-        if (preParsedTsconfig.options.module === undefined)
-            overrides.module = tsModule.ModuleKind.ES2015;
-        // only set declarationDir if useTsconfigDeclarationDir is enabled
-        if (!useTsconfigDeclarationDir)
-            overrides.declarationDir = undefined;
-        // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
-        const sourceMap = preParsedTsconfig.options.sourceMap;
-        if (!sourceMap)
-            overrides.sourceRoot = undefined;
-    }
-    return overrides;
-}
-function expandIncludeWithDirs(include, dirs) {
-    return lodash$1.exports.chain(dirs)
-        .flatMap((root) => {
-        if (include instanceof Array)
-            return include.map((x) => join(root, x));
-        else
-            return join(root, include);
-    })
-        .uniq()
-        .value();
-}
-function createFilter(context, pluginOptions, parsedConfig) {
-    let included = pluginOptions.include;
-    let excluded = pluginOptions.exclude;
-    if (parsedConfig.options.rootDirs) {
-        included = expandIncludeWithDirs(included, parsedConfig.options.rootDirs);
-        excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
-    }
-    if (parsedConfig.projectReferences) {
-        included = lodash$1.exports.concat(included, expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)));
-        excluded = lodash$1.exports.concat(excluded, expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)));
-    }
-    context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
-    context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
-    return createFilter$1(included, excluded, { resolve: parsedConfig.options.rootDir });
-}
-
-function checkTsConfig(parsedConfig) {
-    const module = parsedConfig.options.module;
-    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ESNext && module !== tsModule.ModuleKind.ES2020)
-        throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
-}
-
-function parseTsConfig(context, pluginOptions) {
-    const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
-    // if the value was provided, but no file, fail hard
-    if (pluginOptions.tsconfig !== undefined && !fileName)
-        throw new Error(`rpt2: failed to open '${fileName}'`);
-    let loadedConfig = {};
-    let baseDir = pluginOptions.cwd;
-    let configFileName;
-    let pretty = false;
-    if (fileName) {
-        const text = tsModule.sys.readFile(fileName);
-        if (text === undefined)
-            throw new Error(`rpt2: failed to read '${fileName}'`);
-        const result = tsModule.parseConfigFileTextToJson(fileName, text);
-        pretty = lodash$1.exports.get(result.config, "pretty", pretty);
-        if (result.error !== undefined) {
-            printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
-            throw new Error(`rpt2: failed to parse '${fileName}'`);
-        }
-        loadedConfig = result.config;
-        baseDir = dirname(fileName);
-        configFileName = fileName;
-    }
-    const mergedConfig = {};
-    lodash$1.exports.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
-    const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
-    const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
-    const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
-    checkTsConfig(parsedTsConfig);
-    printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
-    context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
-    context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
-    return { parsedTsConfig, fileName };
-}
-
-// The injected id for helpers.
-const TSLIB = "tslib";
-const TSLIB_VIRTUAL = "\0tslib.js";
-let tslibSource;
-let tslibVersion;
-try {
-    // tslint:disable-next-line:no-string-literal no-var-requires
-    const _ = require("@yarn-tool/resolve-package").resolvePackage('tslib');
-    const tslibPackage = _.pkg;
-    const tslibPath = _.resolveLocation(tslibPackage.module);
-    tslibSource = readFileSync(tslibPath, "utf8");
-    tslibVersion = tslibPackage.version;
-}
-catch (e) {
-    console.warn("Error loading `tslib` helper library.");
-    throw e;
-}
-
 var path$4 = require$$0__default;
 
 var commondir = function (basedir, relfiles) {
@@ -20449,7 +18108,7 @@ pLocate$2.exports = pLocate$1;
 pLocate$2.exports.default = pLocate$1;
 
 const path$3 = require$$0__default;
-const fs$3 = require$$0$3;
+const fs$3 = require$$0$2;
 const {promisify: promisify$2} = require$$2;
 const pLocate = pLocate$2.exports;
 
@@ -20515,7 +18174,7 @@ locatePath.exports.sync = (paths, options) => {
 
 var pathExists = {exports: {}};
 
-const fs$2 = require$$0$3;
+const fs$2 = require$$0$2;
 const {promisify: promisify$1} = require$$2;
 
 const pAccess = promisify$1(fs$2.access);
@@ -22249,7 +19908,7 @@ function coerce (version, options) {
 }
 }(semver$1, semver$1.exports));
 
-const fs$1 = require$$0$3;
+const fs$1 = require$$0$2;
 const path$1 = require$$0__default;
 const {promisify} = require$$2;
 const semver = semver$1.exports;
@@ -22406,7 +20065,7 @@ makeDir$2.exports.sync = (input, options) => {
 };
 
 const path = require$$0__default;
-const fs = require$$0$3;
+const fs = require$$0$2;
 const commonDir = commondir;
 const pkgDir = pkgDir$2.exports;
 const makeDir = makeDir$2.exports;
@@ -22472,6 +20131,2348 @@ var findCacheDir = (options = {}) => {
 	return useDirectory(path.join(directory, 'node_modules', '.cache', options.name), options);
 };
 
+var VerbosityLevel;
+(function (VerbosityLevel) {
+    VerbosityLevel[VerbosityLevel["Error"] = 0] = "Error";
+    VerbosityLevel[VerbosityLevel["Warning"] = 1] = "Warning";
+    VerbosityLevel[VerbosityLevel["Info"] = 2] = "Info";
+    VerbosityLevel[VerbosityLevel["Debug"] = 3] = "Debug";
+})(VerbosityLevel || (VerbosityLevel = {}));
+class ConsoleContext {
+    constructor(verbosity, prefix = "") {
+        this.verbosity = verbosity;
+        this.prefix = prefix;
+    }
+    warn(message) {
+        if (this.verbosity < VerbosityLevel.Warning)
+            return;
+        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
+    }
+    error(message) {
+        if (this.verbosity < VerbosityLevel.Error)
+            return;
+        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
+    }
+    info(message) {
+        if (this.verbosity < VerbosityLevel.Info)
+            return;
+        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
+    }
+    debug(message) {
+        if (this.verbosity < VerbosityLevel.Debug)
+            return;
+        console.log(`${this.prefix}${lodash$1.exports.isFunction(message) ? message() : message}`);
+    }
+}
+
+class RollupContext {
+    constructor(verbosity, bail, context, prefix = "") {
+        this.verbosity = verbosity;
+        this.bail = bail;
+        this.context = context;
+        this.prefix = prefix;
+        this.hasContext = true;
+        this.hasContext = lodash$1.exports.isFunction(this.context.warn) && lodash$1.exports.isFunction(this.context.error);
+    }
+    warn(message) {
+        if (this.verbosity < VerbosityLevel.Warning)
+            return;
+        const text = lodash$1.exports.isFunction(message) ? message() : message;
+        if (this.hasContext)
+            this.context.warn(`${text}`);
+        else
+            console.log(`${this.prefix}${text}`);
+    }
+    error(message) {
+        if (this.verbosity < VerbosityLevel.Error)
+            return;
+        const text = lodash$1.exports.isFunction(message) ? message() : message;
+        if (this.hasContext) {
+            if (this.bail)
+                this.context.error(`${text}`);
+            else
+                this.context.warn(`${text}`);
+        }
+        else
+            console.log(`${this.prefix}${text}`);
+    }
+    info(message) {
+        if (this.verbosity < VerbosityLevel.Info)
+            return;
+        const text = lodash$1.exports.isFunction(message) ? message() : message;
+        console.log(`${this.prefix}${text}`);
+    }
+    debug(message) {
+        if (this.verbosity < VerbosityLevel.Debug)
+            return;
+        const text = lodash$1.exports.isFunction(message) ? message() : message;
+        console.log(`${this.prefix}${text}`);
+    }
+}
+
+let tsModule;
+function setTypescriptModule(override) {
+    tsModule = override;
+}
+
+class LanguageServiceHost {
+    constructor(parsedConfig, transformers, cwd) {
+        this.parsedConfig = parsedConfig;
+        this.transformers = transformers;
+        this.snapshots = {};
+        this.versions = {};
+        this.fileNames = new Set(parsedConfig.fileNames);
+        this.cwd = cwd;
+    }
+    reset() {
+        this.snapshots = {};
+        this.versions = {};
+    }
+    setLanguageService(service) {
+        this.service = service;
+    }
+    setSnapshot(fileName, data) {
+        fileName = normalizePath(fileName);
+        const snapshot = tsModule.ScriptSnapshot.fromString(data);
+        this.snapshots[fileName] = snapshot;
+        this.versions[fileName] = (this.versions[fileName] || 0) + 1;
+        this.fileNames.add(fileName);
+        return snapshot;
+    }
+    getScriptSnapshot(fileName) {
+        fileName = normalizePath(fileName);
+        if (fileName in this.snapshots)
+            return this.snapshots[fileName];
+        const source = tsModule.sys.readFile(fileName);
+        if (source) {
+            this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
+            this.versions[fileName] = (this.versions[fileName] || 0) + 1;
+            return this.snapshots[fileName];
+        }
+        return undefined;
+    }
+    getCurrentDirectory() {
+        return this.cwd;
+    }
+    getScriptVersion(fileName) {
+        fileName = normalizePath(fileName);
+        return (this.versions[fileName] || 0).toString();
+    }
+    getScriptFileNames() {
+        return Array.from(this.fileNames.values());
+    }
+    getCompilationSettings() {
+        return this.parsedConfig.options;
+    }
+    getDefaultLibFileName(opts) {
+        return tsModule.getDefaultLibFilePath(opts);
+    }
+    useCaseSensitiveFileNames() {
+        return tsModule.sys.useCaseSensitiveFileNames;
+    }
+    readDirectory(path, extensions, exclude, include) {
+        return tsModule.sys.readDirectory(path, extensions, exclude, include);
+    }
+    readFile(path, encoding) {
+        return tsModule.sys.readFile(path, encoding);
+    }
+    fileExists(path) {
+        return tsModule.sys.fileExists(path);
+    }
+    realpath(path) {
+        return tsModule.sys.realpath(path); // this exists in the default implementation: https://github.com/microsoft/TypeScript/blob/ab2523bbe0352d4486f67b73473d2143ad64d03d/src/compiler/sys.ts#L1288
+    }
+    getTypeRootsVersion() {
+        return 0;
+    }
+    directoryExists(directoryName) {
+        return tsModule.sys.directoryExists(directoryName);
+    }
+    getDirectories(directoryName) {
+        return tsModule.sys.getDirectories(directoryName);
+    }
+    getCustomTransformers() {
+        if (this.service === undefined || this.transformers === undefined || this.transformers.length === 0)
+            return undefined;
+        const transformer = {
+            before: [],
+            after: [],
+            afterDeclarations: [],
+        };
+        for (const creator of this.transformers) {
+            const factory = creator(this.service);
+            if (factory.before)
+                transformer.before = transformer.before.concat(factory.before);
+            if (factory.after)
+                transformer.after = transformer.after.concat(factory.after);
+            if (factory.afterDeclarations)
+                transformer.afterDeclarations = transformer.afterDeclarations.concat(factory.afterDeclarations);
+        }
+        return transformer;
+    }
+    trace(line) {
+        console.log(line);
+    }
+}
+
+/* global window */
+
+var lodash;
+
+if (typeof commonjsRequire === "function") {
+  try {
+    lodash = {
+      clone: require("lodash/clone"),
+      constant: require("lodash/constant"),
+      each: require("lodash/each"),
+      filter: require("lodash/filter"),
+      has:  require("lodash/has"),
+      isArray: require("lodash/isArray"),
+      isEmpty: require("lodash/isEmpty"),
+      isFunction: require("lodash/isFunction"),
+      isUndefined: require("lodash/isUndefined"),
+      keys: require("lodash/keys"),
+      map: require("lodash/map"),
+      reduce: require("lodash/reduce"),
+      size: require("lodash/size"),
+      transform: require("lodash/transform"),
+      union: require("lodash/union"),
+      values: require("lodash/values")
+    };
+  } catch (e) {
+    // continue regardless of error
+  }
+}
+
+if (!lodash) {
+  lodash = window._;
+}
+
+var lodash_1 = lodash;
+
+var _$b = lodash_1;
+
+var graph = Graph$2;
+
+var DEFAULT_EDGE_NAME = "\x00";
+var GRAPH_NODE = "\x00";
+var EDGE_KEY_DELIM = "\x01";
+
+// Implementation notes:
+//
+//  * Node id query functions should return string ids for the nodes
+//  * Edge id query functions should return an "edgeObj", edge object, that is
+//    composed of enough information to uniquely identify an edge: {v, w, name}.
+//  * Internally we use an "edgeId", a stringified form of the edgeObj, to
+//    reference edges. This is because we need a performant way to look these
+//    edges up and, object properties, which have string keys, are the closest
+//    we're going to get to a performant hashtable in JavaScript.
+
+function Graph$2(opts) {
+  this._isDirected = _$b.has(opts, "directed") ? opts.directed : true;
+  this._isMultigraph = _$b.has(opts, "multigraph") ? opts.multigraph : false;
+  this._isCompound = _$b.has(opts, "compound") ? opts.compound : false;
+
+  // Label for the graph itself
+  this._label = undefined;
+
+  // Defaults to be set when creating a new node
+  this._defaultNodeLabelFn = _$b.constant(undefined);
+
+  // Defaults to be set when creating a new edge
+  this._defaultEdgeLabelFn = _$b.constant(undefined);
+
+  // v -> label
+  this._nodes = {};
+
+  if (this._isCompound) {
+    // v -> parent
+    this._parent = {};
+
+    // v -> children
+    this._children = {};
+    this._children[GRAPH_NODE] = {};
+  }
+
+  // v -> edgeObj
+  this._in = {};
+
+  // u -> v -> Number
+  this._preds = {};
+
+  // v -> edgeObj
+  this._out = {};
+
+  // v -> w -> Number
+  this._sucs = {};
+
+  // e -> edgeObj
+  this._edgeObjs = {};
+
+  // e -> label
+  this._edgeLabels = {};
+}
+
+/* Number of nodes in the graph. Should only be changed by the implementation. */
+Graph$2.prototype._nodeCount = 0;
+
+/* Number of edges in the graph. Should only be changed by the implementation. */
+Graph$2.prototype._edgeCount = 0;
+
+
+/* === Graph functions ========= */
+
+Graph$2.prototype.isDirected = function() {
+  return this._isDirected;
+};
+
+Graph$2.prototype.isMultigraph = function() {
+  return this._isMultigraph;
+};
+
+Graph$2.prototype.isCompound = function() {
+  return this._isCompound;
+};
+
+Graph$2.prototype.setGraph = function(label) {
+  this._label = label;
+  return this;
+};
+
+Graph$2.prototype.graph = function() {
+  return this._label;
+};
+
+
+/* === Node functions ========== */
+
+Graph$2.prototype.setDefaultNodeLabel = function(newDefault) {
+  if (!_$b.isFunction(newDefault)) {
+    newDefault = _$b.constant(newDefault);
+  }
+  this._defaultNodeLabelFn = newDefault;
+  return this;
+};
+
+Graph$2.prototype.nodeCount = function() {
+  return this._nodeCount;
+};
+
+Graph$2.prototype.nodes = function() {
+  return _$b.keys(this._nodes);
+};
+
+Graph$2.prototype.sources = function() {
+  var self = this;
+  return _$b.filter(this.nodes(), function(v) {
+    return _$b.isEmpty(self._in[v]);
+  });
+};
+
+Graph$2.prototype.sinks = function() {
+  var self = this;
+  return _$b.filter(this.nodes(), function(v) {
+    return _$b.isEmpty(self._out[v]);
+  });
+};
+
+Graph$2.prototype.setNodes = function(vs, value) {
+  var args = arguments;
+  var self = this;
+  _$b.each(vs, function(v) {
+    if (args.length > 1) {
+      self.setNode(v, value);
+    } else {
+      self.setNode(v);
+    }
+  });
+  return this;
+};
+
+Graph$2.prototype.setNode = function(v, value) {
+  if (_$b.has(this._nodes, v)) {
+    if (arguments.length > 1) {
+      this._nodes[v] = value;
+    }
+    return this;
+  }
+
+  this._nodes[v] = arguments.length > 1 ? value : this._defaultNodeLabelFn(v);
+  if (this._isCompound) {
+    this._parent[v] = GRAPH_NODE;
+    this._children[v] = {};
+    this._children[GRAPH_NODE][v] = true;
+  }
+  this._in[v] = {};
+  this._preds[v] = {};
+  this._out[v] = {};
+  this._sucs[v] = {};
+  ++this._nodeCount;
+  return this;
+};
+
+Graph$2.prototype.node = function(v) {
+  return this._nodes[v];
+};
+
+Graph$2.prototype.hasNode = function(v) {
+  return _$b.has(this._nodes, v);
+};
+
+Graph$2.prototype.removeNode =  function(v) {
+  var self = this;
+  if (_$b.has(this._nodes, v)) {
+    var removeEdge = function(e) { self.removeEdge(self._edgeObjs[e]); };
+    delete this._nodes[v];
+    if (this._isCompound) {
+      this._removeFromParentsChildList(v);
+      delete this._parent[v];
+      _$b.each(this.children(v), function(child) {
+        self.setParent(child);
+      });
+      delete this._children[v];
+    }
+    _$b.each(_$b.keys(this._in[v]), removeEdge);
+    delete this._in[v];
+    delete this._preds[v];
+    _$b.each(_$b.keys(this._out[v]), removeEdge);
+    delete this._out[v];
+    delete this._sucs[v];
+    --this._nodeCount;
+  }
+  return this;
+};
+
+Graph$2.prototype.setParent = function(v, parent) {
+  if (!this._isCompound) {
+    throw new Error("Cannot set parent in a non-compound graph");
+  }
+
+  if (_$b.isUndefined(parent)) {
+    parent = GRAPH_NODE;
+  } else {
+    // Coerce parent to string
+    parent += "";
+    for (var ancestor = parent;
+      !_$b.isUndefined(ancestor);
+      ancestor = this.parent(ancestor)) {
+      if (ancestor === v) {
+        throw new Error("Setting " + parent+ " as parent of " + v +
+                        " would create a cycle");
+      }
+    }
+
+    this.setNode(parent);
+  }
+
+  this.setNode(v);
+  this._removeFromParentsChildList(v);
+  this._parent[v] = parent;
+  this._children[parent][v] = true;
+  return this;
+};
+
+Graph$2.prototype._removeFromParentsChildList = function(v) {
+  delete this._children[this._parent[v]][v];
+};
+
+Graph$2.prototype.parent = function(v) {
+  if (this._isCompound) {
+    var parent = this._parent[v];
+    if (parent !== GRAPH_NODE) {
+      return parent;
+    }
+  }
+};
+
+Graph$2.prototype.children = function(v) {
+  if (_$b.isUndefined(v)) {
+    v = GRAPH_NODE;
+  }
+
+  if (this._isCompound) {
+    var children = this._children[v];
+    if (children) {
+      return _$b.keys(children);
+    }
+  } else if (v === GRAPH_NODE) {
+    return this.nodes();
+  } else if (this.hasNode(v)) {
+    return [];
+  }
+};
+
+Graph$2.prototype.predecessors = function(v) {
+  var predsV = this._preds[v];
+  if (predsV) {
+    return _$b.keys(predsV);
+  }
+};
+
+Graph$2.prototype.successors = function(v) {
+  var sucsV = this._sucs[v];
+  if (sucsV) {
+    return _$b.keys(sucsV);
+  }
+};
+
+Graph$2.prototype.neighbors = function(v) {
+  var preds = this.predecessors(v);
+  if (preds) {
+    return _$b.union(preds, this.successors(v));
+  }
+};
+
+Graph$2.prototype.isLeaf = function (v) {
+  var neighbors;
+  if (this.isDirected()) {
+    neighbors = this.successors(v);
+  } else {
+    neighbors = this.neighbors(v);
+  }
+  return neighbors.length === 0;
+};
+
+Graph$2.prototype.filterNodes = function(filter) {
+  var copy = new this.constructor({
+    directed: this._isDirected,
+    multigraph: this._isMultigraph,
+    compound: this._isCompound
+  });
+
+  copy.setGraph(this.graph());
+
+  var self = this;
+  _$b.each(this._nodes, function(value, v) {
+    if (filter(v)) {
+      copy.setNode(v, value);
+    }
+  });
+
+  _$b.each(this._edgeObjs, function(e) {
+    if (copy.hasNode(e.v) && copy.hasNode(e.w)) {
+      copy.setEdge(e, self.edge(e));
+    }
+  });
+
+  var parents = {};
+  function findParent(v) {
+    var parent = self.parent(v);
+    if (parent === undefined || copy.hasNode(parent)) {
+      parents[v] = parent;
+      return parent;
+    } else if (parent in parents) {
+      return parents[parent];
+    } else {
+      return findParent(parent);
+    }
+  }
+
+  if (this._isCompound) {
+    _$b.each(copy.nodes(), function(v) {
+      copy.setParent(v, findParent(v));
+    });
+  }
+
+  return copy;
+};
+
+/* === Edge functions ========== */
+
+Graph$2.prototype.setDefaultEdgeLabel = function(newDefault) {
+  if (!_$b.isFunction(newDefault)) {
+    newDefault = _$b.constant(newDefault);
+  }
+  this._defaultEdgeLabelFn = newDefault;
+  return this;
+};
+
+Graph$2.prototype.edgeCount = function() {
+  return this._edgeCount;
+};
+
+Graph$2.prototype.edges = function() {
+  return _$b.values(this._edgeObjs);
+};
+
+Graph$2.prototype.setPath = function(vs, value) {
+  var self = this;
+  var args = arguments;
+  _$b.reduce(vs, function(v, w) {
+    if (args.length > 1) {
+      self.setEdge(v, w, value);
+    } else {
+      self.setEdge(v, w);
+    }
+    return w;
+  });
+  return this;
+};
+
+/*
+ * setEdge(v, w, [value, [name]])
+ * setEdge({ v, w, [name] }, [value])
+ */
+Graph$2.prototype.setEdge = function() {
+  var v, w, name, value;
+  var valueSpecified = false;
+  var arg0 = arguments[0];
+
+  if (typeof arg0 === "object" && arg0 !== null && "v" in arg0) {
+    v = arg0.v;
+    w = arg0.w;
+    name = arg0.name;
+    if (arguments.length === 2) {
+      value = arguments[1];
+      valueSpecified = true;
+    }
+  } else {
+    v = arg0;
+    w = arguments[1];
+    name = arguments[3];
+    if (arguments.length > 2) {
+      value = arguments[2];
+      valueSpecified = true;
+    }
+  }
+
+  v = "" + v;
+  w = "" + w;
+  if (!_$b.isUndefined(name)) {
+    name = "" + name;
+  }
+
+  var e = edgeArgsToId(this._isDirected, v, w, name);
+  if (_$b.has(this._edgeLabels, e)) {
+    if (valueSpecified) {
+      this._edgeLabels[e] = value;
+    }
+    return this;
+  }
+
+  if (!_$b.isUndefined(name) && !this._isMultigraph) {
+    throw new Error("Cannot set a named edge when isMultigraph = false");
+  }
+
+  // It didn't exist, so we need to create it.
+  // First ensure the nodes exist.
+  this.setNode(v);
+  this.setNode(w);
+
+  this._edgeLabels[e] = valueSpecified ? value : this._defaultEdgeLabelFn(v, w, name);
+
+  var edgeObj = edgeArgsToObj(this._isDirected, v, w, name);
+  // Ensure we add undirected edges in a consistent way.
+  v = edgeObj.v;
+  w = edgeObj.w;
+
+  Object.freeze(edgeObj);
+  this._edgeObjs[e] = edgeObj;
+  incrementOrInitEntry(this._preds[w], v);
+  incrementOrInitEntry(this._sucs[v], w);
+  this._in[w][e] = edgeObj;
+  this._out[v][e] = edgeObj;
+  this._edgeCount++;
+  return this;
+};
+
+Graph$2.prototype.edge = function(v, w, name) {
+  var e = (arguments.length === 1
+    ? edgeObjToId(this._isDirected, arguments[0])
+    : edgeArgsToId(this._isDirected, v, w, name));
+  return this._edgeLabels[e];
+};
+
+Graph$2.prototype.hasEdge = function(v, w, name) {
+  var e = (arguments.length === 1
+    ? edgeObjToId(this._isDirected, arguments[0])
+    : edgeArgsToId(this._isDirected, v, w, name));
+  return _$b.has(this._edgeLabels, e);
+};
+
+Graph$2.prototype.removeEdge = function(v, w, name) {
+  var e = (arguments.length === 1
+    ? edgeObjToId(this._isDirected, arguments[0])
+    : edgeArgsToId(this._isDirected, v, w, name));
+  var edge = this._edgeObjs[e];
+  if (edge) {
+    v = edge.v;
+    w = edge.w;
+    delete this._edgeLabels[e];
+    delete this._edgeObjs[e];
+    decrementOrRemoveEntry(this._preds[w], v);
+    decrementOrRemoveEntry(this._sucs[v], w);
+    delete this._in[w][e];
+    delete this._out[v][e];
+    this._edgeCount--;
+  }
+  return this;
+};
+
+Graph$2.prototype.inEdges = function(v, u) {
+  var inV = this._in[v];
+  if (inV) {
+    var edges = _$b.values(inV);
+    if (!u) {
+      return edges;
+    }
+    return _$b.filter(edges, function(edge) { return edge.v === u; });
+  }
+};
+
+Graph$2.prototype.outEdges = function(v, w) {
+  var outV = this._out[v];
+  if (outV) {
+    var edges = _$b.values(outV);
+    if (!w) {
+      return edges;
+    }
+    return _$b.filter(edges, function(edge) { return edge.w === w; });
+  }
+};
+
+Graph$2.prototype.nodeEdges = function(v, w) {
+  var inEdges = this.inEdges(v, w);
+  if (inEdges) {
+    return inEdges.concat(this.outEdges(v, w));
+  }
+};
+
+function incrementOrInitEntry(map, k) {
+  if (map[k]) {
+    map[k]++;
+  } else {
+    map[k] = 1;
+  }
+}
+
+function decrementOrRemoveEntry(map, k) {
+  if (!--map[k]) { delete map[k]; }
+}
+
+function edgeArgsToId(isDirected, v_, w_, name) {
+  var v = "" + v_;
+  var w = "" + w_;
+  if (!isDirected && v > w) {
+    var tmp = v;
+    v = w;
+    w = tmp;
+  }
+  return v + EDGE_KEY_DELIM + w + EDGE_KEY_DELIM +
+             (_$b.isUndefined(name) ? DEFAULT_EDGE_NAME : name);
+}
+
+function edgeArgsToObj(isDirected, v_, w_, name) {
+  var v = "" + v_;
+  var w = "" + w_;
+  if (!isDirected && v > w) {
+    var tmp = v;
+    v = w;
+    w = tmp;
+  }
+  var edgeObj =  { v: v, w: w };
+  if (name) {
+    edgeObj.name = name;
+  }
+  return edgeObj;
+}
+
+function edgeObjToId(isDirected, edgeObj) {
+  return edgeArgsToId(isDirected, edgeObj.v, edgeObj.w, edgeObj.name);
+}
+
+var version = '2.1.8';
+
+// Includes only the "core" of graphlib
+var lib$1 = {
+  Graph: graph,
+  version: version
+};
+
+var _$a = lodash_1;
+var Graph$1 = graph;
+
+var json = {
+  write: write,
+  read: read
+};
+
+function write(g) {
+  var json = {
+    options: {
+      directed: g.isDirected(),
+      multigraph: g.isMultigraph(),
+      compound: g.isCompound()
+    },
+    nodes: writeNodes(g),
+    edges: writeEdges(g)
+  };
+  if (!_$a.isUndefined(g.graph())) {
+    json.value = _$a.clone(g.graph());
+  }
+  return json;
+}
+
+function writeNodes(g) {
+  return _$a.map(g.nodes(), function(v) {
+    var nodeValue = g.node(v);
+    var parent = g.parent(v);
+    var node = { v: v };
+    if (!_$a.isUndefined(nodeValue)) {
+      node.value = nodeValue;
+    }
+    if (!_$a.isUndefined(parent)) {
+      node.parent = parent;
+    }
+    return node;
+  });
+}
+
+function writeEdges(g) {
+  return _$a.map(g.edges(), function(e) {
+    var edgeValue = g.edge(e);
+    var edge = { v: e.v, w: e.w };
+    if (!_$a.isUndefined(e.name)) {
+      edge.name = e.name;
+    }
+    if (!_$a.isUndefined(edgeValue)) {
+      edge.value = edgeValue;
+    }
+    return edge;
+  });
+}
+
+function read(json) {
+  var g = new Graph$1(json.options).setGraph(json.value);
+  _$a.each(json.nodes, function(entry) {
+    g.setNode(entry.v, entry.value);
+    if (entry.parent) {
+      g.setParent(entry.v, entry.parent);
+    }
+  });
+  _$a.each(json.edges, function(entry) {
+    g.setEdge({ v: entry.v, w: entry.w, name: entry.name }, entry.value);
+  });
+  return g;
+}
+
+var _$9 = lodash_1;
+
+var components_1 = components;
+
+function components(g) {
+  var visited = {};
+  var cmpts = [];
+  var cmpt;
+
+  function dfs(v) {
+    if (_$9.has(visited, v)) return;
+    visited[v] = true;
+    cmpt.push(v);
+    _$9.each(g.successors(v), dfs);
+    _$9.each(g.predecessors(v), dfs);
+  }
+
+  _$9.each(g.nodes(), function(v) {
+    cmpt = [];
+    dfs(v);
+    if (cmpt.length) {
+      cmpts.push(cmpt);
+    }
+  });
+
+  return cmpts;
+}
+
+var _$8 = lodash_1;
+
+var priorityQueue = PriorityQueue$2;
+
+/**
+ * A min-priority queue data structure. This algorithm is derived from Cormen,
+ * et al., "Introduction to Algorithms". The basic idea of a min-priority
+ * queue is that you can efficiently (in O(1) time) get the smallest key in
+ * the queue. Adding and removing elements takes O(log n) time. A key can
+ * have its priority decreased in O(log n) time.
+ */
+function PriorityQueue$2() {
+  this._arr = [];
+  this._keyIndices = {};
+}
+
+/**
+ * Returns the number of elements in the queue. Takes `O(1)` time.
+ */
+PriorityQueue$2.prototype.size = function() {
+  return this._arr.length;
+};
+
+/**
+ * Returns the keys that are in the queue. Takes `O(n)` time.
+ */
+PriorityQueue$2.prototype.keys = function() {
+  return this._arr.map(function(x) { return x.key; });
+};
+
+/**
+ * Returns `true` if **key** is in the queue and `false` if not.
+ */
+PriorityQueue$2.prototype.has = function(key) {
+  return _$8.has(this._keyIndices, key);
+};
+
+/**
+ * Returns the priority for **key**. If **key** is not present in the queue
+ * then this function returns `undefined`. Takes `O(1)` time.
+ *
+ * @param {Object} key
+ */
+PriorityQueue$2.prototype.priority = function(key) {
+  var index = this._keyIndices[key];
+  if (index !== undefined) {
+    return this._arr[index].priority;
+  }
+};
+
+/**
+ * Returns the key for the minimum element in this queue. If the queue is
+ * empty this function throws an Error. Takes `O(1)` time.
+ */
+PriorityQueue$2.prototype.min = function() {
+  if (this.size() === 0) {
+    throw new Error("Queue underflow");
+  }
+  return this._arr[0].key;
+};
+
+/**
+ * Inserts a new key into the priority queue. If the key already exists in
+ * the queue this function returns `false`; otherwise it will return `true`.
+ * Takes `O(n)` time.
+ *
+ * @param {Object} key the key to add
+ * @param {Number} priority the initial priority for the key
+ */
+PriorityQueue$2.prototype.add = function(key, priority) {
+  var keyIndices = this._keyIndices;
+  key = String(key);
+  if (!_$8.has(keyIndices, key)) {
+    var arr = this._arr;
+    var index = arr.length;
+    keyIndices[key] = index;
+    arr.push({key: key, priority: priority});
+    this._decrease(index);
+    return true;
+  }
+  return false;
+};
+
+/**
+ * Removes and returns the smallest key in the queue. Takes `O(log n)` time.
+ */
+PriorityQueue$2.prototype.removeMin = function() {
+  this._swap(0, this._arr.length - 1);
+  var min = this._arr.pop();
+  delete this._keyIndices[min.key];
+  this._heapify(0);
+  return min.key;
+};
+
+/**
+ * Decreases the priority for **key** to **priority**. If the new priority is
+ * greater than the previous priority, this function will throw an Error.
+ *
+ * @param {Object} key the key for which to raise priority
+ * @param {Number} priority the new priority for the key
+ */
+PriorityQueue$2.prototype.decrease = function(key, priority) {
+  var index = this._keyIndices[key];
+  if (priority > this._arr[index].priority) {
+    throw new Error("New priority is greater than current priority. " +
+        "Key: " + key + " Old: " + this._arr[index].priority + " New: " + priority);
+  }
+  this._arr[index].priority = priority;
+  this._decrease(index);
+};
+
+PriorityQueue$2.prototype._heapify = function(i) {
+  var arr = this._arr;
+  var l = 2 * i;
+  var r = l + 1;
+  var largest = i;
+  if (l < arr.length) {
+    largest = arr[l].priority < arr[largest].priority ? l : largest;
+    if (r < arr.length) {
+      largest = arr[r].priority < arr[largest].priority ? r : largest;
+    }
+    if (largest !== i) {
+      this._swap(i, largest);
+      this._heapify(largest);
+    }
+  }
+};
+
+PriorityQueue$2.prototype._decrease = function(index) {
+  var arr = this._arr;
+  var priority = arr[index].priority;
+  var parent;
+  while (index !== 0) {
+    parent = index >> 1;
+    if (arr[parent].priority < priority) {
+      break;
+    }
+    this._swap(index, parent);
+    index = parent;
+  }
+};
+
+PriorityQueue$2.prototype._swap = function(i, j) {
+  var arr = this._arr;
+  var keyIndices = this._keyIndices;
+  var origArrI = arr[i];
+  var origArrJ = arr[j];
+  arr[i] = origArrJ;
+  arr[j] = origArrI;
+  keyIndices[origArrJ.key] = i;
+  keyIndices[origArrI.key] = j;
+};
+
+var _$7 = lodash_1;
+var PriorityQueue$1 = priorityQueue;
+
+var dijkstra_1 = dijkstra$1;
+
+var DEFAULT_WEIGHT_FUNC$1 = _$7.constant(1);
+
+function dijkstra$1(g, source, weightFn, edgeFn) {
+  return runDijkstra(g, String(source),
+    weightFn || DEFAULT_WEIGHT_FUNC$1,
+    edgeFn || function(v) { return g.outEdges(v); });
+}
+
+function runDijkstra(g, source, weightFn, edgeFn) {
+  var results = {};
+  var pq = new PriorityQueue$1();
+  var v, vEntry;
+
+  var updateNeighbors = function(edge) {
+    var w = edge.v !== v ? edge.v : edge.w;
+    var wEntry = results[w];
+    var weight = weightFn(edge);
+    var distance = vEntry.distance + weight;
+
+    if (weight < 0) {
+      throw new Error("dijkstra does not allow negative edge weights. " +
+                      "Bad edge: " + edge + " Weight: " + weight);
+    }
+
+    if (distance < wEntry.distance) {
+      wEntry.distance = distance;
+      wEntry.predecessor = v;
+      pq.decrease(w, distance);
+    }
+  };
+
+  g.nodes().forEach(function(v) {
+    var distance = v === source ? 0 : Number.POSITIVE_INFINITY;
+    results[v] = { distance: distance };
+    pq.add(v, distance);
+  });
+
+  while (pq.size() > 0) {
+    v = pq.removeMin();
+    vEntry = results[v];
+    if (vEntry.distance === Number.POSITIVE_INFINITY) {
+      break;
+    }
+
+    edgeFn(v).forEach(updateNeighbors);
+  }
+
+  return results;
+}
+
+var dijkstra = dijkstra_1;
+var _$6 = lodash_1;
+
+var dijkstraAll_1 = dijkstraAll;
+
+function dijkstraAll(g, weightFunc, edgeFunc) {
+  return _$6.transform(g.nodes(), function(acc, v) {
+    acc[v] = dijkstra(g, v, weightFunc, edgeFunc);
+  }, {});
+}
+
+var _$5 = lodash_1;
+
+var tarjan_1 = tarjan$1;
+
+function tarjan$1(g) {
+  var index = 0;
+  var stack = [];
+  var visited = {}; // node id -> { onStack, lowlink, index }
+  var results = [];
+
+  function dfs(v) {
+    var entry = visited[v] = {
+      onStack: true,
+      lowlink: index,
+      index: index++
+    };
+    stack.push(v);
+
+    g.successors(v).forEach(function(w) {
+      if (!_$5.has(visited, w)) {
+        dfs(w);
+        entry.lowlink = Math.min(entry.lowlink, visited[w].lowlink);
+      } else if (visited[w].onStack) {
+        entry.lowlink = Math.min(entry.lowlink, visited[w].index);
+      }
+    });
+
+    if (entry.lowlink === entry.index) {
+      var cmpt = [];
+      var w;
+      do {
+        w = stack.pop();
+        visited[w].onStack = false;
+        cmpt.push(w);
+      } while (v !== w);
+      results.push(cmpt);
+    }
+  }
+
+  g.nodes().forEach(function(v) {
+    if (!_$5.has(visited, v)) {
+      dfs(v);
+    }
+  });
+
+  return results;
+}
+
+var _$4 = lodash_1;
+var tarjan = tarjan_1;
+
+var findCycles_1 = findCycles;
+
+function findCycles(g) {
+  return _$4.filter(tarjan(g), function(cmpt) {
+    return cmpt.length > 1 || (cmpt.length === 1 && g.hasEdge(cmpt[0], cmpt[0]));
+  });
+}
+
+var _$3 = lodash_1;
+
+var floydWarshall_1 = floydWarshall;
+
+var DEFAULT_WEIGHT_FUNC = _$3.constant(1);
+
+function floydWarshall(g, weightFn, edgeFn) {
+  return runFloydWarshall(g,
+    weightFn || DEFAULT_WEIGHT_FUNC,
+    edgeFn || function(v) { return g.outEdges(v); });
+}
+
+function runFloydWarshall(g, weightFn, edgeFn) {
+  var results = {};
+  var nodes = g.nodes();
+
+  nodes.forEach(function(v) {
+    results[v] = {};
+    results[v][v] = { distance: 0 };
+    nodes.forEach(function(w) {
+      if (v !== w) {
+        results[v][w] = { distance: Number.POSITIVE_INFINITY };
+      }
+    });
+    edgeFn(v).forEach(function(edge) {
+      var w = edge.v === v ? edge.w : edge.v;
+      var d = weightFn(edge);
+      results[v][w] = { distance: d, predecessor: v };
+    });
+  });
+
+  nodes.forEach(function(k) {
+    var rowK = results[k];
+    nodes.forEach(function(i) {
+      var rowI = results[i];
+      nodes.forEach(function(j) {
+        var ik = rowI[k];
+        var kj = rowK[j];
+        var ij = rowI[j];
+        var altDistance = ik.distance + kj.distance;
+        if (altDistance < ij.distance) {
+          ij.distance = altDistance;
+          ij.predecessor = kj.predecessor;
+        }
+      });
+    });
+  });
+
+  return results;
+}
+
+var _$2 = lodash_1;
+
+var topsort_1 = topsort$1;
+topsort$1.CycleException = CycleException;
+
+function topsort$1(g) {
+  var visited = {};
+  var stack = {};
+  var results = [];
+
+  function visit(node) {
+    if (_$2.has(stack, node)) {
+      throw new CycleException();
+    }
+
+    if (!_$2.has(visited, node)) {
+      stack[node] = true;
+      visited[node] = true;
+      _$2.each(g.predecessors(node), visit);
+      delete stack[node];
+      results.push(node);
+    }
+  }
+
+  _$2.each(g.sinks(), visit);
+
+  if (_$2.size(visited) !== g.nodeCount()) {
+    throw new CycleException();
+  }
+
+  return results;
+}
+
+function CycleException() {}
+CycleException.prototype = new Error(); // must be an instance of Error to pass testing
+
+var topsort = topsort_1;
+
+var isAcyclic_1 = isAcyclic;
+
+function isAcyclic(g) {
+  try {
+    topsort(g);
+  } catch (e) {
+    if (e instanceof topsort.CycleException) {
+      return false;
+    }
+    throw e;
+  }
+  return true;
+}
+
+var _$1 = lodash_1;
+
+var dfs_1 = dfs$2;
+
+/*
+ * A helper that preforms a pre- or post-order traversal on the input graph
+ * and returns the nodes in the order they were visited. If the graph is
+ * undirected then this algorithm will navigate using neighbors. If the graph
+ * is directed then this algorithm will navigate using successors.
+ *
+ * Order must be one of "pre" or "post".
+ */
+function dfs$2(g, vs, order) {
+  if (!_$1.isArray(vs)) {
+    vs = [vs];
+  }
+
+  var navigation = (g.isDirected() ? g.successors : g.neighbors).bind(g);
+
+  var acc = [];
+  var visited = {};
+  _$1.each(vs, function(v) {
+    if (!g.hasNode(v)) {
+      throw new Error("Graph does not have node: " + v);
+    }
+
+    doDfs(g, v, order === "post", visited, navigation, acc);
+  });
+  return acc;
+}
+
+function doDfs(g, v, postorder, visited, navigation, acc) {
+  if (!_$1.has(visited, v)) {
+    visited[v] = true;
+
+    if (!postorder) { acc.push(v); }
+    _$1.each(navigation(v), function(w) {
+      doDfs(g, w, postorder, visited, navigation, acc);
+    });
+    if (postorder) { acc.push(v); }
+  }
+}
+
+var dfs$1 = dfs_1;
+
+var postorder_1 = postorder;
+
+function postorder(g, vs) {
+  return dfs$1(g, vs, "post");
+}
+
+var dfs = dfs_1;
+
+var preorder_1 = preorder;
+
+function preorder(g, vs) {
+  return dfs(g, vs, "pre");
+}
+
+var _ = lodash_1;
+var Graph = graph;
+var PriorityQueue = priorityQueue;
+
+var prim_1 = prim;
+
+function prim(g, weightFunc) {
+  var result = new Graph();
+  var parents = {};
+  var pq = new PriorityQueue();
+  var v;
+
+  function updateNeighbors(edge) {
+    var w = edge.v === v ? edge.w : edge.v;
+    var pri = pq.priority(w);
+    if (pri !== undefined) {
+      var edgeWeight = weightFunc(edge);
+      if (edgeWeight < pri) {
+        parents[w] = v;
+        pq.decrease(w, edgeWeight);
+      }
+    }
+  }
+
+  if (g.nodeCount() === 0) {
+    return result;
+  }
+
+  _.each(g.nodes(), function(v) {
+    pq.add(v, Number.POSITIVE_INFINITY);
+    result.setNode(v);
+  });
+
+  // Start from an arbitrary node
+  pq.decrease(g.nodes()[0], 0);
+
+  var init = false;
+  while (pq.size() > 0) {
+    v = pq.removeMin();
+    if (_.has(parents, v)) {
+      result.setEdge(v, parents[v]);
+    } else if (init) {
+      throw new Error("Input graph is not connected: " + g);
+    } else {
+      init = true;
+    }
+
+    g.nodeEdges(v).forEach(updateNeighbors);
+  }
+
+  return result;
+}
+
+var alg = {
+  components: components_1,
+  dijkstra: dijkstra_1,
+  dijkstraAll: dijkstraAll_1,
+  findCycles: findCycles_1,
+  floydWarshall: floydWarshall_1,
+  isAcyclic: isAcyclic_1,
+  postorder: postorder_1,
+  preorder: preorder_1,
+  prim: prim_1,
+  tarjan: tarjan_1,
+  topsort: topsort_1
+};
+
+/**
+ * Copyright (c) 2014, Chris Pettitt
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ * list of conditions and the following disclaimer.
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ * this list of conditions and the following disclaimer in the documentation
+ * and/or other materials provided with the distribution.
+ *
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ * may be used to endorse or promote products derived from this software without
+ * specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+var lib = lib$1;
+
+var graphlib = {
+  Graph: lib.Graph,
+  json: json,
+  alg: alg,
+  version: lib.version
+};
+
+var objectHash = {exports: {}};
+
+(function (module, exports) {
+
+var crypto = require$$0$3;
+
+/**
+ * Exported function
+ *
+ * Options:
+ *
+ *  - `algorithm` hash algo to be used by this instance: *'sha1', 'md5'
+ *  - `excludeValues` {true|*false} hash object keys, values ignored
+ *  - `encoding` hash encoding, supports 'buffer', '*hex', 'binary', 'base64'
+ *  - `ignoreUnknown` {true|*false} ignore unknown object types
+ *  - `replacer` optional function that replaces values before hashing
+ *  - `respectFunctionProperties` {*true|false} consider function properties when hashing
+ *  - `respectFunctionNames` {*true|false} consider 'name' property of functions for hashing
+ *  - `respectType` {*true|false} Respect special properties (prototype, constructor)
+ *    when hashing to distinguish between types
+ *  - `unorderedArrays` {true|*false} Sort all arrays before hashing
+ *  - `unorderedSets` {*true|false} Sort `Set` and `Map` instances before hashing
+ *  * = default
+ *
+ * @param {object} object value to hash
+ * @param {object} options hashing options
+ * @return {string} hash value
+ * @api public
+ */
+exports = module.exports = objectHash;
+
+function objectHash(object, options){
+  options = applyDefaults(object, options);
+
+  return hash(object, options);
+}
+
+/**
+ * Exported sugar methods
+ *
+ * @param {object} object value to hash
+ * @return {string} hash value
+ * @api public
+ */
+exports.sha1 = function(object){
+  return objectHash(object);
+};
+exports.keys = function(object){
+  return objectHash(object, {excludeValues: true, algorithm: 'sha1', encoding: 'hex'});
+};
+exports.MD5 = function(object){
+  return objectHash(object, {algorithm: 'md5', encoding: 'hex'});
+};
+exports.keysMD5 = function(object){
+  return objectHash(object, {algorithm: 'md5', encoding: 'hex', excludeValues: true});
+};
+
+// Internals
+var hashes = crypto.getHashes ? crypto.getHashes().slice() : ['sha1', 'md5'];
+hashes.push('passthrough');
+var encodings = ['buffer', 'hex', 'binary', 'base64'];
+
+function applyDefaults(object, sourceOptions){
+  sourceOptions = sourceOptions || {};
+
+  // create a copy rather than mutating
+  var options = {};
+  options.algorithm = sourceOptions.algorithm || 'sha1';
+  options.encoding = sourceOptions.encoding || 'hex';
+  options.excludeValues = sourceOptions.excludeValues ? true : false;
+  options.algorithm = options.algorithm.toLowerCase();
+  options.encoding = options.encoding.toLowerCase();
+  options.ignoreUnknown = sourceOptions.ignoreUnknown !== true ? false : true; // default to false
+  options.respectType = sourceOptions.respectType === false ? false : true; // default to true
+  options.respectFunctionNames = sourceOptions.respectFunctionNames === false ? false : true;
+  options.respectFunctionProperties = sourceOptions.respectFunctionProperties === false ? false : true;
+  options.unorderedArrays = sourceOptions.unorderedArrays !== true ? false : true; // default to false
+  options.unorderedSets = sourceOptions.unorderedSets === false ? false : true; // default to false
+  options.unorderedObjects = sourceOptions.unorderedObjects === false ? false : true; // default to true
+  options.replacer = sourceOptions.replacer || undefined;
+  options.excludeKeys = sourceOptions.excludeKeys || undefined;
+
+  if(typeof object === 'undefined') {
+    throw new Error('Object argument required.');
+  }
+
+  // if there is a case-insensitive match in the hashes list, accept it
+  // (i.e. SHA256 for sha256)
+  for (var i = 0; i < hashes.length; ++i) {
+    if (hashes[i].toLowerCase() === options.algorithm.toLowerCase()) {
+      options.algorithm = hashes[i];
+    }
+  }
+
+  if(hashes.indexOf(options.algorithm) === -1){
+    throw new Error('Algorithm "' + options.algorithm + '"  not supported. ' +
+      'supported values: ' + hashes.join(', '));
+  }
+
+  if(encodings.indexOf(options.encoding) === -1 &&
+     options.algorithm !== 'passthrough'){
+    throw new Error('Encoding "' + options.encoding + '"  not supported. ' +
+      'supported values: ' + encodings.join(', '));
+  }
+
+  return options;
+}
+
+/** Check if the given function is a native function */
+function isNativeFunction(f) {
+  if ((typeof f) !== 'function') {
+    return false;
+  }
+  var exp = /^function\s+\w*\s*\(\s*\)\s*{\s+\[native code\]\s+}$/i;
+  return exp.exec(Function.prototype.toString.call(f)) != null;
+}
+
+function hash(object, options) {
+  var hashingStream;
+
+  if (options.algorithm !== 'passthrough') {
+    hashingStream = crypto.createHash(options.algorithm);
+  } else {
+    hashingStream = new PassThrough();
+  }
+
+  if (typeof hashingStream.write === 'undefined') {
+    hashingStream.write = hashingStream.update;
+    hashingStream.end   = hashingStream.update;
+  }
+
+  var hasher = typeHasher(options, hashingStream);
+  hasher.dispatch(object);
+  if (!hashingStream.update) {
+    hashingStream.end('');
+  }
+
+  if (hashingStream.digest) {
+    return hashingStream.digest(options.encoding === 'buffer' ? undefined : options.encoding);
+  }
+
+  var buf = hashingStream.read();
+  if (options.encoding === 'buffer') {
+    return buf;
+  }
+
+  return buf.toString(options.encoding);
+}
+
+/**
+ * Expose streaming API
+ *
+ * @param {object} object  Value to serialize
+ * @param {object} options  Options, as for hash()
+ * @param {object} stream  A stream to write the serializiation to
+ * @api public
+ */
+exports.writeToStream = function(object, options, stream) {
+  if (typeof stream === 'undefined') {
+    stream = options;
+    options = {};
+  }
+
+  options = applyDefaults(object, options);
+
+  return typeHasher(options, stream).dispatch(object);
+};
+
+function typeHasher(options, writeTo, context){
+  context = context || [];
+  var write = function(str) {
+    if (writeTo.update) {
+      return writeTo.update(str, 'utf8');
+    } else {
+      return writeTo.write(str, 'utf8');
+    }
+  };
+
+  return {
+    dispatch: function(value){
+      if (options.replacer) {
+        value = options.replacer(value);
+      }
+
+      var type = typeof value;
+      if (value === null) {
+        type = 'null';
+      }
+
+      //console.log("[DEBUG] Dispatch: ", value, "->", type, " -> ", "_" + type);
+
+      return this['_' + type](value);
+    },
+    _object: function(object) {
+      var pattern = (/\[object (.*)\]/i);
+      var objString = Object.prototype.toString.call(object);
+      var objType = pattern.exec(objString);
+      if (!objType) { // object type did not match [object ...]
+        objType = 'unknown:[' + objString + ']';
+      } else {
+        objType = objType[1]; // take only the class name
+      }
+
+      objType = objType.toLowerCase();
+
+      var objectNumber = null;
+
+      if ((objectNumber = context.indexOf(object)) >= 0) {
+        return this.dispatch('[CIRCULAR:' + objectNumber + ']');
+      } else {
+        context.push(object);
+      }
+
+      if (typeof Buffer !== 'undefined' && Buffer.isBuffer && Buffer.isBuffer(object)) {
+        write('buffer:');
+        return write(object);
+      }
+
+      if(objType !== 'object' && objType !== 'function' && objType !== 'asyncfunction') {
+        if(this['_' + objType]) {
+          this['_' + objType](object);
+        } else if (options.ignoreUnknown) {
+          return write('[' + objType + ']');
+        } else {
+          throw new Error('Unknown object type "' + objType + '"');
+        }
+      }else {
+        var keys = Object.keys(object);
+        if (options.unorderedObjects) {
+          keys = keys.sort();
+        }
+        // Make sure to incorporate special properties, so
+        // Types with different prototypes will produce
+        // a different hash and objects derived from
+        // different functions (`new Foo`, `new Bar`) will
+        // produce different hashes.
+        // We never do this for native functions since some
+        // seem to break because of that.
+        if (options.respectType !== false && !isNativeFunction(object)) {
+          keys.splice(0, 0, 'prototype', '__proto__', 'constructor');
+        }
+
+        if (options.excludeKeys) {
+          keys = keys.filter(function(key) { return !options.excludeKeys(key); });
+        }
+
+        write('object:' + keys.length + ':');
+        var self = this;
+        return keys.forEach(function(key){
+          self.dispatch(key);
+          write(':');
+          if(!options.excludeValues) {
+            self.dispatch(object[key]);
+          }
+          write(',');
+        });
+      }
+    },
+    _array: function(arr, unordered){
+      unordered = typeof unordered !== 'undefined' ? unordered :
+        options.unorderedArrays !== false; // default to options.unorderedArrays
+
+      var self = this;
+      write('array:' + arr.length + ':');
+      if (!unordered || arr.length <= 1) {
+        return arr.forEach(function(entry) {
+          return self.dispatch(entry);
+        });
+      }
+
+      // the unordered case is a little more complicated:
+      // since there is no canonical ordering on objects,
+      // i.e. {a:1} < {a:2} and {a:1} > {a:2} are both false,
+      // we first serialize each entry using a PassThrough stream
+      // before sorting.
+      // also: we can’t use the same context array for all entries
+      // since the order of hashing should *not* matter. instead,
+      // we keep track of the additions to a copy of the context array
+      // and add all of them to the global context array when we’re done
+      var contextAdditions = [];
+      var entries = arr.map(function(entry) {
+        var strm = new PassThrough();
+        var localContext = context.slice(); // make copy
+        var hasher = typeHasher(options, strm, localContext);
+        hasher.dispatch(entry);
+        // take only what was added to localContext and append it to contextAdditions
+        contextAdditions = contextAdditions.concat(localContext.slice(context.length));
+        return strm.read().toString();
+      });
+      context = context.concat(contextAdditions);
+      entries.sort();
+      return this._array(entries, false);
+    },
+    _date: function(date){
+      return write('date:' + date.toJSON());
+    },
+    _symbol: function(sym){
+      return write('symbol:' + sym.toString());
+    },
+    _error: function(err){
+      return write('error:' + err.toString());
+    },
+    _boolean: function(bool){
+      return write('bool:' + bool.toString());
+    },
+    _string: function(string){
+      write('string:' + string.length + ':');
+      write(string.toString());
+    },
+    _function: function(fn){
+      write('fn:');
+      if (isNativeFunction(fn)) {
+        this.dispatch('[native]');
+      } else {
+        this.dispatch(fn.toString());
+      }
+
+      if (options.respectFunctionNames !== false) {
+        // Make sure we can still distinguish native functions
+        // by their name, otherwise String and Function will
+        // have the same hash
+        this.dispatch("function-name:" + String(fn.name));
+      }
+
+      if (options.respectFunctionProperties) {
+        this._object(fn);
+      }
+    },
+    _number: function(number){
+      return write('number:' + number.toString());
+    },
+    _xml: function(xml){
+      return write('xml:' + xml.toString());
+    },
+    _null: function() {
+      return write('Null');
+    },
+    _undefined: function() {
+      return write('Undefined');
+    },
+    _regexp: function(regex){
+      return write('regex:' + regex.toString());
+    },
+    _uint8array: function(arr){
+      write('uint8array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _uint8clampedarray: function(arr){
+      write('uint8clampedarray:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _int8array: function(arr){
+      write('int8array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _uint16array: function(arr){
+      write('uint16array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _int16array: function(arr){
+      write('int16array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _uint32array: function(arr){
+      write('uint32array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _int32array: function(arr){
+      write('int32array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _float32array: function(arr){
+      write('float32array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _float64array: function(arr){
+      write('float64array:');
+      return this.dispatch(Array.prototype.slice.call(arr));
+    },
+    _arraybuffer: function(arr){
+      write('arraybuffer:');
+      return this.dispatch(new Uint8Array(arr));
+    },
+    _url: function(url) {
+      return write('url:' + url.toString());
+    },
+    _map: function(map) {
+      write('map:');
+      var arr = Array.from(map);
+      return this._array(arr, options.unorderedSets !== false);
+    },
+    _set: function(set) {
+      write('set:');
+      var arr = Array.from(set);
+      return this._array(arr, options.unorderedSets !== false);
+    },
+    _file: function(file) {
+      write('file:');
+      return this.dispatch([file.name, file.size, file.type, file.lastModfied]);
+    },
+    _blob: function() {
+      if (options.ignoreUnknown) {
+        return write('[blob]');
+      }
+
+      throw Error('Hashing Blob objects is currently not supported\n' +
+        '(see https://github.com/puleos/object-hash/issues/26)\n' +
+        'Use "options.replacer" or "options.ignoreUnknown"\n');
+    },
+    _domwindow: function() { return write('domwindow'); },
+    _bigint: function(number){
+      return write('bigint:' + number.toString());
+    },
+    /* Node.js standard native objects */
+    _process: function() { return write('process'); },
+    _timer: function() { return write('timer'); },
+    _pipe: function() { return write('pipe'); },
+    _tcp: function() { return write('tcp'); },
+    _udp: function() { return write('udp'); },
+    _tty: function() { return write('tty'); },
+    _statwatcher: function() { return write('statwatcher'); },
+    _securecontext: function() { return write('securecontext'); },
+    _connection: function() { return write('connection'); },
+    _zlib: function() { return write('zlib'); },
+    _context: function() { return write('context'); },
+    _nodescript: function() { return write('nodescript'); },
+    _httpparser: function() { return write('httpparser'); },
+    _dataview: function() { return write('dataview'); },
+    _signal: function() { return write('signal'); },
+    _fsevent: function() { return write('fsevent'); },
+    _tlswrap: function() { return write('tlswrap'); },
+  };
+}
+
+// Mini-implementation of stream.PassThrough
+// We are far from having need for the full implementation, and we can
+// make assumptions like "many writes, then only one final read"
+// and we can ignore encoding specifics
+function PassThrough() {
+  return {
+    buf: '',
+
+    write: function(b) {
+      this.buf += b;
+    },
+
+    end: function(b) {
+      this.buf += b;
+    },
+
+    read: function() {
+      return this.buf;
+    }
+  };
+}
+}(objectHash, objectHash.exports));
+
+var hash = objectHash.exports;
+
+/**
+ * Saves data in new cache folder or reads it from old one.
+ * Avoids perpetually growing cache and situations when things need to consider changed and then reverted data to be changed.
+ */
+class RollingCache {
+    /**
+     * @param cacheRoot: root folder for the cache
+     * @param checkNewCache: whether to also look in new cache when reading from cache
+     */
+    constructor(cacheRoot, checkNewCache) {
+        this.cacheRoot = cacheRoot;
+        this.checkNewCache = checkNewCache;
+        this.rolled = false;
+        this.oldCacheRoot = `${this.cacheRoot}/cache`;
+        this.newCacheRoot = `${this.cacheRoot}/cache_`;
+        emptyDirSync(this.newCacheRoot);
+    }
+    /**
+     * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
+     */
+    exists(name) {
+        if (this.rolled)
+            return false;
+        if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
+            return true;
+        return existsSync(`${this.oldCacheRoot}/${name}`);
+    }
+    path(name) {
+        return `${this.oldCacheRoot}/${name}`;
+    }
+    /**
+     * @returns true if old cache contains all names and nothing more
+     */
+    match(names) {
+        if (this.rolled)
+            return false;
+        if (!existsSync(this.oldCacheRoot))
+            return names.length === 0; // empty folder matches
+        return lodash$1.exports.isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
+    }
+    /**
+     * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
+     */
+    read(name) {
+        if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
+            return readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8", throws: false });
+        return readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8", throws: false });
+    }
+    write(name, data) {
+        if (this.rolled)
+            return;
+        if (data === undefined)
+            return;
+        writeJsonSync(`${this.newCacheRoot}/${name}`, data);
+    }
+    touch(name) {
+        if (this.rolled)
+            return;
+        ensureFileSync(`${this.newCacheRoot}/${name}`);
+    }
+    /**
+     * clears old cache and moves new in its place
+     */
+    roll() {
+        if (this.rolled)
+            return;
+        this.rolled = true;
+        removeSync(this.oldCacheRoot);
+        if (existsSync(this.newCacheRoot)) {
+            renameSync(this.newCacheRoot, this.oldCacheRoot);
+        }
+    }
+}
+
+class FormatHost {
+    getCurrentDirectory() {
+        return tsModule.sys.getCurrentDirectory();
+    }
+    getCanonicalFileName(fileName) {
+        return require$$0.normalize(fileName);
+    }
+    getNewLine() {
+        return tsModule.sys.newLine;
+    }
+}
+const formatHost = new FormatHost();
+
+class NoCache {
+    exists(_name) {
+        return false;
+    }
+    path(name) {
+        return name;
+    }
+    match(_names) {
+        return false;
+    }
+    read(_name) {
+        return undefined;
+    }
+    write(_name, _data) {
+        return;
+    }
+    touch(_name) {
+        return;
+    }
+    roll() {
+        return;
+    }
+}
+
+function convertEmitOutput(output, references) {
+    const out = { code: "", references };
+    output.outputFiles.forEach((e) => {
+        if (e.name.endsWith(".d.ts"))
+            out.dts = e;
+        else if (e.name.endsWith(".d.ts.map"))
+            out.dtsmap = e;
+        else if (e.name.endsWith(".map"))
+            out.map = e.text;
+        else
+            out.code = e.text;
+    });
+    return out;
+}
+function getAllReferences(importer, snapshot, options) {
+    if (!snapshot)
+        return [];
+    const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
+    return lodash$1.exports.compact(info.referencedFiles.concat(info.importedFiles).map((reference) => {
+        var _a;
+        const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
+        return (_a = resolved.resolvedModule) === null || _a === void 0 ? void 0 : _a.resolvedFileName;
+    }));
+}
+function convertDiagnostic(type, data) {
+    return data.map((diagnostic) => {
+        const entry = {
+            flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+            formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
+            category: diagnostic.category,
+            code: diagnostic.code,
+            type,
+        };
+        if (diagnostic.file && diagnostic.start !== undefined) {
+            const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
+        }
+        return entry;
+    });
+}
+class TsCache {
+    constructor(noCache, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
+        this.noCache = noCache;
+        this.host = host;
+        this.cacheRoot = cacheRoot;
+        this.options = options;
+        this.rollupConfig = rollupConfig;
+        this.context = context;
+        this.cacheVersion = "9";
+        this.cachePrefix = "rpt2_";
+        this.ambientTypesDirty = false;
+        this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
+        this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
+        if (!noCache) {
+            this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${hash({
+                version: this.cacheVersion,
+                rootFilenames,
+                options: this.options,
+                rollupConfig: this.rollupConfig,
+                tsVersion: tsModule.version,
+            }, this.hashOptions)}`;
+        }
+        this.dependencyTree = new graphlib.Graph({ directed: true });
+        this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
+        const automaticTypes = tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys).map((entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+            .filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
+            .map((entry) => entry.resolvedTypeReferenceDirective.resolvedFileName);
+        this.ambientTypes = rootFilenames.filter(file => file.endsWith(".d.ts"))
+            .concat(automaticTypes)
+            .map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
+        this.init();
+        this.checkAmbientTypes();
+    }
+    clean() {
+        if (pathExistsSync(this.cacheRoot)) {
+            const entries = readdirSync$1(this.cacheRoot);
+            entries.forEach((e) => {
+                const dir = `${this.cacheRoot}/${e}`;
+                if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory) {
+                    this.context.info(safe.exports.blue(`cleaning cache: ${dir}`));
+                    emptyDirSync(`${dir}`);
+                    removeSync(`${dir}`);
+                }
+                else
+                    this.context.debug(`not cleaning ${dir}`);
+            });
+        }
+        this.init();
+    }
+    setDependency(importee, importer) {
+        // importee -> importer
+        this.context.debug(`${safe.exports.blue("dependency")} '${importee}'`);
+        this.context.debug(`    imported by '${importer}'`);
+        this.dependencyTree.setEdge(importer, importee);
+    }
+    walkTree(cb) {
+        const acyclic = graphlib.alg.isAcyclic(this.dependencyTree);
+        if (acyclic) {
+            graphlib.alg.topsort(this.dependencyTree).forEach(id => cb(id));
+            return;
+        }
+        this.context.info(safe.exports.yellow("import tree has cycles"));
+        this.dependencyTree.nodes().forEach(id => cb(id));
+    }
+    done() {
+        this.context.info(safe.exports.blue("rolling caches"));
+        this.codeCache.roll();
+        this.semanticDiagnosticsCache.roll();
+        this.syntacticDiagnosticsCache.roll();
+        this.typesCache.roll();
+    }
+    getCompiled(id, snapshot, transform) {
+        if (this.noCache) {
+            this.context.info(`${safe.exports.blue("transpiling")} '${id}'`);
+            this.markAsDirty(id);
+            return transform();
+        }
+        const name = this.makeName(id, snapshot);
+        this.context.info(`${safe.exports.blue("transpiling")} '${id}'`);
+        this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
+        if (this.codeCache.exists(name) && !this.isDirty(id, false)) {
+            this.context.debug(safe.exports.green("    cache hit"));
+            const data = this.codeCache.read(name);
+            if (data) {
+                this.codeCache.write(name, data);
+                return data;
+            }
+            else
+                this.context.warn(safe.exports.yellow("    cache broken, discarding"));
+        }
+        this.context.debug(safe.exports.yellow("    cache miss"));
+        const transformedData = transform();
+        this.codeCache.write(name, transformedData);
+        this.markAsDirty(id);
+        return transformedData;
+    }
+    getSyntacticDiagnostics(id, snapshot, check) {
+        return this.getDiagnostics("syntax", this.syntacticDiagnosticsCache, id, snapshot, check);
+    }
+    getSemanticDiagnostics(id, snapshot, check) {
+        return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
+    }
+    checkAmbientTypes() {
+        if (this.noCache) {
+            this.ambientTypesDirty = true;
+            return;
+        }
+        this.context.debug(safe.exports.blue("Ambient types:"));
+        const typeNames = this.ambientTypes.filter((snapshot) => snapshot.snapshot !== undefined)
+            .map((snapshot) => {
+            this.context.debug(`    ${snapshot.id}`);
+            return this.makeName(snapshot.id, snapshot.snapshot);
+        });
+        // types dirty if any d.ts changed, added or removed
+        this.ambientTypesDirty = !this.typesCache.match(typeNames);
+        if (this.ambientTypesDirty)
+            this.context.info(safe.exports.yellow("ambient types changed, redoing all semantic diagnostics"));
+        typeNames.forEach(this.typesCache.touch, this.typesCache);
+    }
+    getDiagnostics(type, cache, id, snapshot, check) {
+        if (this.noCache) {
+            this.markAsDirty(id);
+            return convertDiagnostic(type, check());
+        }
+        const name = this.makeName(id, snapshot);
+        this.context.debug(`    cache: '${cache.path(name)}'`);
+        if (cache.exists(name) && !this.isDirty(id, true)) {
+            this.context.debug(safe.exports.green("    cache hit"));
+            const data = cache.read(name);
+            if (data) {
+                cache.write(name, data);
+                return data;
+            }
+            else
+                this.context.warn(safe.exports.yellow("    cache broken, discarding"));
+        }
+        this.context.debug(safe.exports.yellow("    cache miss"));
+        const convertedData = convertDiagnostic(type, check());
+        cache.write(name, convertedData);
+        this.markAsDirty(id);
+        return convertedData;
+    }
+    init() {
+        if (this.noCache) {
+            this.codeCache = new NoCache();
+            this.typesCache = new NoCache();
+            this.syntacticDiagnosticsCache = new NoCache();
+            this.semanticDiagnosticsCache = new NoCache();
+        }
+        else {
+            if (this.cacheDir === undefined)
+                throw new Error(`this.cacheDir undefined`);
+            this.codeCache = new RollingCache(`${this.cacheDir}/code`, true);
+            this.typesCache = new RollingCache(`${this.cacheDir}/types`, true);
+            this.syntacticDiagnosticsCache = new RollingCache(`${this.cacheDir}/syntacticDiagnostics`, true);
+            this.semanticDiagnosticsCache = new RollingCache(`${this.cacheDir}/semanticDiagnostics`, true);
+        }
+    }
+    markAsDirty(id) {
+        this.dependencyTree.setNode(id, { dirty: true });
+    }
+    // returns true if node or any of its imports or any of global types changed
+    isDirty(id, checkImports) {
+        const label = this.dependencyTree.node(id);
+        if (!label)
+            return false;
+        if (!checkImports || label.dirty)
+            return label.dirty;
+        if (this.ambientTypesDirty)
+            return true;
+        const dependencies = graphlib.alg.dijkstra(this.dependencyTree, id);
+        return Object.keys(dependencies).some(node => {
+            const dependency = dependencies[node];
+            if (!node || dependency.distance === Infinity)
+                return false;
+            const l = this.dependencyTree.node(node);
+            const dirty = l === undefined ? true : l.dirty;
+            if (dirty)
+                this.context.debug(`    import changed: ${node}`);
+            return dirty;
+        });
+    }
+    makeName(id, snapshot) {
+        const data = snapshot.getText(0, snapshot.getLength());
+        return hash({ data, id }, this.hashOptions);
+    }
+}
+
+function printDiagnostics(context, diagnostics, pretty) {
+    diagnostics.forEach((diagnostic) => {
+        let print;
+        let color;
+        let category;
+        switch (diagnostic.category) {
+            case tsModule.DiagnosticCategory.Message:
+                print = context.info;
+                color = safe.exports.white;
+                category = "";
+                break;
+            case tsModule.DiagnosticCategory.Error:
+                print = context.error;
+                color = safe.exports.red;
+                category = "error";
+                break;
+            case tsModule.DiagnosticCategory.Warning:
+            default:
+                print = context.warn;
+                color = safe.exports.yellow;
+                category = "warning";
+                break;
+        }
+        const type = diagnostic.type + " ";
+        if (pretty)
+            print.call(context, `${diagnostic.formatted}`);
+        else {
+            if (diagnostic.fileLine !== undefined)
+                print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
+            else
+                print.call(context, `${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
+        }
+    });
+}
+
+function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
+    const overrides = {
+        noEmitHelpers: false,
+        importHelpers: true,
+        noResolve: false,
+        noEmit: false,
+        noEmitOnError: false,
+        inlineSourceMap: false,
+        outDir: normalizePath(`${cacheRoot}/placeholder`),
+        moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
+        allowNonTsExtensions: true,
+    };
+    if (preParsedTsconfig) {
+        if (preParsedTsconfig.options.module === undefined)
+            overrides.module = tsModule.ModuleKind.ES2015;
+        // only set declarationDir if useTsconfigDeclarationDir is enabled
+        if (!useTsconfigDeclarationDir)
+            overrides.declarationDir = undefined;
+        // unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
+        const sourceMap = preParsedTsconfig.options.sourceMap;
+        if (!sourceMap)
+            overrides.sourceRoot = undefined;
+    }
+    return overrides;
+}
+function expandIncludeWithDirs(include, dirs) {
+    const newDirs = [];
+    dirs.forEach(root => {
+        if (include instanceof Array)
+            include.forEach(x => newDirs.push(normalizePath(require$$0.join(root, x))));
+        else
+            newDirs.push(normalizePath(require$$0.join(root, include)));
+    });
+    return newDirs;
+}
+function createFilter(context, pluginOptions, parsedConfig) {
+    let included = pluginOptions.include;
+    let excluded = pluginOptions.exclude;
+    if (parsedConfig.options.rootDirs) {
+        included = expandIncludeWithDirs(included, parsedConfig.options.rootDirs);
+        excluded = expandIncludeWithDirs(excluded, parsedConfig.options.rootDirs);
+    }
+    if (parsedConfig.projectReferences) {
+        included = expandIncludeWithDirs(included, parsedConfig.projectReferences.map((x) => x.path)).concat(included);
+        excluded = expandIncludeWithDirs(excluded, parsedConfig.projectReferences.map((x) => x.path)).concat(excluded);
+    }
+    context.debug(() => `included:\n${JSON.stringify(included, undefined, 4)}`);
+    context.debug(() => `excluded:\n${JSON.stringify(excluded, undefined, 4)}`);
+    return createFilter$1(included, excluded, { resolve: parsedConfig.options.rootDir });
+}
+
+function checkTsConfig(parsedConfig) {
+    const module = parsedConfig.options.module;
+    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ESNext && module !== tsModule.ModuleKind.ES2020)
+        throw new Error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with rollup, please use 'module: "ES2015"' or 'module: "ESNext"'.`);
+}
+
+function parseTsConfig(context, pluginOptions) {
+    var _a, _b;
+    const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
+    // if the value was provided, but no file, fail hard
+    if (pluginOptions.tsconfig !== undefined && !fileName)
+        throw new Error(`rpt2: failed to open '${fileName}'`);
+    let loadedConfig = {};
+    let baseDir = pluginOptions.cwd;
+    let configFileName;
+    let pretty = false;
+    if (fileName) {
+        const text = tsModule.sys.readFile(fileName);
+        if (text === undefined)
+            throw new Error(`rpt2: failed to read '${fileName}'`);
+        const result = tsModule.parseConfigFileTextToJson(fileName, text);
+        pretty = (_b = (_a = result.config) === null || _a === void 0 ? void 0 : _a.pretty) !== null && _b !== void 0 ? _b : pretty;
+        if (result.error !== undefined) {
+            printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
+            throw new Error(`rpt2: failed to parse '${fileName}'`);
+        }
+        loadedConfig = result.config;
+        baseDir = dirname(fileName);
+        configFileName = fileName;
+    }
+    const mergedConfig = {};
+    lodash$1.exports.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
+    const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
+    const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
+    checkTsConfig(parsedTsConfig);
+    printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
+    context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
+    context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
+    return { parsedTsConfig, fileName };
+}
+
+// The injected id for helpers.
+const TSLIB = "tslib";
+const TSLIB_VIRTUAL = "\0tslib.js";
+let tslibSource;
+let tslibVersion;
+try {
+    // tslint:disable-next-line:no-string-literal no-var-requires
+    const tslibPackage = require("tslib/package.json");
+    const tslibPath = require.resolve("tslib/" + tslibPackage.module);
+    tslibSource = readFileSync(tslibPath, "utf8");
+    tslibVersion = tslibPackage.version;
+}
+catch (e) {
+    console.warn("Error loading `tslib` helper library.");
+    throw e;
+}
+
 const typescript = (options) => {
     let watchMode = false;
     let generateRound = 0;
@@ -22491,8 +22492,14 @@ const typescript = (options) => {
             _cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
         return _cache;
     };
-    const pluginOptions = Object.assign({}, options);
-    lodash$1.exports.defaults(pluginOptions, {
+    const getDiagnostics = (id, snapshot) => {
+        return cache().getSyntacticDiagnostics(id, snapshot, () => {
+            return service.getSyntacticDiagnostics(id);
+        }).concat(cache().getSemanticDiagnostics(id, snapshot, () => {
+            return service.getSemanticDiagnostics(id);
+        }));
+    };
+    const pluginOptions = Object.assign({}, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
@@ -22508,7 +22515,7 @@ const typescript = (options) => {
         tsconfigDefaults: {},
         objectHashIgnoreUnknownHack: false,
         cwd: process.cwd(),
-    });
+    }, options);
     if (!pluginOptions.typescript) {
         pluginOptions.typescript = require("typescript");
     }
@@ -22521,7 +22528,7 @@ const typescript = (options) => {
             watchMode = process.env.ROLLUP_WATCH === "true";
             ({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
             if (generateRound === 0) {
-                parsedConfig.fileNames.forEach((fileName) => { allImportedFiles.add(fileName); });
+                parsedConfig.fileNames.map(allImportedFiles.add, allImportedFiles);
                 context.info(`typescript version: ${tsModule.version}`);
                 context.info(`tslib version: ${tslibVersion}`);
                 if (this.meta)
@@ -22547,33 +22554,33 @@ const typescript = (options) => {
             return config;
         },
         watchChange(id) {
-            const key = normalize(id);
+            const key = normalizePath(id);
             delete declarations[key];
         },
         resolveId(importee, importer) {
+            var _a;
             if (importee === TSLIB)
                 return TSLIB_VIRTUAL;
             if (!importer)
                 return;
-            importer = normalize(importer);
+            importer = normalizePath(importer);
             // avoiding trying to resolve ids for things imported from files unrelated to this plugin
             if (!allImportedFiles.has(importer))
                 return;
             // TODO: use module resolution cache
             const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
-            if (result.resolvedModule && result.resolvedModule.resolvedFileName) {
-                if (filter(result.resolvedModule.resolvedFileName))
-                    cache().setDependency(result.resolvedModule.resolvedFileName, importer);
-                if (lodash$1.exports.endsWith(result.resolvedModule.resolvedFileName, ".d.ts"))
-                    return;
-                const resolved = pluginOptions.rollupCommonJSResolveHack
-                    ? resolve.sync(result.resolvedModule.resolvedFileName)
-                    : result.resolvedModule.resolvedFileName;
-                context.debug(() => `${safe.exports.blue("resolving")} '${importee}' imported by '${importer}'`);
-                context.debug(() => `    to '${resolved}'`);
-                return normalize$1(resolved);
-            }
-            return;
+            let resolved = (_a = result.resolvedModule) === null || _a === void 0 ? void 0 : _a.resolvedFileName;
+            if (!resolved)
+                return;
+            if (filter(resolved))
+                cache().setDependency(resolved, importer);
+            if (resolved.endsWith(".d.ts"))
+                return;
+            if (pluginOptions.rollupCommonJSResolveHack)
+                resolved = resolve.sync(resolved);
+            context.debug(() => `${safe.exports.blue("resolving")} '${importee}' imported by '${importer}'`);
+            context.debug(() => `    to '${resolved}'`);
+            return normalize(resolved); // use host OS separators to fix Windows issue: https://github.com/ezolenko/rollup-plugin-typescript2/pull/251
         },
         load(id) {
             if (id === TSLIB_VIRTUAL)
@@ -22584,7 +22591,7 @@ const typescript = (options) => {
             generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
             if (!filter(id))
                 return undefined;
-            allImportedFiles.add(normalize(id));
+            allImportedFiles.add(normalizePath(id));
             const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
             const snapshot = servicesHost.setSnapshot(id, code);
             // getting compiled file from cache or from ts
@@ -22593,11 +22600,7 @@ const typescript = (options) => {
                 if (output.emitSkipped) {
                     noErrors = false;
                     // always checking on fatal errors, even if options.check is set to false
-                    const diagnostics = lodash$1.exports.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
-                        return service.getSyntacticDiagnostics(id);
-                    }), cache().getSemanticDiagnostics(id, snapshot, () => {
-                        return service.getSemanticDiagnostics(id);
-                    }));
+                    const diagnostics = getDiagnostics(id, snapshot);
                     printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
                     // since no output was generated, aborting compilation
                     cache().done();
@@ -22608,38 +22611,33 @@ const typescript = (options) => {
                 return convertEmitOutput(output, references);
             });
             if (pluginOptions.check) {
-                const diagnostics = lodash$1.exports.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
-                    return service.getSyntacticDiagnostics(id);
-                }), cache().getSemanticDiagnostics(id, snapshot, () => {
-                    return service.getSemanticDiagnostics(id);
-                }));
+                const diagnostics = getDiagnostics(id, snapshot);
                 if (diagnostics.length > 0)
                     noErrors = false;
                 printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
             }
-            if (result) {
-                if (result.references)
-                    result.references.map(normalize).map(allImportedFiles.add, allImportedFiles);
-                if (watchMode && this.addWatchFile && result.references) {
-                    if (tsConfigPath)
-                        this.addWatchFile(tsConfigPath);
-                    result.references.map(this.addWatchFile, this);
-                    context.debug(() => `${safe.exports.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
-                }
-                if (result.dts) {
-                    const key = normalize(id);
-                    declarations[key] = { type: result.dts, map: result.dtsmap };
-                    context.debug(() => `${safe.exports.blue("generated declarations")} for '${key}'`);
-                }
-                const transformResult = { code: result.code, map: { mappings: "" } };
-                if (result.map) {
-                    if (pluginOptions.sourceMapCallback)
-                        pluginOptions.sourceMapCallback(id, result.map);
-                    transformResult.map = JSON.parse(result.map);
-                }
-                return transformResult;
+            if (!result)
+                return undefined;
+            if (result.references)
+                result.references.map(normalizePath).map(allImportedFiles.add, allImportedFiles);
+            if (watchMode && this.addWatchFile && result.references) {
+                if (tsConfigPath)
+                    this.addWatchFile(tsConfigPath);
+                result.references.map(this.addWatchFile, this);
+                context.debug(() => `${safe.exports.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
             }
-            return undefined;
+            if (result.dts) {
+                const key = normalizePath(id);
+                declarations[key] = { type: result.dts, map: result.dtsmap };
+                context.debug(() => `${safe.exports.blue("generated declarations")} for '${key}'`);
+            }
+            const transformResult = { code: result.code, map: { mappings: "" } };
+            if (result.map) {
+                if (pluginOptions.sourceMapCallback)
+                    pluginOptions.sourceMapCallback(id, result.map);
+                transformResult.map = JSON.parse(result.map);
+            }
+            return transformResult;
         },
         generateBundle(bundleOptions) {
             self._ongenerate();
@@ -22654,11 +22652,7 @@ const typescript = (options) => {
                     const snapshot = servicesHost.getScriptSnapshot(id);
                     if (!snapshot)
                         return;
-                    const diagnostics = lodash$1.exports.concat(cache().getSyntacticDiagnostics(id, snapshot, () => {
-                        return service.getSyntacticDiagnostics(id);
-                    }), cache().getSemanticDiagnostics(id, snapshot, () => {
-                        return service.getSemanticDiagnostics(id);
-                    }));
+                    const diagnostics = getDiagnostics(id, snapshot);
                     printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
                 });
             }
@@ -22670,9 +22664,9 @@ const typescript = (options) => {
         _onwrite(_output) {
             if (!parsedConfig.options.declaration)
                 return;
-            lodash$1.exports.each(parsedConfig.fileNames, (name) => {
-                const key = normalize(name);
-                if (lodash$1.exports.has(declarations, key))
+            parsedConfig.fileNames.forEach((name) => {
+                const key = normalizePath(name);
+                if (key in declarations)
                     return;
                 if (!allImportedFiles.has(key)) {
                     context.debug(() => `skipping declarations for unused '${key}'`);
@@ -22689,41 +22683,38 @@ const typescript = (options) => {
                     return;
                 let fileName = entry.name;
                 if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
-                    fileName = fileName.split("?", 1) + extension;
-                // If 'useTsconfigDeclarationDir' is given in the
-                // plugin options, directly write to the path provided
-                // by Typescript's LanguageService (which may not be
-                // under Rollup's output directory, and thus can't be
-                // emitted as an asset).
+                    fileName = fileName.split(".vue?", 1) + extension;
+                // If 'useTsconfigDeclarationDir' is in plugin options, directly write to 'declarationDir'.
+                // This may not be under Rollup's output directory, and thus can't be emitted as an asset.
                 if (pluginOptions.useTsconfigDeclarationDir) {
                     context.debug(() => `${safe.exports.blue("emitting declarations")} for '${key}' to '${fileName}'`);
                     tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
+                    return;
                 }
-                else {
-                    // don't mutate the entry because generateBundle gets called multiple times
-                    let entryText = entry.text;
+                // don't mutate the entry because generateBundle gets called multiple times
+                let entryText = entry.text;
+                const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`;
+                // modify declaration map sources to correct relative path (only if outputting)
+                if (extension === ".d.ts.map" && ((_output === null || _output === void 0 ? void 0 : _output.file) || (_output === null || _output === void 0 ? void 0 : _output.dir))) {
                     const declarationDir = (_output.file ? dirname(_output.file) : _output.dir);
-                    const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`;
-                    // modify declaration map sources to correct relative path
-                    if (extension === ".d.ts.map") {
-                        const parsedText = JSON.parse(entryText);
-                        // invert back to absolute, then make relative to declarationDir
-                        parsedText.sources = parsedText.sources.map(source => {
-                            const absolutePath = resolve$1(cachePlaceholder, source);
-                            return normalize(relative(declarationDir, absolutePath));
-                        });
-                        entryText = JSON.stringify(parsedText);
-                    }
-                    const relativePath = normalize(relative(cachePlaceholder, fileName));
-                    context.debug(() => `${safe.exports.blue("emitting declarations")} for '${key}' to '${relativePath}'`);
-                    this.emitFile({
-                        type: "asset",
-                        source: entryText,
-                        fileName: relativePath,
+                    const parsedText = JSON.parse(entryText);
+                    // invert back to absolute, then make relative to declarationDir
+                    parsedText.sources = parsedText.sources.map(source => {
+                        const absolutePath = resolve$1(cachePlaceholder, source);
+                        return normalizePath(relative(declarationDir, absolutePath));
                     });
+                    entryText = JSON.stringify(parsedText);
                 }
+                const relativePath = normalizePath(relative(cachePlaceholder, fileName));
+                context.debug(() => `${safe.exports.blue("emitting declarations")} for '${key}' to '${relativePath}'`);
+                this.emitFile({
+                    type: "asset",
+                    source: entryText,
+                    fileName: relativePath,
+                });
             };
-            lodash$1.exports.each(declarations, ({ type, map }, key) => {
+            Object.keys(declarations).forEach((key) => {
+                const { type, map } = declarations[key];
                 emitDeclaration(key, ".d.ts", type);
                 emitDeclaration(key, ".d.ts.map", map);
             });

@@ -1,5 +1,5 @@
-import { IContext, VerbosityLevel } from "./context";
 import { PluginContext } from "rollup";
+import { IContext, VerbosityLevel } from "./context";
 export declare class RollupContext implements IContext {
     private verbosity;
     private bail;

@@ -1,5 +1,5 @@
-import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
+import { tsModule } from "./tsproxy";
 export interface ICustomTransformer {
     before?: tsTypes.TransformerFactory<tsTypes.SourceFile>;
     after?: tsTypes.TransformerFactory<tsTypes.SourceFile>;
