@@ -1,5 +1,6 @@
-import { tsModule } from "./tsproxy";
 import { red, white, yellow } from "colors/safe";
+
+import { tsModule } from "./tsproxy";
 import { IContext } from "./context";
 import { IDiagnostics } from "./tscache";
 

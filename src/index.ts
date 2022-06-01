@@ -1,22 +1,21 @@
+import { relative, dirname, normalize as pathNormalize, resolve as pathResolve } from "path";
+import * as tsTypes from "typescript";
+import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
+import { normalizePath as normalize } from "@rollup/pluginutils";
+import * as _ from "lodash";
+import { blue, red, yellow, green } from "colors/safe";
+import * as resolve from "resolve";
+import findCacheDir from "find-cache-dir";
+
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
 import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
-import * as tsTypes from "typescript";
-import * as resolve from "resolve";
-import * as _ from "lodash";
 import { IOptions } from "./ioptions";
 import { parseTsConfig } from "./parse-tsconfig";
 import { printDiagnostics } from "./print-diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
-import { blue, red, yellow, green } from "colors/safe";
-import { relative, dirname, normalize as pathNormalize, resolve as pathResolve } from "path";
-import { normalizePath as normalize } from "@rollup/pluginutils";
-import findCacheDir from "find-cache-dir";
-
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
-
 import { createFilter } from "./get-options-overrides";
 
 type RPT2Options = Partial<IOptions>;

@@ -1,13 +1,14 @@
-import { IContext } from "./context";
+import * as tsTypes from "typescript";
+import { emptyDirSync, pathExistsSync, readdirSync, removeSync, statSync } from "fs-extra";
+import * as _ from "lodash";
 import { Graph, alg } from "graphlib";
 import hash from "object-hash";
+import { blue, yellow, green } from "colors/safe";
+
+import { IContext } from "./context";
 import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
-import * as _ from "lodash";
 import { tsModule } from "./tsproxy";
-import * as tsTypes from "typescript";
-import { blue, yellow, green } from "colors/safe";
-import { emptyDirSync, pathExistsSync, readdirSync, removeSync, statSync } from "fs-extra";
 import { formatHost } from "./diagnostics-format-host";
 import { NoCache } from "./nocache";
 

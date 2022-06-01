@@ -1,6 +1,7 @@
-import { IContext, VerbosityLevel } from "./context";
 import * as _ from "lodash";
 import { PluginContext } from "rollup";
+
+import { IContext, VerbosityLevel } from "./context";
 
 export class RollupContext implements IContext
 {

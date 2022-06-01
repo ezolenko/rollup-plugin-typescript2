@@ -1,7 +1,8 @@
-import { ICache } from "./icache";
-import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from "fs-extra";
 import { existsSync, readdirSync, renameSync } from "fs";
+import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from "fs-extra";
 import * as _ from "lodash";
+
+import { ICache } from "./icache";
 
 /**
  * Saves data in new cache folder or reads it from old one.

@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as tsTypes from "typescript";
+
 import { tsModule } from "./tsproxy";
 
 export class FormatHost implements tsTypes.FormatDiagnosticsHost
