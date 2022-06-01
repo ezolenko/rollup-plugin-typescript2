@@ -1,11 +1,12 @@
+import { dirname } from "path";
+import * as _ from "lodash";
+
 import { tsModule } from "./tsproxy";
 import { IContext } from "./context";
-import { dirname } from "path";
 import { printDiagnostics } from "./print-diagnostics";
 import { convertDiagnostic } from "./tscache";
 import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
-import * as _ from "lodash";
 import { checkTsConfig } from "./check-tsconfig";
 
 export function parseTsConfig(context: IContext, pluginOptions: IOptions)

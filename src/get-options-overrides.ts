@@ -1,8 +1,9 @@
-import { createFilter as createRollupFilter, normalizePath as normalize } from "@rollup/pluginutils";
-import { tsModule } from "./tsproxy";
-import * as tsTypes from "typescript";
-import { IOptions } from "./ioptions";
 import * as path from "path";
+import * as tsTypes from "typescript";
+import { createFilter as createRollupFilter, normalizePath as normalize } from "@rollup/pluginutils";
+
+import { tsModule } from "./tsproxy";
+import { IOptions } from "./ioptions";
 import { IContext } from "./context";
 
 export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions

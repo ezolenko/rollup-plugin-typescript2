@@ -1,5 +1,6 @@
-import { tsModule } from "./tsproxy";
 import * as tsTypes from "typescript";
+
+import { tsModule } from "./tsproxy";
 
 export function checkTsConfig(parsedConfig: tsTypes.ParsedCommandLine): void
 {
