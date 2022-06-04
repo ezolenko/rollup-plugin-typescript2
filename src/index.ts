@@ -56,10 +56,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		}));
 	}
 
-	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, context: IContext) =>
+	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, tcContext: IContext) =>
 	{
 			const diagnostics = getDiagnostics(id, snapshot);
-			printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
+			printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty === true);
 
 			if (diagnostics.length > 0)
 				noErrors = false;
