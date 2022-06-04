@@ -78,7 +78,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	if (!pluginOptions.typescript) {
 		pluginOptions.typescript = require("typescript");
 	}
-
 	setTypescriptModule(pluginOptions.typescript);
 
 	const self: Plugin & { _ongenerate: () => void, _onwrite: (this: PluginContext, _output: OutputOptions) => void } = {
@@ -122,8 +121,12 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			servicesHost.setLanguageService(service);
 
 			// printing compiler option errors
-			if (pluginOptions.check)
-				printDiagnostics(context, convertDiagnostic("options", service.getCompilerOptionsDiagnostics()), parsedConfig.options.pretty === true);
+			if (pluginOptions.check) {
+				const diagnostics = convertDiagnostic("options", service.getCompilerOptionsDiagnostics());
+				printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
+				if (diagnostics.length > 0)
+					noErrors = false;
+			}
 
 			if (pluginOptions.clean)
 				cache().clean();
