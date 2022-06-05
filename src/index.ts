@@ -301,7 +301,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			parsedConfig.fileNames.forEach((name) =>
 			{
 				const key = normalize(name);
-				if (key in declarations)
+				if (key in declarations || !filter(key))
 					return;
 				if (!allImportedFiles.has(key))
 				{
