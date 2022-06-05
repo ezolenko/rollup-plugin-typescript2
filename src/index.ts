@@ -287,6 +287,23 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				});
 			}
 
+			// type-check missed files as well
+			parsedConfig.fileNames.forEach((name) =>
+			{
+				if (!pluginOptions.check)
+					return;
+
+				const key = normalize(name);
+				if (key in declarations || !filter(key)) // don't duplicate if it's already been transformed
+					return;
+
+				context.debug(() => `type-checking missed '${key}'`);
+
+				const snapshot = servicesHost.getScriptSnapshot(key);
+				if (snapshot)
+					typecheckFile(key, snapshot, context);
+			});
+
 			if (!watchMode && !noErrors)
 				context.info(yellow("there were errors or warnings."));
 
