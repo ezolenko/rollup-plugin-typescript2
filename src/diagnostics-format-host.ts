@@ -10,15 +10,8 @@ export class FormatHost implements tsTypes.FormatDiagnosticsHost
 		return tsModule.sys.getCurrentDirectory();
 	}
 
-	public getCanonicalFileName(fileName: string): string
-	{
-		return path.normalize(fileName);
-	}
-
-	public getNewLine(): string
-	{
-		return tsModule.sys.newLine;
-	}
+	public getCanonicalFileName = path.normalize;
+	public getNewLine = () => tsModule.sys.newLine;
 }
 
 export const formatHost = new FormatHost();

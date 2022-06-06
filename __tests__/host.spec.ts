@@ -9,6 +9,11 @@ import { LanguageServiceHost } from "../src/host";
 
 setTypescriptModule(ts);
 
+// mock for host.trace
+(global as any).console = {
+	log: jest.fn(),
+};
+
 const defaultConfig = { fileNames: [], errors: [], options: {} };
 
 const unaryFunc = "const unary = (x: string): string => x.reverse()";
@@ -72,7 +77,6 @@ test("LanguageServiceHost", async () => {
 	expect(host.getTypeRootsVersion()).toEqual(0);
 
 	// mock out trace
-	console.log = jest.fn();
 	host.trace('test log');
 	expect(console.log).toHaveBeenCalledWith('test log');
 });
