@@ -6,16 +6,14 @@ import { TransformerFactoryCreator } from "./ioptions";
 
 export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 {
-	private cwd: string;
 	private snapshots: { [fileName: string]: tsTypes.IScriptSnapshot } = {};
 	private versions: { [fileName: string]: number } = {};
 	private service?: tsTypes.LanguageService;
 	private fileNames: Set<string>;
 
-	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[], cwd: string)
+	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[], private cwd: string)
 	{
 		this.fileNames = new Set(parsedConfig.fileNames);
-		this.cwd = cwd;
 	}
 
 	public reset()
@@ -58,71 +56,13 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		return undefined;
 	}
 
-	public getCurrentDirectory()
-	{
-		return this.cwd;
-	}
+	public getScriptFileNames = () => Array.from(this.fileNames.values());
 
 	public getScriptVersion(fileName: string)
 	{
 		fileName = normalize(fileName);
 
 		return (this.versions[fileName] || 0).toString();
-	}
-
-	public getScriptFileNames()
-	{
-		return Array.from(this.fileNames.values());
-	}
-
-	public getCompilationSettings(): tsTypes.CompilerOptions
-	{
-		return this.parsedConfig.options;
-	}
-
-	public getDefaultLibFileName(opts: tsTypes.CompilerOptions)
-	{
-		return tsModule.getDefaultLibFilePath(opts);
-	}
-
-	public useCaseSensitiveFileNames(): boolean
-	{
-		return tsModule.sys.useCaseSensitiveFileNames;
-	}
-
-	public readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[]
-	{
-		return tsModule.sys.readDirectory(path, extensions, exclude, include);
-	}
-
-	public readFile(path: string, encoding?: string): string | undefined
-	{
-		return tsModule.sys.readFile(path, encoding);
-	}
-
-	public fileExists(path: string): boolean
-	{
-		return tsModule.sys.fileExists(path);
-	}
-
-	public realpath(path: string): string
-	{
-		return tsModule.sys.realpath!(path); // this exists in the default implementation: https://github.com/microsoft/TypeScript/blob/ab2523bbe0352d4486f67b73473d2143ad64d03d/src/compiler/sys.ts#L1288
-	}
-
-	public getTypeRootsVersion(): number
-	{
-		return 0;
-	}
-
-	public directoryExists(directoryName: string): boolean
-	{
-		return tsModule.sys.directoryExists(directoryName);
-	}
-
-	public getDirectories(directoryName: string): string[]
-	{
-		return tsModule.sys.getDirectories(directoryName);
 	}
 
 	public getCustomTransformers(): tsTypes.CustomTransformers | undefined
@@ -151,7 +91,19 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		return transformer;
 	}
 
-	public trace(line: string) {
-		console.log(line)
-	}
+	public getCompilationSettings = () => this.parsedConfig.options;
+	public getTypeRootsVersion = () => 0;
+	public getCurrentDirectory = () => this.cwd;
+
+	public useCaseSensitiveFileNames = () => tsModule.sys.useCaseSensitiveFileNames;
+	public getDefaultLibFileName = tsModule.getDefaultLibFilePath; // confusing naming: https://github.com/microsoft/TypeScript/issues/35318
+
+	public readDirectory = tsModule.sys.readDirectory;
+	public readFile = tsModule.sys.readFile;
+	public fileExists = tsModule.sys.fileExists;
+	public directoryExists = tsModule.sys.directoryExists;
+	public getDirectories = tsModule.sys.getDirectories;
+	public realpath = tsModule.sys.realpath!; // this exists in the default implementation: https://github.com/microsoft/TypeScript/blob/ab2523bbe0352d4486f67b73473d2143ad64d03d/src/compiler/sys.ts#L1288
+
+	public trace = console.log;
 }
