@@ -306,11 +306,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				const key = normalize(name);
 				if (key in declarations)
 					return;
-				if (!allImportedFiles.has(key))
-				{
-					context.debug(() => `skipping declarations for unused '${key}'`);
-					return;
-				}
 
 				context.debug(() => `generating missed declarations for '${key}'`);
 				const output = service.getEmitOutput(key, true);
