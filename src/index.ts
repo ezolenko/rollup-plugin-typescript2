@@ -213,7 +213,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 						this.error(red(`failed to transpile '${id}'`));
 				}
 
-				const references = getAllReferences(id, servicesHost.getScriptSnapshot(id), parsedConfig.options);
+				const references = getAllReferences(id, snapshot, parsedConfig.options);
 				return convertEmitOutput(output, references);
 			});
 
