@@ -20,20 +20,20 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		allowNonTsExtensions: true,
 	};
 
-	if (preParsedTsconfig)
-	{
-		if (preParsedTsconfig.options.module === undefined)
-			overrides.module = tsModule.ModuleKind.ES2015;
+	if (!preParsedTsconfig)
+		return overrides;
 
-		// only set declarationDir if useTsconfigDeclarationDir is enabled
-		if (!useTsconfigDeclarationDir)
-			overrides.declarationDir = undefined;
+	if (preParsedTsconfig.options.module === undefined)
+		overrides.module = tsModule.ModuleKind.ES2015;
 
-		// unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
-		const sourceMap = preParsedTsconfig.options.sourceMap;
-		if (!sourceMap)
-			overrides.sourceRoot = undefined;
-	}
+	// only set declarationDir if useTsconfigDeclarationDir is enabled
+	if (!useTsconfigDeclarationDir)
+		overrides.declarationDir = undefined;
+
+	// unsetting sourceRoot if sourceMap is not enabled (in case original tsconfig had inlineSourceMap set that is being unset and would cause TS5051)
+	const sourceMap = preParsedTsconfig.options.sourceMap;
+	if (!sourceMap)
+		overrides.sourceRoot = undefined;
 
 	return overrides;
 }
