@@ -4,15 +4,16 @@
 
 Report any bugs [in the GitHub Issue Tracker](https://github.com/ezolenko/rollup-plugin-typescript2/issues).
 
-Attach your `tsconfig.json`, `package.json` (for versions of dependencies), `rollup.config.js`, and anything else that could influence module resolution, ambient types, and TS compilation.
+Please follow the issue template as closely as possible:
 
-Check if the problem is reproducible after running `npm prune` to clear any rogue types from `node_modules` (by default TS grabs _all_ ambient types).
+- Attach your `tsconfig.json`, `package.json` (for versions of dependencies), `rollup.config.js`, and any other pieces of your environment that could influence module resolution, ambient types, and TS compilation.
 
-Check if you get the same problem with `clean` option set to `true` (might indicate a bug in the cache).
+Some additional debugging steps you can take to help diagnose the issue:
 
-If it makes sense, check if running `tsc` directly produces similar results.
-
-Attach plugin output with `verbosity` option set to 3 (this will list all files being transpiled and their imports).
+- Attach plugin output with `verbosity` option set to `3` (this will list all files being transpiled and their imports).
+- If it makes sense, check if running `tsc` directly produces similar results.
+- Check if you get the same problem with `clean` option set to `true` (might indicate a bug in the cache).
+- Check if the problem is reproducible after running `npm prune` to clear any rogue types from `node_modules` (by default TS grabs _all_ ambient types).
 
 ## Developing
 
