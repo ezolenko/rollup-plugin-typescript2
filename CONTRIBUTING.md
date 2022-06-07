@@ -44,3 +44,34 @@ One can test changes by doing a self-build; the plugin is part of its own build 
 1. run `npm run build-self` _again_ to make sure plugin built by new version can still build itself
 
 If `build-self` breaks at some point, fix the problem and restart from the `build` step (a known good copy).
+
+## Learning the codebase
+
+If you're looking to learn more about the codebase, either to contribute or just to educate yourself, this section contains an outline as well as tips and useful resources.<br />
+These docs have been written by contributors who have gone through the process of learning the codebase themselves!
+
+### General Overview
+
+Before starting, make sure you're familiar with the [`README`](README.md) in its entirety, as it describes this plugin's options that make up its API surface.<br />
+It can also be useful to review some issues and have a "goal" in mind (especially if you're looking to contribute), so that you can focus on understanding how a certain part of the codebase works.
+
+1. Can read [`get-options-overrides`](src/get-options-overrides.ts) as a quick intro to the codebase that dives a bit deeper into the `compilerOptions` that this plugin forces.
+    - The [TSConfig Reference](https://www.typescriptlang.org/tsconfig) can be a helpful resource to understand these options.
+1. Get a _quick_ read-through of [`index`](src/index.ts) (which is actually relatively small), to get a general understanding of this plugin's workflow.
+    - Rollup's [Plugin docs](https://rollupjs.org/guide/en/#plugins-overview) are _very_ helpful to reference as you're going through, especially if you're not familiar with the Rollup Plugin API.
+
+### Deeper Dive
+
+Once you have some understanding of the codebase's main workflow, you can start to dive deeper into pieces that require more domain knowledge.<br />
+A useful resource as you dive deeper are the [unit tests](__tests__/). They're good to look through as you dig into a module to understand how it's used.
+
+1. From here, you can start to read more of the modules that integrate with the TypeScript API, such as [`host`](src/host.ts), [`parse-tsconfig`](src/parse-tsconfig.ts), [`check-tsconfig`](src/check-tsconfig.ts), and maybe how TS is imported in [`tsproxy`](src/tsproxy.ts) and [`tslib`](src/tslib.ts)
+    - A _very_ useful reference here is the [TypeScript Wiki](https://github.com/microsoft/TypeScript/wiki), which has two main articles that are the basis for most Compiler integrations:
+      - [Using the Compiler API](https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API)
+      - [Using the Language Service API](https://github.com/microsoft/TypeScript/wiki/Using-the-Language-Service-API)
+      - _NOTE_: These are fairly short and unfortunately leave a lot to be desired... especially when you consider that this plugin is actually one of the simpler integrations out there.
+1. At this point, you may be ready to read the more complicated bits of [`index`](src/index.ts) in detail and see how it interacts with the other modules.
+    - The integration tests [TBD] could be useful to review at this point as well.
+1. Once you're pretty familiar with `index`, you can dive into some of the cache code in [`tscache`](src/tscache.ts), [`nocache`](src/nocache.ts), and [`rollingcache`](src/rollingcache.ts).
+1. And finally, you can see some of the Rollup logging nuances in [`context`](src/context.ts) and [`rollupcontext`](src/rollupcontext.ts), and then the TS logging nuances in [`print-diagnostics`](src/print-diagnostics.ts), and [`diagnostics-format-host`](src/diagnostics-format-host.ts)
+    - While these are necessary to the implementation, they are fairly ancillary to understanding and working with the codebase.
