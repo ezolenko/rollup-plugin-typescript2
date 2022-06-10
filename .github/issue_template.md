@@ -16,7 +16,7 @@
       Rollup plugin order matters, so if there is a mismatch here, that could be the cause of your issue.
     -->
 
-1. Can you create a [minimal example](https://stackoverflow.com/help/minimal-reproducible-example) that reproduces this behavior?
+1. Can you create a [minimal example](https://stackoverflow.com/help/minimal-reproducible-example) that reproduces this behavior? Preferably, use [this environment](https://stackblitz.com/edit/rpt2-repro) for your reproduction
     <!--
       Minimal reproductions help us find the root cause of an issue much more expediently than trying to interpret and disentangle a complicated repo.
       The process of creating a minimal reproduction also often helps users find a misconfiguration in their code.
