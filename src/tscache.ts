@@ -2,7 +2,7 @@ import * as tsTypes from "typescript";
 import { emptyDirSync, pathExistsSync, readdirSync, removeSync, statSync } from "fs-extra";
 import * as _ from "lodash";
 import { Graph, alg } from "graphlib";
-import hash from "object-hash";
+import objHash from "object-hash";
 import { blue, yellow, green } from "colors/safe";
 
 import { IContext } from "./context";
@@ -117,7 +117,7 @@ export class TsCache
 		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
 		if (!noCache)
 		{
-			this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${hash(
+			this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash(
 				{
 					version: this.cacheVersion,
 					rootFilenames,
@@ -362,6 +362,6 @@ export class TsCache
 	private createHash(id: string, snapshot: tsTypes.IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
-		return hash({ data, id }, this.hashOptions);
+		return objHash({ data, id }, this.hashOptions);
 	}
 }
