@@ -1,5 +1,5 @@
 import * as tsTypes from "typescript";
-import { emptyDirSync, pathExistsSync, readdirSync, removeSync, statSync } from "fs-extra";
+import * as fs from "fs-extra";
 import * as _ from "lodash";
 import { Graph, alg } from "graphlib";
 import hash from "object-hash";
@@ -127,6 +127,8 @@ export class TsCache
 				},
 				this.hashOptions,
 			)}`;
+		} else {
+			this.clean();
 		}
 
 		this.dependencyTree = new Graph({ directed: true });
@@ -145,26 +147,18 @@ export class TsCache
 		this.checkAmbientTypes();
 	}
 
-	public clean()
+	private clean()
 	{
-		if (pathExistsSync(this.cacheRoot))
-		{
-			const entries = readdirSync(this.cacheRoot);
-			entries.forEach((e) =>
-			{
-				const dir = `${this.cacheRoot}/${e}`;
-				if (e.startsWith(this.cachePrefix) && statSync(dir).isDirectory)
-				{
-					this.context.info(blue(`cleaning cache: ${dir}`));
-					emptyDirSync(`${dir}`);
-					removeSync(`${dir}`);
-				}
-				else
-					this.context.debug(`not cleaning ${dir}`);
-			});
-		}
+		if (!fs.pathExistsSync(this.cacheRoot))
+			return;
 
-		this.init();
+		const entries = fs.readdirSync(this.cacheRoot);
+		entries.filter(e => e.startsWith(this.cachePrefix)).forEach((e) =>
+		{
+			const dir = `${this.cacheRoot}/${e}`;
+			this.context.info(blue(`cleaning cache: ${dir}`));
+			fs.removeSync(`${dir}`);
+		});
 	}
 
 	public setDependency(importee: string, importer: string): void
