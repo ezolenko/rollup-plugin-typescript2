@@ -36,7 +36,7 @@
 <!--
   PLEASE RUN THIS COMMAND INSIDE YOUR PROJECT:
 
-  npx envinfo --npmPackages typescript,rollup,rollup-plugin-typescript2
+  npx envinfo --npmPackages typescript,rollup,rollup-plugin-typescript2 --npmGlobalPackages typescript --system os,cpu --binaries node,yarn,npm
 
   AND PASTE ITS CONTENTS BELOW INSIDE THE CODE SNIPPET vvvvvvvvv
 -->
