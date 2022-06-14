@@ -2,7 +2,7 @@ import * as tsTypes from "typescript";
 import { emptyDirSync, pathExistsSync, readdirSync, removeSync, statSync } from "fs-extra";
 import * as _ from "lodash";
 import { Graph, alg } from "graphlib";
-import hash from "object-hash";
+import objHash from "object-hash";
 import { blue, yellow, green } from "colors/safe";
 
 import { IContext } from "./context";
@@ -117,7 +117,7 @@ export class TsCache
 		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
 		if (!noCache)
 		{
-			this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${hash(
+			this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash(
 				{
 					version: this.cacheVersion,
 					rootFilenames,
@@ -208,18 +208,18 @@ export class TsCache
 			return transform();
 		}
 
-		const name = this.makeName(id, snapshot);
+		const hash = this.createHash(id, snapshot);
 
 		this.context.info(`${blue("transpiling")} '${id}'`);
-		this.context.debug(`    cache: '${this.codeCache.path(name)}'`);
+		this.context.debug(`    cache: '${this.codeCache.path(hash)}'`);
 
-		if (this.codeCache.exists(name) && !this.isDirty(id, false))
+		if (this.codeCache.exists(hash) && !this.isDirty(id, false))
 		{
 			this.context.debug(green("    cache hit"));
-			const data = this.codeCache.read(name);
+			const data = this.codeCache.read(hash);
 			if (data)
 			{
-				this.codeCache.write(name, data);
+				this.codeCache.write(hash, data);
 				return data;
 			}
 			else
@@ -229,7 +229,7 @@ export class TsCache
 		this.context.debug(yellow("    cache miss"));
 
 		const transformedData = transform();
-		this.codeCache.write(name, transformedData);
+		this.codeCache.write(hash, transformedData);
 		this.markAsDirty(id);
 		return transformedData;
 	}
@@ -253,19 +253,19 @@ export class TsCache
 		}
 
 		this.context.debug(blue("Ambient types:"));
-		const typeNames = this.ambientTypes.filter((snapshot) => snapshot.snapshot !== undefined)
+		const typeHashes = this.ambientTypes.filter((snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
 			{
 				this.context.debug(`    ${snapshot.id}`);
-				return this.makeName(snapshot.id, snapshot.snapshot!);
+				return this.createHash(snapshot.id, snapshot.snapshot!);
 			});
 		// types dirty if any d.ts changed, added or removed
-		this.ambientTypesDirty = !this.typesCache.match(typeNames);
+		this.ambientTypesDirty = !this.typesCache.match(typeHashes);
 
 		if (this.ambientTypesDirty)
 			this.context.info(yellow("ambient types changed, redoing all semantic diagnostics"));
 
-		typeNames.forEach(this.typesCache.touch, this.typesCache);
+		typeHashes.forEach(this.typesCache.touch, this.typesCache);
 	}
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -276,18 +276,18 @@ export class TsCache
 			return convertDiagnostic(type, check());
 		}
 
-		const name = this.makeName(id, snapshot);
+		const hash = this.createHash(id, snapshot);
 
-		this.context.debug(`    cache: '${cache.path(name)}'`);
+		this.context.debug(`    cache: '${cache.path(hash)}'`);
 
-		if (cache.exists(name) && !this.isDirty(id, true))
+		if (cache.exists(hash) && !this.isDirty(id, true))
 		{
 			this.context.debug(green("    cache hit"));
 
-			const data = cache.read(name);
+			const data = cache.read(hash);
 			if (data)
 			{
-				cache.write(name, data);
+				cache.write(hash, data);
 				return data;
 			}
 			else
@@ -297,7 +297,7 @@ export class TsCache
 		this.context.debug(yellow("    cache miss"));
 
 		const convertedData = convertDiagnostic(type, check());
-		cache.write(name, convertedData);
+		cache.write(hash, convertedData);
 		this.markAsDirty(id);
 		return convertedData;
 	}
@@ -361,9 +361,9 @@ export class TsCache
 		});
 	}
 
-	private makeName(id: string, snapshot: tsTypes.IScriptSnapshot)
+	private createHash(id: string, snapshot: tsTypes.IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
-		return hash({ data, id }, this.hashOptions);
+		return objHash({ data, id }, this.hashOptions);
 	}
 }
