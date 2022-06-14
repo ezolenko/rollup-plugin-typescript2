@@ -132,8 +132,9 @@ export class TsCache
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
 
-		const automaticTypes = tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys).map((entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
-			.filter((entry) => entry.resolvedTypeReferenceDirective && entry.resolvedTypeReferenceDirective.resolvedFileName)
+		const automaticTypes = tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys)
+			.map((entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
+			.filter((entry) => entry.resolvedTypeReferenceDirective?.resolvedFileName)
 			.map((entry) => entry.resolvedTypeReferenceDirective!.resolvedFileName!);
 
 		this.ambientTypes = rootFilenames.filter(file => file.endsWith(".d.ts"))
