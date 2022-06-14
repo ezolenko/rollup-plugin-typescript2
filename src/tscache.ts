@@ -178,9 +178,7 @@ export class TsCache
 
 	public walkTree(cb: (id: string) => void | false): void
 	{
-		const acyclic = alg.isAcyclic(this.dependencyTree);
-
-		if (acyclic)
+		if (alg.isAcyclic(this.dependencyTree))
 		{
 			alg.topsort(this.dependencyTree).forEach(id => cb(id));
 			return;
