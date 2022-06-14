@@ -313,8 +313,10 @@ export class TsCache
 		}
 		else
 		{
+			// this is an invariant, it should never happen: cacheDir should only not exist when noCache
 			if (this.cacheDir === undefined)
 				throw new Error(`this.cacheDir undefined`);
+
 			this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
 			this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
 			this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
@@ -327,7 +329,7 @@ export class TsCache
 		this.dependencyTree.setNode(id, { dirty: true });
 	}
 
-	// returns true if node or any of its imports or any of global types changed
+	/** @returns true if node, any of its imports, or any ambient types changed */
 	private isDirty(id: string, checkImports: boolean): boolean
 	{
 		const label = this.dependencyTree.node(id) as INodeLabel;
