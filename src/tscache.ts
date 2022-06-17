@@ -360,6 +360,7 @@ export class TsCache
 		});
 	}
 
+	/** @returns an FS-safe hash string for use as a path to the cached content */
 	private createHash(id: string, snapshot: tsTypes.IScriptSnapshot)
 	{
 		const data = snapshot.getText(0, snapshot.getLength());
