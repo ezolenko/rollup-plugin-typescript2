@@ -153,9 +153,24 @@ export class TsCache
 			return;
 
 		const entries = fs.readdirSync(this.cacheRoot);
-		entries.filter(e => e.startsWith(this.cachePrefix)).forEach((e) =>
+		entries.forEach((e) =>
 		{
 			const dir = `${this.cacheRoot}/${e}`;
+
+			/* istanbul ignore if -- this is a safety check, but shouldn't happen when using a dedicated cache dir */
+			if (!e.startsWith(this.cachePrefix))
+			{
+				this.context.debug(`skipping cleaning ${dir} as it does not have prefix ${this.cachePrefix}`);
+				return;
+			}
+
+			/* istanbul ignore if -- this is a safety check, but should never happen in normal usage */
+			if (!fs.statSync(dir).isDirectory)
+			{
+				this.context.debug(`skipping cleaning ${dir} as it is not a directory`);
+				return;
+			}
+
 			this.context.info(blue(`cleaning cache: ${dir}`));
 			fs.removeSync(`${dir}`);
 		});
