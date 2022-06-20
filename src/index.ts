@@ -128,9 +128,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					noErrors = false;
 			}
 
-			if (pluginOptions.clean)
-				cache().clean();
-
 			return config;
 		},
 
