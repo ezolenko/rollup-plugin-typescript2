@@ -8,7 +8,7 @@ import * as resolve from "resolve";
 import findCacheDir from "find-cache-dir";
 
 import { RollupContext } from "./rollupcontext";
-import { ConsoleContext, VerbosityLevel } from "./context";
+import { ConsoleContext, IContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
 import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
@@ -54,6 +54,15 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		{
 			return service.getSemanticDiagnostics(id);
 		}));
+	}
+
+	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, tcContext: IContext) =>
+	{
+			const diagnostics = getDiagnostics(id, snapshot);
+			printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty === true);
+
+			if (diagnostics.length > 0)
+				noErrors = false;
 	}
 
 	const pluginOptions: IOptions = Object.assign({},
@@ -201,11 +210,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				if (output.emitSkipped)
 				{
-					noErrors = false;
-
 					// always checking on fatal errors, even if options.check is set to false
-					const diagnostics = getDiagnostics(id, snapshot);
-					printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
+					typecheckFile(id, snapshot, contextWrapper);
 
 					// since no output was generated, aborting compilation
 					cache().done();
@@ -218,13 +224,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			});
 
 			if (pluginOptions.check)
-			{
-				const diagnostics = getDiagnostics(id, snapshot);
-				if (diagnostics.length > 0)
-					noErrors = false;
-
-				printDiagnostics(contextWrapper, diagnostics, parsedConfig.options.pretty === true);
-			}
+				typecheckFile(id, snapshot, contextWrapper);
 
 			if (!result)
 				return undefined;
@@ -277,11 +277,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 						return;
 
 					const snapshot = servicesHost.getScriptSnapshot(id);
-					if (!snapshot)
-						return;
-
-					const diagnostics = getDiagnostics(id, snapshot);
-					printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
+					if (snapshot)
+						typecheckFile(id, snapshot, context);
 				});
 			}
 
@@ -289,7 +286,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				context.info(yellow("there were errors or warnings."));
 
 			cache().done();
-
 			generateRound++;
 		},
 
