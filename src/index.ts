@@ -251,8 +251,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (result.map)
 			{
-				if (pluginOptions.sourceMapCallback)
-					pluginOptions.sourceMapCallback(id, result.map);
+				pluginOptions.sourceMapCallback?.(id, result.map);
 				transformResult.map = JSON.parse(result.map);
 			}
 
