@@ -27,11 +27,11 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		this.service = service;
 	}
 
-	public setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot
+	public setSnapshot(fileName: string, source: string): tsTypes.IScriptSnapshot
 	{
 		fileName = normalize(fileName);
 
-		const snapshot = tsModule.ScriptSnapshot.fromString(data);
+		const snapshot = tsModule.ScriptSnapshot.fromString(source);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
 		this.fileNames.add(fileName);
@@ -47,11 +47,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 
 		const source = tsModule.sys.readFile(fileName);
 		if (source)
-		{
-			this.snapshots[fileName] = tsModule.ScriptSnapshot.fromString(source);
-			this.versions[fileName] = (this.versions[fileName] || 0) + 1;
-			return this.snapshots[fileName];
-		}
+			return this.setSnapshot(fileName, source);
 
 		return undefined;
 	}
