@@ -164,7 +164,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			// TODO: use module resolution cache
 			const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
-			let resolved = result.resolvedModule?.resolvedFileName;
+			const resolved = result.resolvedModule?.resolvedFileName;
 
 			if (!resolved)
 				return;
