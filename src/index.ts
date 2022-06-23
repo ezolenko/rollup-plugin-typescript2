@@ -1,10 +1,9 @@
-import { relative, dirname, normalize as pathNormalize, resolve as pathResolve } from "path";
+import { relative, dirname, normalize as pathNormalize, resolve } from "path";
 import * as tsTypes from "typescript";
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import * as _ from "lodash";
 import { blue, red, yellow, green } from "colors/safe";
-import * as resolve from "resolve";
 import findCacheDir from "find-cache-dir";
 
 import { RollupContext } from "./rollupcontext";
@@ -118,6 +117,9 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				if (pluginOptions.objectHashIgnoreUnknownHack)
 					context.warn(() => `${yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
 
+				if (pluginOptions.rollupCommonJSResolveHack)
+					context.warn(() => `${yellow("You are using 'rollupCommonJSResolveHack' option")}. This is no longer needed, try disabling it now.`);
+
 				if (watchMode)
 					context.info(`running in watch mode`);
 			}
@@ -172,9 +174,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (resolved.endsWith(".d.ts"))
 				return;
-
-			if (pluginOptions.rollupCommonJSResolveHack)
-				resolved = resolve.sync(resolved);
 
 			context.debug(() => `${blue("resolving")} '${importee}' imported by '${importer}'`);
 			context.debug(() => `    to '${resolved}'`);
@@ -337,7 +336,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					// invert back to absolute, then make relative to declarationDir
 					parsedText.sources = parsedText.sources.map(source =>
 					{
-						const absolutePath = pathResolve(cachePlaceholder, source);
+						const absolutePath = resolve(cachePlaceholder, source);
 						return normalize(relative(declarationDir, absolutePath));
 					});
 					entryText = JSON.stringify(parsedText);
