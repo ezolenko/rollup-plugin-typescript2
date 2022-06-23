@@ -247,6 +247,14 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				context.debug(() => `${blue("generated declarations")} for '${key}'`);
 			}
 
+			// if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
+			// note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
+			if (parsedConfig.options.emitDeclarationOnly)
+			{
+				context.debug(() => `${blue("emitDeclarationOnly")} enabled, not transforming TS'`);
+				return undefined;
+			}
+
 			const transformResult: TransformResult = { code: result.code, map: { mappings: "" } };
 
 			if (result.map)
