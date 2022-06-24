@@ -10,7 +10,6 @@ import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
 import { tsModule } from "./tsproxy";
 import { formatHost } from "./diagnostics-format-host";
-import { NoCache } from "./nocache";
 
 export interface ICode
 {
@@ -103,9 +102,9 @@ export class TsCache
 	private cacheVersion = "9";
 	private cachePrefix = "rpt2_";
 	private dependencyTree: Graph;
-	private ambientTypes: ITypeSnapshot[];
+	private ambientTypes!: ITypeSnapshot[];
 	private ambientTypesDirty = false;
-	private cacheDir: string | undefined;
+	private cacheDir!: string;
 	private codeCache!: ICache<ICode | undefined>;
 	private typesCache!: ICache<string>;
 	private semanticDiagnosticsCache!: ICache<IDiagnostics[]>;
@@ -114,25 +113,28 @@ export class TsCache
 
 	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
 	{
-		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
-		if (!noCache)
-		{
-			this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash(
-				{
-					version: this.cacheVersion,
-					rootFilenames,
-					options: this.options,
-					rollupConfig: this.rollupConfig,
-					tsVersion: tsModule.version,
-				},
-				this.hashOptions,
-			)}`;
-		} else {
-			this.clean();
-		}
-
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
+
+		if (noCache)
+		{
+			this.clean();
+			return;
+		}
+
+		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
+		this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash(
+			{
+				version: this.cacheVersion,
+				rootFilenames,
+				options: this.options,
+				rollupConfig: this.rollupConfig,
+				tsVersion: tsModule.version,
+			},
+			this.hashOptions,
+		)}`;
+
+		this.init();
 
 		const automaticTypes = tsModule.getAutomaticTypeDirectiveNames(options, tsModule.sys)
 			.map((entry) => tsModule.resolveTypeReferenceDirective(entry, undefined, options, tsModule.sys))
@@ -142,8 +144,6 @@ export class TsCache
 		this.ambientTypes = rootFilenames.filter(file => file.endsWith(".d.ts"))
 			.concat(automaticTypes)
 			.map((id) => ({ id, snapshot: this.host.getScriptSnapshot(id) }));
-
-		this.init();
 
 		this.checkAmbientTypes();
 	}
@@ -200,6 +200,9 @@ export class TsCache
 
 	public done()
 	{
+		if (this.noCache)
+			return;
+
 		this.context.info(blue("rolling caches"));
 		this.codeCache.roll();
 		this.semanticDiagnosticsCache.roll();
@@ -225,12 +228,6 @@ export class TsCache
 
 	private checkAmbientTypes(): void
 	{
-		if (this.noCache)
-		{
-			this.ambientTypesDirty = true;
-			return;
-		}
-
 		this.context.debug(blue("Ambient types:"));
 		const typeHashes = this.ambientTypes.filter((snapshot) => snapshot.snapshot !== undefined)
 			.map((snapshot) =>
@@ -284,24 +281,10 @@ export class TsCache
 
 	private init()
 	{
-		if (this.noCache)
-		{
-			this.codeCache = new NoCache<ICode>();
-			this.typesCache = new NoCache<string>();
-			this.syntacticDiagnosticsCache = new NoCache<IDiagnostics[]>();
-			this.semanticDiagnosticsCache = new NoCache<IDiagnostics[]>();
-		}
-		else
-		{
-			// this is an invariant, it should never happen: cacheDir should only not exist when noCache
-			if (this.cacheDir === undefined)
-				throw new Error(`this.cacheDir undefined`);
-
-			this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
-			this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
-			this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
-			this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
-		}
+		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
+		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
+		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
+		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
 	}
 
 	private markAsDirty(id: string): void
