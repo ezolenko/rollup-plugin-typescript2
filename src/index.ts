@@ -35,7 +35,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let service: tsTypes.LanguageService;
 	let noErrors = true;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
-	const allImportedFiles = new Set<string>();
 
 	let _cache: TsCache;
 	const cache = (): TsCache =>
@@ -103,8 +102,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (generateRound === 0)
 			{
-				parsedConfig.fileNames.map(allImportedFiles.add, allImportedFiles);
-
 				context.info(`typescript version: ${tsModule.version}`);
 				context.info(`tslib version: ${tslibVersion}`);
 				if (this.meta)
@@ -156,10 +153,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			importer = normalize(importer);
 
-			// avoiding trying to resolve ids for things imported from files unrelated to this plugin
-			if (!allImportedFiles.has(importer))
-				return;
-
 			// TODO: use module resolution cache
 			const result = tsModule.nodeModuleNameResolver(importee, importer, parsedConfig.options, tsModule.sys);
 			let resolved = result.resolvedModule?.resolvedFileName;
@@ -197,8 +190,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!filter(id))
 				return undefined;
 
-			allImportedFiles.add(normalize(id));
-
 			const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
 
 			const snapshot = servicesHost.setSnapshot(id, code);
@@ -228,9 +219,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (!result)
 				return undefined;
-
-			if (result.references)
-				result.references.map(normalize).map(allImportedFiles.add, allImportedFiles);
 
 			if (watchMode && this.addWatchFile && result.references)
 			{
