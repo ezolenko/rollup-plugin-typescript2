@@ -61,7 +61,7 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 
 #### @rollup/plugin-node-resolve
 
-Must be before rollup-plugin-typescript2 in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)
+Must be before `rollup-plugin-typescript2` in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66).
 
 #### @rollup/plugin-commonjs
 
@@ -199,8 +199,16 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 ### Declarations
 
-This plugin respects `declaration: true` in your `tsconfig.json` file. When set, it will emit `*.d.ts` files for your bundle. The resulting file(s) can then be used with the `types` property in your `package.json` file as described [here](https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html).
+This plugin respects `declaration: true` in your `tsconfig.json` file. When set, it will emit `*.d.ts` files for your bundle.
+The resulting file(s) can then be used with the `types` property in your `package.json` file as described [here](https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html).<br />
 By default, the declaration files will be located in the same directory as the generated Rollup bundle. If you want to override this behavior and instead use the declarationDir set `useTsconfigDeclarationDir` to `true` in the plugin options.
+
+The above also applies to `declarationMap: true` and `*.d.ts.map` files for your bundle.
+
+This plugin also respects `emitDeclarationOnly: true` and will only emit declarations (and declaration maps, if enabled) if set in your `tsconfig.json`.
+If you use `emitDeclarationOnly`, you will need another plugin to compile any TypeScript sources, such as `@rollup/plugin-babel`, `rollup-plugin-esbuild`, `rollup-plugin-swc`, etc.
+When composing Rollup plugins this way, `rollup-plugin-typescript2` will perform type-checking and declaration generation, while another plugin performs the TypeScript to JavaScript compilation.<br />
+Some scenarios where this can be particularly useful: you want to use Babel plugins on TypeScript source, or you want declarations and type-checking for your Vite builds (**NOTE**: this space has not been fully explored yet).
 
 ### Watch mode
 
