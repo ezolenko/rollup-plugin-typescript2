@@ -209,37 +209,8 @@ export class TsCache
 
 	public getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined
 	{
-		if (this.noCache)
-		{
-			this.context.info(`${blue("transpiling")} '${id}'`);
-			this.markAsDirty(id);
-			return transform();
-		}
-
-		const hash = this.createHash(id, snapshot);
-
 		this.context.info(`${blue("transpiling")} '${id}'`);
-		this.context.debug(`    cache: '${this.codeCache.path(hash)}'`);
-
-		if (this.codeCache.exists(hash) && !this.isDirty(id, false))
-		{
-			this.context.debug(green("    cache hit"));
-			const data = this.codeCache.read(hash);
-			if (data)
-			{
-				this.codeCache.write(hash, data);
-				return data;
-			}
-			else
-				this.context.warn(yellow("    cache broken, discarding"));
-		}
-
-		this.context.debug(yellow("    cache miss"));
-
-		const transformedData = transform();
-		this.codeCache.write(hash, transformedData);
-		this.markAsDirty(id);
-		return transformedData;
+		return this.getCached(this.codeCache, id, snapshot, false, transform);
 	}
 
 	public getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
@@ -278,17 +249,18 @@ export class TsCache
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
+		return this.getCached(cache, id, snapshot, true, () => convertDiagnostic(type, check()));
+	}
+
+	private getCached<CacheType>(cache: ICache<CacheType>, id: string, snapshot: tsTypes.IScriptSnapshot, checkImports: boolean, convert: () => CacheType): CacheType
+	{
 		if (this.noCache)
-		{
-			this.markAsDirty(id);
-			return convertDiagnostic(type, check());
-		}
+			return convert();
 
 		const hash = this.createHash(id, snapshot);
-
 		this.context.debug(`    cache: '${cache.path(hash)}'`);
 
-		if (cache.exists(hash) && !this.isDirty(id, true))
+		if (cache.exists(hash) && !this.isDirty(id, checkImports))
 		{
 			this.context.debug(green("    cache hit"));
 
@@ -304,7 +276,7 @@ export class TsCache
 
 		this.context.debug(yellow("    cache miss"));
 
-		const convertedData = convertDiagnostic(type, check());
+		const convertedData = convert();
 		cache.write(hash, convertedData);
 		this.markAsDirty(id);
 		return convertedData;
