@@ -213,7 +213,8 @@ export class TsCache
 	public getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined
 	{
 		this.context.info(`${blue("transpiling")} '${id}'`);
-		return this.getCached(this.codeCache, id, snapshot, false, transform);
+		// the compiled JS code will not change if imports do, but the declarations can change based on imports' types changing, so only check imports when declarations are needed
+		return this.getCached(this.codeCache, id, snapshot, Boolean(this.options.declaration), transform);
 	}
 
 	public getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
