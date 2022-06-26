@@ -14,26 +14,21 @@ export class RollingCache<DataType> implements ICache<DataType>
 	private newCacheRoot: string;
 	private rolled: boolean = false;
 
-	/**
-	 * @param cacheRoot: root folder for the cache
-	 * @param checkNewCache: whether to also look in new cache when reading from cache
-	 */
-	constructor(private cacheRoot: string, private checkNewCache: boolean)
+	/** @param cacheRoot: root folder for the cache */
+	constructor(private cacheRoot: string)
 	{
 		this.oldCacheRoot = `${this.cacheRoot}/cache`;
 		this.newCacheRoot = `${this.cacheRoot}/cache_`;
 		emptyDirSync(this.newCacheRoot);
 	}
 
-	/**
-	 * @returns true if name exist in old cache (or either old of new cache if checkNewCache is true)
-	 */
+	/** @returns true if name exists in either old cache or new cache */
 	public exists(name: string): boolean
 	{
 		if (this.rolled)
 			return false;
 
-		if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
+		if (existsSync(`${this.newCacheRoot}/${name}`))
 			return true;
 
 		return existsSync(`${this.oldCacheRoot}/${name}`);
@@ -44,9 +39,7 @@ export class RollingCache<DataType> implements ICache<DataType>
 		return `${this.oldCacheRoot}/${name}`;
 	}
 
-	/**
-	 * @returns true if old cache contains all names and nothing more
-	 */
+	/** @returns true if old cache contains all names and nothing more */
 	public match(names: string[]): boolean
 	{
 		if (this.rolled)
@@ -58,12 +51,10 @@ export class RollingCache<DataType> implements ICache<DataType>
 		return _.isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
 	}
 
-	/**
-	 * @returns data for name, must exist in old cache (or either old of new cache if checkNewCache is true)
-	 */
+	/** @returns data for name, must exist in either old cache or new cache */
 	public read(name: string): DataType | null | undefined
 	{
-		if (this.checkNewCache && existsSync(`${this.newCacheRoot}/${name}`))
+		if (existsSync(`${this.newCacheRoot}/${name}`))
 			return readJsonSync(`${this.newCacheRoot}/${name}`, { encoding: "utf8", throws: false });
 
 		return readJsonSync(`${this.oldCacheRoot}/${name}`, { encoding: "utf8", throws: false });
@@ -84,12 +75,11 @@ export class RollingCache<DataType> implements ICache<DataType>
 	{
 		if (this.rolled)
 			return;
+
 		ensureFileSync(`${this.newCacheRoot}/${name}`);
 	}
 
-	/**
-	 * clears old cache and moves new in its place
-	 */
+	/** clears old cache and moves new in its place */
 	public roll()
 	{
 		if (this.rolled)

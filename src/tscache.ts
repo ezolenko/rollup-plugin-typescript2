@@ -281,10 +281,10 @@ export class TsCache
 
 	private init()
 	{
-		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`, true);
-		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`, true);
-		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`, true);
-		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`, true);
+		this.codeCache = new RollingCache<ICode>(`${this.cacheDir}/code`);
+		this.typesCache = new RollingCache<string>(`${this.cacheDir}/types`);
+		this.syntacticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/syntacticDiagnostics`);
+		this.semanticDiagnosticsCache = new RollingCache<IDiagnostics[]>(`${this.cacheDir}/semanticDiagnostics`);
 	}
 
 	private markAsDirty(id: string): void
