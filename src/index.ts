@@ -33,6 +33,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let service: tsTypes.LanguageService;
 	let noErrors = true;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
+	const checkedFiles = new Set<string>();
 
 	let _cache: TsCache;
 	const cache = (): TsCache =>
@@ -60,6 +61,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (diagnostics.length > 0)
 				noErrors = false;
+
+			checkedFiles.add(id);
 	}
 
 	const pluginOptions: IOptions = Object.assign({},
@@ -141,6 +144,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		{
 			const key = normalize(id);
 			delete declarations[key];
+			checkedFiles.delete(key);
 		},
 
 		resolveId(importee, importer)
@@ -270,7 +274,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			parsedConfig.fileNames.forEach((name) =>
 			{
 				const key = normalize(name);
-				if (!filter(key))
+				if (checkedFiles.has(key) || !filter(key)) // don't duplicate if it's already been checked
 					return;
 
 				context.debug(() => `type-checking missed '${key}'`);
