@@ -253,15 +253,32 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		buildEnd(err)
 		{
-			if (!err)
+			if (err)
+			{
+				// workaround: err.stack contains err.message and Rollup prints both, causing duplication, so split out the stack itself if it exists (c.f. https://github.com/ezolenko/rollup-plugin-typescript2/issues/103#issuecomment-1172820658)
+				const stackOnly = err.stack?.split(err.message)[1];
+				if (stackOnly)
+					this.error({ ...err, message: err.message, stack: stackOnly });
+				else
+					this.error(err);
+			}
+
+			if (!pluginOptions.check)
 				return
 
-			// workaround: err.stack contains err.message and Rollup prints both, causing duplication, so split out the stack itself if it exists (c.f. https://github.com/ezolenko/rollup-plugin-typescript2/issues/103#issuecomment-1172820658)
-			const stackOnly = err.stack?.split(err.message)[1];
-			if (stackOnly)
-				this.error({ ...err, message: err.message, stack: stackOnly });
-			else
-				this.error(err);
+			// type-check missed files as well
+			parsedConfig.fileNames.forEach((name) =>
+			{
+				const key = normalize(name);
+				if (!filter(key))
+					return;
+
+				context.debug(() => `type-checking missed '${key}'`);
+
+				const snapshot = servicesHost.getScriptSnapshot(key);
+				if (snapshot)
+					typecheckFile(key, snapshot, context);
+			});
 		},
 
 		generateBundle(bundleOptions)
@@ -286,23 +303,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 						typecheckFile(id, snapshot, context);
 				});
 			}
-
-			// type-check missed files as well
-			parsedConfig.fileNames.forEach((name) =>
-			{
-				if (!pluginOptions.check)
-					return;
-
-				const key = normalize(name);
-				if (key in declarations || !filter(key)) // don't duplicate if it's already been transformed
-					return;
-
-				context.debug(() => `type-checking missed '${key}'`);
-
-				const snapshot = servicesHost.getScriptSnapshot(key);
-				if (snapshot)
-					typecheckFile(key, snapshot, context);
-			});
 
 			if (!watchMode && !noErrors)
 				context.info(yellow("there were errors or warnings."));
