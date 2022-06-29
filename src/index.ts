@@ -57,7 +57,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, tcContext: IContext) =>
 	{
 			const diagnostics = getDiagnostics(id, snapshot);
-			printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty === true);
+			printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty !== false);
 
 			if (diagnostics.length > 0)
 				noErrors = false;
@@ -131,7 +131,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// printing compiler option errors
 			if (pluginOptions.check) {
 				const diagnostics = convertDiagnostic("options", service.getCompilerOptionsDiagnostics());
-				printDiagnostics(context, diagnostics, parsedConfig.options.pretty === true);
+				printDiagnostics(context, diagnostics, parsedConfig.options.pretty !== false);
 				if (diagnostics.length > 0)
 					noErrors = false;
 			}
