@@ -1,6 +1,14 @@
-/** @type {import("@jest/types").Config.InitialOptions} */
+/** @type {import("ts-jest").InitialOptionsTsJest} */
 const config = {
+	// ts-jest settings
 	preset: "ts-jest",
+	globals: {
+		"ts-jest": {
+			tsconfig: "./tsconfig.test.json",
+		}
+	},
+
+	// jest settings
 	injectGlobals: false, // use @jest/globals instead
 	restoreMocks: true,
 	// only use *.spec.ts files in __tests__, no auto-generated files

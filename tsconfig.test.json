@@ -1,0 +1,6 @@
+{
+	"extends": "./tsconfig",
+	"compilerOptions": {
+		"esModuleInterop": true, // needed to parse some imports with ts-jest (since Rollup isn't used when importing during testing)
+	},
+}
