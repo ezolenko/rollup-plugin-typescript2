@@ -27,7 +27,7 @@ afterAll(() => remove(testDir));
 
 
 test("RollingCache", async () => {
-	const cache = new RollingCache(testDir, true);
+	const cache = new RollingCache(testDir);
 
 	expect(cache.exists(nonExistentFile)).toBeFalsy();
 	expect(cache.exists(testFile)).toBeTruthy();
@@ -50,7 +50,7 @@ test("RollingCache", async () => {
 });
 
 test("RollingCache, rolled", async () => {
-	const cache = new RollingCache(testDir, true);
+	const cache = new RollingCache(testDir);
 	// roll the cache
 	cache.roll();
 	// rolling again hits coverage for this.rolled being true already
@@ -65,8 +65,8 @@ test("RollingCache, rolled", async () => {
 	expect(await pathExists(`${oldCacheDir}/touched.json`)).toBeFalsy();
 });
 
-test("RollingCache, test checkNewCache", async () => {
-	const cache = new RollingCache(testDir, true);
+test("RollingCache, test newCache", async () => {
+	const cache = new RollingCache(testDir);
 
 	const preExistingFile = `${newCacheDir}/pre-existing.json`;
 	await writeFile(preExistingFile, JSON.stringify({}));
@@ -74,7 +74,7 @@ test("RollingCache, test checkNewCache", async () => {
 });
 
 test("RollingCache, test match when oldCacheDir is empty", () => {
-	const cache = new RollingCache(emptyCacheRoot, true);
+	const cache = new RollingCache(emptyCacheRoot);
 
 	expect(cache.match([])).toBeTruthy();
 	expect(cache.match([testFile])).toBeFalsy();
