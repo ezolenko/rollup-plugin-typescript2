@@ -65,6 +65,15 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				noErrors = false;
 	}
 
+	/** to be called at the end of Rollup's build phase, before output generation */
+	const buildDone = (): void =>
+	{
+		if (!watchMode && !noErrors)
+			context.info(yellow("there were errors or warnings."));
+
+		cache().done();
+	}
+
 	const pluginOptions: IOptions = Object.assign({},
 		{
 			check: true,
@@ -204,9 +213,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				{
 					// always checking on fatal errors, even if options.check is set to false
 					typecheckFile(id, snapshot, contextWrapper);
-
 					// since no output was generated, aborting compilation
-					cache().done();
 					this.error(red(`failed to transpile '${id}'`));
 				}
 
@@ -259,6 +266,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		{
 			if (err)
 			{
+				buildDone();
 				// workaround: err.stack contains err.message and Rollup prints both, causing duplication, so split out the stack itself if it exists (c.f. https://github.com/ezolenko/rollup-plugin-typescript2/issues/103#issuecomment-1172820658)
 				const stackOnly = err.stack?.split(err.message)[1];
 				if (stackOnly)
@@ -268,7 +276,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			}
 
 			if (!pluginOptions.check)
-				return
+				return buildDone();
 
 			// walkTree once on each cycle when in watch mode
 			if (watchMode)
@@ -298,10 +306,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					typecheckFile(key, snapshot, context);
 			});
 
-			if (!watchMode && !noErrors)
-				context.info(yellow("there were errors or warnings."));
-
-			cache().done();
+			buildDone();
 		},
 
 		generateBundle(this, _output)
