@@ -1,6 +1,6 @@
 import { relative, dirname, normalize as pathNormalize, resolve } from "path";
 import * as tsTypes from "typescript";
-import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
+import { PluginImpl, InputOptions, TransformResult, SourceMap, Plugin } from "rollup";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { blue, red, yellow, green } from "colors/safe";
 import findCacheDir from "find-cache-dir";
@@ -89,7 +89,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	}
 	setTypescriptModule(pluginOptions.typescript);
 
-	const self: Plugin & { _ongenerate: () => void, _onwrite: (this: PluginContext, _output: OutputOptions) => void } = {
+	const self: Plugin = {
 
 		name: "rpt2",
 
@@ -270,6 +270,20 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!pluginOptions.check)
 				return
 
+			// walkTree once on each cycle when in watch mode
+			if (watchMode)
+			{
+				cache().walkTree((id) =>
+				{
+					if (!filter(id))
+						return;
+
+					const snapshot = servicesHost.getScriptSnapshot(id);
+					if (snapshot)
+						typecheckFile(id, snapshot, context);
+				});
+			}
+
 			// type-check missed files as well
 			parsedConfig.fileNames.forEach((name) =>
 			{
@@ -283,40 +297,18 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				if (snapshot)
 					typecheckFile(key, snapshot, context);
 			});
-		},
-
-		generateBundle(bundleOptions)
-		{
-			self._ongenerate();
-			self._onwrite.call(this, bundleOptions);
-		},
-
-		_ongenerate(): void
-		{
-			context.debug(() => `generating target ${generateRound + 1}`);
-
-			if (pluginOptions.check && watchMode && generateRound === 0)
-			{
-				cache().walkTree((id) =>
-				{
-					if (!filter(id))
-						return;
-
-					const snapshot = servicesHost.getScriptSnapshot(id);
-					if (snapshot)
-						typecheckFile(id, snapshot, context);
-				});
-			}
 
 			if (!watchMode && !noErrors)
 				context.info(yellow("there were errors or warnings."));
 
 			cache().done();
-			generateRound++;
 		},
 
-		_onwrite(this: PluginContext, _output: OutputOptions): void
+		generateBundle(this, _output)
 		{
+			context.debug(() => `generating target ${generateRound + 1}`);
+			generateRound++;
+
 			if (!parsedConfig.options.declaration)
 				return;
 
