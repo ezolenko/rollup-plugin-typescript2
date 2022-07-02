@@ -12,9 +12,7 @@ import { RollupContext } from "../src/rollupcontext";
 test("RollupContext", () => {
 	const data = {};
 	const stubbedContext = makeStubbedContext(data);
-
 	const context = new RollupContext(5, false, stubbedContext);
-	expect(Object.keys(context)).toEqual(["verbosity", "bail", "context", "prefix", "hasContext"]);
 
 	context.warn("test");
 	expect((data as any).warn).toEqual("test");
@@ -27,23 +25,6 @@ test("RollupContext", () => {
 
 	context.error(() => "test2!");
 	expect((data as any).warn).toEqual("test2!");
-});
-
-test("RollupContext with no logger", () => {
-	const data = {};
-	const stubbedContext = makeStubbedContext(data);
-	delete (stubbedContext as any).warn;
-	delete (stubbedContext as any).error;
-	delete (stubbedContext as any).info;
-	delete (stubbedContext as any).debug;
-
-	const context = new RollupContext(5, false, stubbedContext);
-
-	context.warn("test");
-	expect(console.log).toHaveBeenLastCalledWith("test");
-
-	context.error("test2");
-	expect(console.log).toHaveBeenLastCalledWith("test2");
 
 	context.info("test3");
 	expect(console.log).toHaveBeenLastCalledWith("test3");

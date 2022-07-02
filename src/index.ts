@@ -2,7 +2,6 @@ import { relative, dirname, normalize as pathNormalize, resolve } from "path";
 import * as tsTypes from "typescript";
 import { PluginImpl, PluginContext, InputOptions, OutputOptions, TransformResult, SourceMap, Plugin } from "rollup";
 import { normalizePath as normalize } from "@rollup/pluginutils";
-import * as _ from "lodash";
 import { blue, red, yellow, green } from "colors/safe";
 import findCacheDir from "find-cache-dir";
 
@@ -103,8 +102,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			{
 				context.info(`typescript version: ${tsModule.version}`);
 				context.info(`tslib version: ${tslibVersion}`);
-				if (this.meta)
-					context.info(`rollup version: ${this.meta.rollupVersion}`);
+				context.info(`rollup version: ${this.meta.rollupVersion}`);
 
 				context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
 				context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
@@ -205,8 +203,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 					// since no output was generated, aborting compilation
 					cache().done();
-					if (_.isFunction(this.error))
-						this.error(red(`failed to transpile '${id}'`));
+					this.error(red(`failed to transpile '${id}'`));
 				}
 
 				const references = getAllReferences(id, snapshot, parsedConfig.options);
@@ -219,10 +216,11 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!result)
 				return undefined;
 
-			if (watchMode && this.addWatchFile && result.references)
+			if (watchMode && result.references)
 			{
 				if (tsConfigPath)
 					this.addWatchFile(tsConfigPath);
+
 				result.references.map(this.addWatchFile, this);
 				context.debug(() => `${green("    watching")}: ${result.references!.join("\nrpt2:               ")}`);
 			}
