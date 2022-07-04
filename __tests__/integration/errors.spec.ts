@@ -6,6 +6,9 @@ import { red } from "colors/safe";
 import { RPT2Options } from "../../src/index";
 import * as helpers from "./helpers";
 
+// increase timeout to 10s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
+jest.setTimeout(10000);
+
 const local = (x: string) => path.resolve(__dirname, x);
 const cacheRoot = local("__temp/errors/rpt2-cache"); // don't use the one in node_modules
 const onwarn = jest.fn();
