@@ -70,13 +70,6 @@ test("integration - no errors - no declaration maps", async () => {
     clean: true,
   });
 
-  // populate the cache
-  await genBundle("fixtures/no-errors/index.ts", { tsconfigOverride: noDeclarationMaps });
-  const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts", {
-    tsconfigOverride: noDeclarationMaps,
-  });
-  expect(output).toEqual(outputWithCache);
-
   expect(output[0].fileName).toEqual("index.ts");
   expect(output[1].fileName).toEqual("index.d.ts");
   expect(output[2].fileName).toEqual("some-import.d.ts");
@@ -91,13 +84,6 @@ test("integration - no errors - no declarations", async () => {
     tsconfigOverride: noDeclarations,
     clean: true,
   });
-
-  // populate the cache
-  await genBundle("fixtures/no-errors/index.ts", { tsconfigOverride: noDeclarations });
-  const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts", {
-    tsconfigOverride: noDeclarations,
-  });
-  expect(output).toEqual(outputWithCache);
 
   expect(output[0].fileName).toEqual("index.ts");
   expect(output.length).toEqual(1); // no other files
