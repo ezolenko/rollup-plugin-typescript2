@@ -30,10 +30,7 @@ test("integration - no errors", async () => {
   const { output: outputWithCache } = await genBundle();
   expect(output).toEqual(outputWithCache);
 
-  // JS file should be bundled by Rollup, even though rpt2 does not resolve it (as Rollup natively understands ESM)
-  expect(output[0].code).toEqual(expect.stringContaining("identity"));
-
-  expect(output[0].fileName).toEqual("index.ts");
+  expect(output[0].fileName).toEqual("index.js");
   expect(output[1].fileName).toEqual("index.d.ts");
   expect(output[2].fileName).toEqual("index.d.ts.map");
   expect(output[3].fileName).toEqual("some-import.d.ts");
@@ -41,6 +38,9 @@ test("integration - no errors", async () => {
   expect(output[5].fileName).toEqual("type-only-import.d.ts");
   expect(output[6].fileName).toEqual("type-only-import.d.ts.map");
   expect(output.length).toEqual(7); // no other files
+
+  // JS file should be bundled by Rollup, even though rpt2 does not resolve it (as Rollup natively understands ESM)
+  expect(output[0].code).toEqual(expect.stringContaining("identity"));
 });
 
 test("integration - no errors - no declaration maps", async () => {
@@ -50,7 +50,7 @@ test("integration - no errors - no declaration maps", async () => {
     clean: true,
   });
 
-  expect(output[0].fileName).toEqual("index.ts");
+  expect(output[0].fileName).toEqual("index.js");
   expect(output[1].fileName).toEqual("index.d.ts");
   expect(output[2].fileName).toEqual("some-import.d.ts");
   expect(output[3].fileName).toEqual("type-only-import.d.ts");
@@ -65,6 +65,6 @@ test("integration - no errors - no declarations", async () => {
     clean: true,
   });
 
-  expect(output[0].fileName).toEqual("index.ts");
+  expect(output[0].fileName).toEqual("index.js");
   expect(output.length).toEqual(1); // no other files
 });

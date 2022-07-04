@@ -40,10 +40,10 @@ test("integration - errors - abortOnError: false / check: false", async () => {
   const { output: output2 } = await genBundle({ check: false });
   expect(output).toEqual(output2);
 
-  expect(output[0].fileName).toEqual("index.ts");
+  expect(output[0].fileName).toEqual("index.js");
   expect(output[1].fileName).toEqual("index.d.ts");
   expect(output[2].fileName).toEqual("index.d.ts.map");
-  expect(output.length).toEqual(3);
+  expect(output.length).toEqual(3); // no other files
   expect(onwarn).toBeCalledTimes(1);
 });
 

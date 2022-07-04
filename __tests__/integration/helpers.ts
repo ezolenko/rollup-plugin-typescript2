@@ -22,7 +22,7 @@ export async function genBundle ({ input, tsconfig, cacheRoot, extraOpts, onwarn
   });
 
   const esm = await bundle.generate({
-    file: "./dist/index.ts",
+    file: "./dist/index.js",
     format: "esm",
     exports: "named",
   });
