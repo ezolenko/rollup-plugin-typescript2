@@ -41,6 +41,8 @@ async function genBundle (input: string, extraOpts?: RPT2Options) {
 
 test("integration - no errors", async () => {
   const { output } = await genBundle("fixtures/no-errors/index.ts", { clean: true });
+  // populate the cache
+  await genBundle("fixtures/no-errors/index.ts");
   const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts");
 
   expect(output).toEqual(outputWithCache);
@@ -61,6 +63,8 @@ test("integration - no errors - no declaration maps", async () => {
     tsconfigOverride: noDeclarationMaps,
     clean: true,
   });
+  // populate the cache
+  await genBundle("fixtures/no-errors/index.ts", { tsconfigOverride: noDeclarationMaps });
   const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts", {
     tsconfigOverride: noDeclarationMaps,
   });
@@ -81,6 +85,8 @@ test("integration - no errors - no declarations", async () => {
     tsconfigOverride: noDeclarations,
     clean: true,
   });
+  // populate the cache
+  await genBundle("fixtures/no-errors/index.ts", { tsconfigOverride: noDeclarations });
   const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts", {
     tsconfigOverride: noDeclarations,
   });
