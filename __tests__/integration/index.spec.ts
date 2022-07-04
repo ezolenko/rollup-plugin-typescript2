@@ -1,16 +1,21 @@
-import { test, expect } from "@jest/globals";
+import { afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
+import * as fs from "fs-extra";
 import { rollup, OutputAsset } from "rollup";
 
 import rpt2, { RPT2Options } from "../../src/index";
 
 const local = (x: string) => path.resolve(__dirname, x);
+const cacheRoot = local("__temp/rpt2-cache"); // don't use the one in node_modules
+
+afterAll(() => fs.remove(cacheRoot));
 
 async function genBundle (input: string, extraOpts?: RPT2Options) {
   const bundle = await rollup({
     input: local(input),
     plugins: [rpt2({
       tsconfig: local("fixtures/tsconfig.json"),
+      cacheRoot,
       ...extraOpts,
     })],
   });
@@ -47,5 +52,5 @@ test("integration - no error case", async () => {
   expect(output[4].fileName).toEqual("some-import.d.ts.map");
   expect(output[5].fileName).toEqual("type-only-import.d.ts");
   expect(output[6].fileName).toEqual("type-only-import.d.ts.map");
-  expect(output.length).toEqual(7);
+  expect(output.length).toEqual(7); // no other files
 });
