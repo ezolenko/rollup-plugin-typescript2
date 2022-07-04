@@ -1,9 +1,12 @@
-import { afterAll, test, expect } from "@jest/globals";
+import { jest, afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
 import * as fs from "fs-extra";
 import { rollup, OutputAsset } from "rollup";
 
 import rpt2, { RPT2Options } from "../../src/index";
+
+// increase timeout to 10s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
+jest.setTimeout(10000);
 
 const local = (x: string) => path.resolve(__dirname, x);
 const cacheRoot = local("__temp/rpt2-cache"); // don't use the one in node_modules
