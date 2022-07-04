@@ -1,53 +1,33 @@
 import { jest, afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
 import * as fs from "fs-extra";
-import { rollup, OutputAsset } from "rollup";
 
-import rpt2, { RPT2Options } from "../../src/index";
+import { RPT2Options } from "../../src/index";
+import * as helpers from "./helpers";
 
 // increase timeout to 10s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
 jest.setTimeout(10000);
 
 const local = (x: string) => path.resolve(__dirname, x);
-const cacheRoot = local("__temp/rpt2-cache"); // don't use the one in node_modules
+const cacheRoot = local("__temp/no-errors/rpt2-cache"); // don't use the one in node_modules
 
 afterAll(() => fs.remove(cacheRoot));
 
-async function genBundle (input: string, extraOpts?: RPT2Options) {
-  const bundle = await rollup({
-    input: local(input),
-    plugins: [rpt2({
-      tsconfig: local("fixtures/tsconfig.json"),
-      cacheRoot,
-      ...extraOpts,
-    })],
+async function genBundle(extraOpts?: RPT2Options) {
+  return helpers.genBundle({
+    input: local("fixtures/no-errors/index.ts"),
+    tsconfig: local("fixtures/no-errors/tsconfig.json"),
+    cacheRoot,
+    extraOpts,
   });
-
-  const esm = await bundle.generate({
-    file: "./dist/index.ts",
-    format: "esm",
-    exports: "named",
-  });
-
-  // Rollup has some deprecated properties like `get isAsset`, so enumerating them with, e.g. `.toEqual`, causes a bunch of warnings to be output
-  // delete the `isAsset` property for (much) cleaner logs
-  const { output: files } = esm;
-  for (const file of files) {
-    if ("isAsset" in file) {
-      const optIsAsset = file as Partial<Pick<OutputAsset, "isAsset">> & Omit<OutputAsset, "isAsset">;
-      delete optIsAsset["isAsset"];
-    }
-  }
-
-  return esm;
 }
 
 test("integration - no errors", async () => {
-  const { output } = await genBundle("fixtures/no-errors/index.ts", { clean: true });
+  const { output } = await genBundle({ clean: true });
 
   // populate the cache
-  await genBundle("fixtures/no-errors/index.ts");
-  const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts");
+  await genBundle();
+  const { output: outputWithCache } = await genBundle();
   expect(output).toEqual(outputWithCache);
 
   // JS file should be bundled by Rollup, even though rpt2 does not resolve it (as Rollup natively understands ESM)
@@ -65,7 +45,7 @@ test("integration - no errors", async () => {
 
 test("integration - no errors - no declaration maps", async () => {
   const noDeclarationMaps = { compilerOptions: { declarationMap: false } };
-  const { output } = await genBundle("fixtures/no-errors/index.ts", {
+  const { output } = await genBundle({
     tsconfigOverride: noDeclarationMaps,
     clean: true,
   });
@@ -80,7 +60,7 @@ test("integration - no errors - no declaration maps", async () => {
 
 test("integration - no errors - no declarations", async () => {
   const noDeclarations = { compilerOptions: { declaration: false, declarationMap: false } };
-  const { output } = await genBundle("fixtures/no-errors/index.ts", {
+  const { output } = await genBundle({
     tsconfigOverride: noDeclarations,
     clean: true,
   });
