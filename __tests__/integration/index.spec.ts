@@ -39,7 +39,7 @@ async function genBundle (input: string, extraOpts?: RPT2Options) {
   return esm;
 }
 
-test("integration - no error case", async () => {
+test("integration - no errors", async () => {
   const { output } = await genBundle("fixtures/no-errors/index.ts", { clean: true });
   const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts");
 
@@ -53,4 +53,40 @@ test("integration - no error case", async () => {
   expect(output[5].fileName).toEqual("type-only-import.d.ts");
   expect(output[6].fileName).toEqual("type-only-import.d.ts.map");
   expect(output.length).toEqual(7); // no other files
+});
+
+test("integration - no errors - no declaration maps", async () => {
+  const noDeclarationMaps = { compilerOptions: { declarationMap: false } };
+  const { output } = await genBundle("fixtures/no-errors/index.ts", {
+    tsconfigOverride: noDeclarationMaps,
+    clean: true,
+  });
+  const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts", {
+    tsconfigOverride: noDeclarationMaps,
+  });
+
+  expect(output).toEqual(outputWithCache);
+
+  expect(output[0].fileName).toEqual("index.ts");
+  expect(output[1].fileName).toEqual("index.d.ts");
+  expect(output[2].fileName).toEqual("some-import.d.ts");
+  expect(output[3].fileName).toEqual("type-only-import.d.ts");
+  expect(output.length).toEqual(4); // no other files
+});
+
+
+test("integration - no errors - no declarations", async () => {
+  const noDeclarations = { compilerOptions: { declaration: false, declarationMap: false } };
+  const { output } = await genBundle("fixtures/no-errors/index.ts", {
+    tsconfigOverride: noDeclarations,
+    clean: true,
+  });
+  const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts", {
+    tsconfigOverride: noDeclarations,
+  });
+
+  expect(output).toEqual(outputWithCache);
+
+  expect(output[0].fileName).toEqual("index.ts");
+  expect(output.length).toEqual(1); // no other files
 });
