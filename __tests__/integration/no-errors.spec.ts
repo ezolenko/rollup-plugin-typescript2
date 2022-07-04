@@ -68,3 +68,29 @@ test("integration - no errors - no declarations", async () => {
   expect(output[0].fileName).toEqual("index.js");
   expect(output.length).toEqual(1); // no other files
 });
+
+test("integration - no errors - allowJs + emitDeclarationOnly", async () => {
+  const { output } = await helpers.genBundle({
+    input: local("fixtures/no-errors/some-js-import.js"),
+    tsconfig: local("fixtures/no-errors/tsconfig.json"),
+    cacheRoot,
+    extraOpts: {
+      include: ["**/*.js"],
+      tsconfigOverride: {
+        compilerOptions: {
+          allowJs: true,
+          emitDeclarationOnly: true,
+        },
+      },
+    },
+  });
+
+  expect(output[0].fileName).toEqual("index.js");
+  expect(output[1].fileName).toEqual("some-js-import.d.ts");
+  expect(output[2].fileName).toEqual("some-js-import.d.ts.map");
+  expect(output.length).toEqual(3); // no other files
+
+  expect(output[0].code).toEqual(expect.stringContaining("identity"));
+  expect(output[0].code).not.toEqual(expect.stringContaining("sum")); // no TS files included
+  expect("source" in output[1] && output[1].source).toEqual(expect.stringContaining("identity"));
+});
