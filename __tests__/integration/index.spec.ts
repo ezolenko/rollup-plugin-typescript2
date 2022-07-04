@@ -1,13 +1,16 @@
 import { test, expect } from "@jest/globals";
+import * as path from "path";
 import { rollup } from "rollup";
 
 import rpt2 from "../../src/index";
 
-test.only("integration - no error case", async () => {
+const local = (x: string) => path.resolve(__dirname, x);
+
+test("integration - no error case", async () => {
   const bundle = await rollup({
-    input: "./__tests__/integration/fixtures/no-errors/index.ts",
+    input: local("fixtures/no-errors/index.ts"),
     plugins: [rpt2({
-      tsconfig: "./__tests__/integration/fixtures/tsconfig.json",
+      tsconfig: local("fixtures/tsconfig.json"),
     })],
   });
 
