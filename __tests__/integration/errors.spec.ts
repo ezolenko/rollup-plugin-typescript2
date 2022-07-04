@@ -32,7 +32,9 @@ test("integration - errors", async () => {
   })).rejects.toThrow("rpt2: failed to open 'undefined'"); // FIXME: bug: this should be "non-existent-tsconfig", not "undefined"
 
   expect(genBundle()).rejects.toThrow(`semantic error TS2322: ${red("Type 'string' is not assignable to type 'number'.")}`);
+});
 
+test("integration - errors - abortOnError: false / check: false", async () => {
   // either warning or not type-checking should result in the same bundle
   const { output } = await genBundle({ abortOnError: false });
   const { output: output2 } = await genBundle({ check: false });
