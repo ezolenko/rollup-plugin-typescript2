@@ -1,24 +1,44 @@
 import { test, expect } from "@jest/globals";
 import * as path from "path";
-import { rollup } from "rollup";
+import { rollup, OutputAsset } from "rollup";
 
-import rpt2 from "../../src/index";
+import rpt2, { RPT2Options } from "../../src/index";
 
 const local = (x: string) => path.resolve(__dirname, x);
 
-test("integration - no error case", async () => {
+async function genBundle (input: string, extraOpts?: RPT2Options) {
   const bundle = await rollup({
-    input: local("fixtures/no-errors/index.ts"),
+    input: local(input),
     plugins: [rpt2({
       tsconfig: local("fixtures/tsconfig.json"),
+      ...extraOpts,
     })],
   });
 
-  const { output } = await bundle.generate({
-    file: './dist/index.ts',
-    format: 'esm',
-    exports: 'named'
-  })
+  const esm = await bundle.generate({
+    file: "./dist/index.ts",
+    format: "esm",
+    exports: "named",
+  });
+
+  // Rollup has some deprecated properties like `get isAsset`, so enumerating them with, e.g. `.toEqual`, causes a bunch of warnings to be output
+  // delete the `isAsset` property for (much) cleaner logs
+  const { output: files } = esm;
+  for (const file of files) {
+    if ("isAsset" in file) {
+      const optIsAsset = file as Partial<Pick<OutputAsset, "isAsset">> & Omit<OutputAsset, "isAsset">;
+      delete optIsAsset["isAsset"];
+    }
+  }
+
+  return esm;
+}
+
+test("integration - no error case", async () => {
+  const { output } = await genBundle("fixtures/no-errors/index.ts", { clean: true });
+  const { output: outputWithCache } = await genBundle("fixtures/no-errors/index.ts");
+
+  expect(output).toEqual(outputWithCache);
 
   expect(output[0].fileName).toEqual("index.ts");
   expect(output[1].fileName).toEqual("index.d.ts");
