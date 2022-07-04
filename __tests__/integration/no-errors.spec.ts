@@ -13,9 +13,9 @@ const cacheRoot = local("__temp/no-errors/rpt2-cache"); // don't use the one in 
 
 afterAll(() => fs.remove(cacheRoot));
 
-async function genBundle(extraOpts?: RPT2Options) {
+async function genBundle(relInput: string, extraOpts?: RPT2Options) {
   return helpers.genBundle({
-    input: local("fixtures/no-errors/index.ts"),
+    input: local(`fixtures/no-errors/${relInput}`),
     tsconfig: local("fixtures/no-errors/tsconfig.json"),
     cacheRoot,
     extraOpts,
@@ -23,11 +23,11 @@ async function genBundle(extraOpts?: RPT2Options) {
 }
 
 test("integration - no errors", async () => {
-  const { output } = await genBundle({ clean: true });
+  const { output } = await genBundle("index.ts", { clean: true });
 
   // populate the cache
-  await genBundle();
-  const { output: outputWithCache } = await genBundle();
+  await genBundle("index.ts");
+  const { output: outputWithCache } = await genBundle("index.ts");
   expect(output).toEqual(outputWithCache);
 
   expect(output[0].fileName).toEqual("index.js");
@@ -45,7 +45,7 @@ test("integration - no errors", async () => {
 
 test("integration - no errors - no declaration maps", async () => {
   const noDeclarationMaps = { compilerOptions: { declarationMap: false } };
-  const { output } = await genBundle({
+  const { output } = await genBundle("index.ts", {
     tsconfigOverride: noDeclarationMaps,
     clean: true,
   });
@@ -60,7 +60,7 @@ test("integration - no errors - no declaration maps", async () => {
 
 test("integration - no errors - no declarations", async () => {
   const noDeclarations = { compilerOptions: { declaration: false, declarationMap: false } };
-  const { output } = await genBundle({
+  const { output } = await genBundle("index.ts", {
     tsconfigOverride: noDeclarations,
     clean: true,
   });
@@ -70,17 +70,12 @@ test("integration - no errors - no declarations", async () => {
 });
 
 test("integration - no errors - allowJs + emitDeclarationOnly", async () => {
-  const { output } = await helpers.genBundle({
-    input: local("fixtures/no-errors/some-js-import.js"),
-    tsconfig: local("fixtures/no-errors/tsconfig.json"),
-    cacheRoot,
-    extraOpts: {
-      include: ["**/*.js"],
-      tsconfigOverride: {
-        compilerOptions: {
-          allowJs: true,
-          emitDeclarationOnly: true,
-        },
+  const { output } = await genBundle("some-js-import.js", {
+    include: ["**/*.js"],
+    tsconfigOverride: {
+      compilerOptions: {
+        allowJs: true,
+        emitDeclarationOnly: true,
       },
     },
   });
