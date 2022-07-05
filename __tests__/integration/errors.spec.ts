@@ -1,5 +1,6 @@
 import { jest, afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 import * as fs from "fs-extra";
 import { red } from "colors/safe";
 
@@ -20,7 +21,7 @@ afterAll(async () => {
 });
 
 async function genBundle(relInput: string, extraOpts?: RPT2Options) {
-  const input = local(`fixtures/errors/${relInput}`)
+  const input = normalize(local(`fixtures/errors/${relInput}`));
   return helpers.genBundle({
     input,
     tsconfig: local("fixtures/errors/tsconfig.json"),
