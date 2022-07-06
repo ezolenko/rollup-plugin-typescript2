@@ -292,6 +292,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				});
 			}
 
+			const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
+
 			// type-check missed files as well
 			parsedConfig.fileNames.forEach((name) =>
 			{
@@ -303,7 +305,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				const snapshot = servicesHost.getScriptSnapshot(key);
 				if (snapshot)
-					typecheckFile(key, snapshot, context);
+					typecheckFile(key, snapshot, contextWrapper);
 			});
 
 			buildDone();
