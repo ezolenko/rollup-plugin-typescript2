@@ -5,11 +5,8 @@ import { IContext, VerbosityLevel } from "./context";
 
 export class RollupContext implements IContext
 {
-	private hasContext: boolean = true;
-
 	constructor(private verbosity: VerbosityLevel, private bail: boolean, private context: PluginContext, private prefix: string = "")
 	{
-		this.hasContext = _.isFunction(this.context.warn) && _.isFunction(this.context.error);
 	}
 
 	public warn(message: string | (() => string)): void
@@ -18,11 +15,7 @@ export class RollupContext implements IContext
 			return;
 
 		const text = _.isFunction(message) ? message() : message;
-
-		if (this.hasContext)
-			this.context.warn(`${text}`);
-		else
-			console.log(`${this.prefix}${text}`);
+		this.context.warn(`${text}`);
 	}
 
 	public error(message: string | (() => string)): void
@@ -32,15 +25,10 @@ export class RollupContext implements IContext
 
 		const text = _.isFunction(message) ? message() : message;
 
-		if (this.hasContext)
-		{
-			if (this.bail)
-				this.context.error(`${text}`);
-			else
-				this.context.warn(`${text}`);
-		}
+		if (this.bail)
+			this.context.error(`${text}`);
 		else
-			console.log(`${this.prefix}${text}`);
+			this.context.warn(`${text}`);
 	}
 
 	public info(message: string | (() => string)): void
@@ -49,7 +37,6 @@ export class RollupContext implements IContext
 			return;
 
 		const text = _.isFunction(message) ? message() : message;
-
 		console.log(`${this.prefix}${text}`);
 	}
 
@@ -59,7 +46,6 @@ export class RollupContext implements IContext
 			return;
 
 		const text = _.isFunction(message) ? message() : message;
-
 		console.log(`${this.prefix}${text}`);
 	}
 }
