@@ -20,7 +20,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 	let loadedConfig: any = {};
 	let baseDir = pluginOptions.cwd;
 	let configFileName;
-	let pretty = false;
+	let pretty = true;
 	if (fileName)
 	{
 		const text = tsModule.sys.readFile(fileName);

@@ -4,7 +4,7 @@ import { tsModule } from "./tsproxy";
 import { IContext } from "./context";
 import { IDiagnostics } from "./tscache";
 
-export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[], pretty: boolean): void
+export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[], pretty = true): void
 {
 	diagnostics.forEach((diagnostic) =>
 	{
