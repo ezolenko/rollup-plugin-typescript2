@@ -6,9 +6,9 @@
 
 Rollup plugin for typescript with compiler errors.
 
-This is a rewrite of original rollup-plugin-typescript, starting and borrowing from [this fork](https://github.com/alexlur/rollup-plugin-typescript).
+This is a rewrite of the original `rollup-plugin-typescript`, starting and borrowing from [this fork](https://github.com/alexlur/rollup-plugin-typescript).
 
-This version is somewhat slower than original, but it will print out typescript syntactic and semantic diagnostic messages (the main reason for using typescript after all).
+This version is somewhat slower than the original, but it will print out TypeScript syntactic and semantic diagnostic messages (the main reason for using TypeScript after all).
 
 ## Installation
 
@@ -34,9 +34,11 @@ export default {
 }
 ```
 
-The plugin inherits all compiler options and file lists from your `tsconfig.json` file. If your tsconfig has another name or another relative path from the root directory, see `tsconfigDefaults`, `tsconfig` and `tsconfigOverride` options below. This also allows for passing in different tsconfig files depending on your build target.
+This plugin inherits all compiler options and file lists from your `tsconfig.json` file.
+If your `tsconfig` has another name or another relative path from the root directory, see `tsconfigDefaults`, `tsconfig`, and `tsconfigOverride` options below.
+This also allows for passing in different `tsconfig` files depending on your build target.
 
-#### Some compiler options are forced
+### Some compiler options are forced
 
 * `noEmitHelpers`: false
 * `importHelpers`: true
@@ -44,28 +46,28 @@ The plugin inherits all compiler options and file lists from your `tsconfig.json
 * `noEmit`: false (Rollup controls emit)
 * `noEmitOnError`: false (Rollup controls emit. See [#254](https://github.com/ezolenko/rollup-plugin-typescript2/issues/254) and the `abortOnError` plugin option below)
 * `inlineSourceMap`: false (see [#71](https://github.com/ezolenko/rollup-plugin-typescript2/issues/71))
-* `outDir`: `./placeholder` in cache root, see [#83](https://github.com/ezolenko/rollup-plugin-typescript2/issues/83) and [Microsoft/TypeScript#24715](https://github.com/Microsoft/TypeScript/issues/24715)
-* `declarationDir`: Rollup's `output.file` or `output.dir` (*only if `useTsconfigDeclarationDir` is false in the plugin options*)
+* `outDir`: `./placeholder` in cache root (see [#83](https://github.com/ezolenko/rollup-plugin-typescript2/issues/83) and [Microsoft/TypeScript#24715](https://github.com/Microsoft/TypeScript/issues/24715))
+* `declarationDir`: Rollup's `output.file` or `output.dir` (*unless `useTsconfigDeclarationDir` is true in the plugin options*)
 * `moduleResolution`: `node` (*`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
-* `allowNonTsExtensions`: true to let other plugins on the chain generate typescript, update plugin's include filter to pick them up (see [#111](https://github.com/ezolenko/rollup-plugin-typescript2/issues/111))
+* `allowNonTsExtensions`: true to let other plugins on the chain generate typescript; update plugin's `include` filter to pick them up (see [#111](https://github.com/ezolenko/rollup-plugin-typescript2/issues/111))
 
-#### Some compiler options have more than one compatible value.
+### Some compiler options have more than one compatible value
 
 * `module`: defaults to `ES2015`, other valid value is `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
 
-#### Some options need additional configuration on plugin side
+### Some options need additional configuration on plugin side
 
-* `allowJs`: lets typescript process js files as well, if you use it, modify plugin's `include` option to add `"*.js+(|x)", "**/*.js+(|x)"` (might want to exclude node_modules, it will slow down the build significantly).
+* `allowJs`: lets TypeScript process JS files as well. If you use it, modify this plugin's `include` option to add `"*.js+(|x)", "**/*.js+(|x)"` (might also want to `exclude` `"**/node_modules/**/*"`, as it can slow down the build significantly).
 
 ### Compatibility
 
 #### @rollup/plugin-node-resolve
 
-Must be before `rollup-plugin-typescript2` in the plugin list, especially when `browser: true` option is used, see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66).
+Must be before `rollup-plugin-typescript2` in the plugin list, especially when the `browser: true` option is used (see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)).
 
 #### @rollup/plugin-commonjs
 
-See explanation for `rollupCommonJSResolveHack` option below.
+See the explanation for `rollupCommonJSResolveHack` option below.
 
 #### @rollup/plugin-babel
 
@@ -91,13 +93,14 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `cwd`: `string`
 
-    The current work directory, default `process.cwd()`.
+	The current working directory. Defaults to `process.cwd()`.
 
 * `tsconfigDefaults`: `{}`
 
-	The object passed as `tsconfigDefaults` will be merged with loaded `tsconfig.json`. Final config passed to typescript will be the result of values in `tsconfigDefaults` replaced by values in loaded `tsconfig.json`, replaced by values in `tsconfigOverride` and then replaced by hard `compilerOptions` overrides on top of that (see above).
+	The object passed as `tsconfigDefaults` will be merged with the loaded `tsconfig.json`.
+	The final config passed to TypeScript will be the result of values in `tsconfigDefaults` replaced by values in the loaded `tsconfig.json`, replaced by values in `tsconfigOverride`, and then replaced by forced `compilerOptions` overrides on top of that (see above).
 
-	For simplicity and other tools' sake, try to minimize usage of defaults and overrides and keep everything in `tsconfig.json` file (tsconfigs can themselves be chained, so save some turtles).
+	For simplicity and other tools' sake, try to minimize the usage of defaults and overrides and keep everything in a `tsconfig.json` file (`tsconfig`s can themselves be chained with [`extends`](https://www.typescriptlang.org/tsconfig#extends), so save some turtles).
 
 	```js
 	let defaults = { compilerOptions: { declaration: true } };
@@ -113,11 +116,15 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 	]
 	```
 
-	This is a [deep merge](https://lodash.com/docs/4.17.4#merge) (objects are merged, arrays are merged by index, primitives are replaced, etc), increase `verbosity` to 3 and look for `parsed tsconfig` if you get something unexpected.
+	This is a [deep merge](https://lodash.com/docs/4.17.4#merge): objects are merged, arrays are merged by index, primitives are replaced, etc.
+	Increase `verbosity` to `3` and look for `parsed tsconfig` if you get something unexpected.
 
 * `tsconfig`: `undefined`
 
-    Path to `tsconfig.json`. Set this if your tsconfig has another name or relative location from the project directory. By default will try to load `./tsconfig.json`, but will not fail if file is missing unless the value is set explicitly.
+	Path to `tsconfig.json`.
+	Set this if your `tsconfig` has another name or relative location from the project directory.
+
+	By default, will try to load `./tsconfig.json`, but will not fail if the file is missing, unless the value is explicitly set.
 
 * `tsconfigOverride`: `{}`
 
@@ -152,7 +159,8 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `abortOnError`: true
 
-	Bail out on first syntactic or semantic error. In some cases setting this to false will result in exception in rollup itself (for example for unresolvable imports).
+	Bail out on first syntactic or semantic error.
+	In some cases, setting this to false will result in an exception in Rollup itself (for example, unresolvable imports).
 
 * `rollupCommonJSResolveHack`: false
 
@@ -160,23 +168,31 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `objectHashIgnoreUnknownHack`: false
 
-	The plugin uses rollup config as part of cache key. `object-hash` is used to generate a hash, but it can have trouble with some uncommon types of elements. Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed. Only enable this if you need it (`Error: Unknown object type "xxx"` for example) and make sure to run with `clean: true` once in a while and definitely before a release. (See [#105](https://github.com/ezolenko/rollup-plugin-typescript2/issues/105) and [#203](https://github.com/ezolenko/rollup-plugin-typescript2/pull/203))
+	The plugin uses your Rollup config as part of its cache key.
+	`object-hash` is used to generate a hash, but it can have trouble with some uncommon types of elements.
+	Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed.
+
+	Only enable this option if you need it (e.g. if you get `Error: Unknown object type "xxx"`) and make sure to run with `clean: true` once in a while and definitely before a release.
+	(See [#105](https://github.com/ezolenko/rollup-plugin-typescript2/issues/105) and [#203](https://github.com/ezolenko/rollup-plugin-typescript2/pull/203))
 
 * `useTsconfigDeclarationDir`: false
 
-	If true, declaration files will be emitted in the directory given in the tsconfig. If false, the declaration files will be placed inside the destination directory given in the Rollup configuration.
+	If true, declaration files will be emitted in the [`declarationDir`](https://www.typescriptlang.org/tsconfig#declarationDir) given in the `tsconfig`.
+	If false, declaration files will be placed inside the destination directory given in the Rollup configuration.
 
-	Set to false if any other rollup plugins need access to declaration files.
+	Set to false if any other Rollup plugins need access to declaration files.
 
 * `typescript`: peerDependency
 
-	If you'd like to use a different version of TS than the peerDependency, you can import a different TypeScript module and pass it in as `typescript: require("path/to/other/typescript")`. Must be TS 2.0+, things might break if transpiler interfaces changed enough from what the plugin was built against.
+	If you'd like to use a different version of TS than the peerDependency, you can import a different TypeScript module and pass it in as `typescript: require("path/to/other/typescript")`.
+
+	Must be TS 2.0+; things might break if the compiler interfaces changed enough from what the plugin was built against.
 
 * `transformers`: `undefined`
 
-	**experimental**, typescript 2.4.1+
+	**experimental**, TypeScript 2.4.1+
 
-	Transformers will likely be available in tsconfig eventually, so this is not a stable interface, see [Microsoft/TypeScript#14419](https://github.com/Microsoft/TypeScript/issues/14419).
+	Transformers will likely be available in `tsconfig` eventually, so this is not a stable interface (see [Microsoft/TypeScript#14419](https://github.com/Microsoft/TypeScript/issues/14419)).
 
 	For example, integrating [kimamula/ts-transformer-keys](https://github.com/kimamula/ts-transformer-keys):
 
@@ -195,28 +211,30 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 ### Declarations
 
-This plugin respects `declaration: true` in your `tsconfig.json` file. When set, it will emit `*.d.ts` files for your bundle.
+This plugin respects [`declaration: true`](https://www.typescriptlang.org/tsconfig#declaration) in your `tsconfig.json` file.
+When set, it will emit `*.d.ts` files for your bundle.
 The resulting file(s) can then be used with the `types` property in your `package.json` file as described [here](https://www.typescriptlang.org/docs/handbook/declaration-files/publishing.html).<br />
-By default, the declaration files will be located in the same directory as the generated Rollup bundle. If you want to override this behavior and instead use the declarationDir set `useTsconfigDeclarationDir` to `true` in the plugin options.
+By default, the declaration files will be located in the same directory as the generated Rollup bundle.
+If you want to override this behavior and instead use [`declarationDir`](https://www.typescriptlang.org/tsconfig#declarationDir), set `useTsconfigDeclarationDir: true` in the plugin options.
 
-The above also applies to `declarationMap: true` and `*.d.ts.map` files for your bundle.
+The above also applies to [`declarationMap: true`](https://www.typescriptlang.org/tsconfig#declarationMap) and `*.d.ts.map` files for your bundle.
 
-This plugin also respects `emitDeclarationOnly: true` and will only emit declarations (and declaration maps, if enabled) if set in your `tsconfig.json`.
+This plugin also respects [`emitDeclarationOnly: true`](https://www.typescriptlang.org/tsconfig#emitDeclarationOnly) and will only emit declarations (and declaration maps, if enabled) if set in your `tsconfig.json`.
 If you use `emitDeclarationOnly`, you will need another plugin to compile any TypeScript sources, such as `@rollup/plugin-babel`, `rollup-plugin-esbuild`, `rollup-plugin-swc`, etc.
 When composing Rollup plugins this way, `rollup-plugin-typescript2` will perform type-checking and declaration generation, while another plugin performs the TypeScript to JavaScript compilation.<br />
 Some scenarios where this can be particularly useful: you want to use Babel plugins on TypeScript source, or you want declarations and type-checking for your Vite builds (**NOTE**: this space has not been fully explored yet).
 
 ### Watch mode
 
-The way typescript handles type-only imports and ambient types effectively hides them from rollup watch, because import statements are not generated and changing them doesn't trigger a rebuild.
+The way TypeScript handles type-only imports and ambient types effectively hides them from Rollup's watch mode, because import statements are not generated and changing them doesn't trigger a rebuild.
 
 Otherwise the plugin should work in watch mode. Make sure to run a normal build after watch session to catch any type errors.
 
 ### Requirements
 
-TypeScript `2.4+`
-Rollup `1.26.3+`
-Node `6.4.0+` (basic es6 support)
+* TypeScript `2.4+`
+* Rollup `1.26.3+`
+* Node `6.4.0+` (basic ES6 support)
 
 ### Reporting bugs and Contributing
 
