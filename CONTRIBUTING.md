@@ -30,8 +30,8 @@ Use the [standard GitHub process](https://docs.github.com/en/pull-requests/colla
 1. `npm run test:watch` to run tests in watch mode while developing
 1. `npm run test:coverage` to run tests and output a test coverage report
 
-While this repo now has an assortment of unit tests, it still badly needs integration tests with various scenarios and expected outcomes.
-Test coverage improvements for existing files and untested is needed as well.
+While this repo now has an assortment of unit tests and integration tests, it still needs more integration tests with various scenarios and expected outcomes.
+Test coverage improvements for existing files and untested files is needed as well.
 
 ### Building and Self-Build
 
@@ -72,7 +72,7 @@ A useful resource as you dive deeper are the [unit tests](__tests__/). They're g
       - [Using the Language Service API](https://github.com/microsoft/TypeScript/wiki/Using-the-Language-Service-API)
       - _NOTE_: These are fairly short and unfortunately leave a lot to be desired... especially when you consider that this plugin is actually one of the simpler integrations out there.
 1. At this point, you may be ready to read the more complicated bits of [`index`](src/index.ts) in detail and see how it interacts with the other modules.
-    - The integration tests [TBD] could be useful to review at this point as well.
+    - The [integration tests](__tests__/integration/) could be useful to review at this point as well.
 1. Once you're pretty familiar with `index`, you can dive into some of the cache code in [`tscache`](src/tscache.ts) and [`rollingcache`](src/rollingcache.ts).
 1. And finally, you can see some of the Rollup logging nuances in [`context`](src/context.ts) and [`rollupcontext`](src/rollupcontext.ts), and then the TS logging nuances in [`print-diagnostics`](src/print-diagnostics.ts), and [`diagnostics-format-host`](src/diagnostics-format-host.ts)
     - While these are necessary to the implementation, they are fairly ancillary to understanding and working with the codebase.
