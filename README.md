@@ -53,7 +53,7 @@ This also allows for passing in different `tsconfig` files depending on your bui
 
 ### Some compiler options have more than one compatible value
 
-* `module`: defaults to `ES2015`, other valid value is `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
+* `module`: defaults to `ES2015`. Other valid values are `ES2020` and `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
 
 ### Some options need additional configuration on plugin side
 
