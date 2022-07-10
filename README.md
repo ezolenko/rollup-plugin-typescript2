@@ -133,6 +133,7 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 * `check`: true
 
 	Set to false to avoid doing any diagnostic checks on the code.
+	Setting to false is sometimes referred to as `transpileOnly` by other TypeScript integrations.
 
 * `verbosity`: 1
 
