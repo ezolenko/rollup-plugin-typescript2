@@ -6,7 +6,7 @@
 
 Rollup plugin for typescript with compiler errors.
 
-This is a rewrite of the original `rollup-plugin-typescript`, starting and borrowing from [this fork](https://github.com/alexlur/rollup-plugin-typescript).
+This is a rewrite of the [original](https://github.com/rollup/rollup-plugin-typescript/tree/v0.8.1) `rollup-plugin-typescript`, starting and borrowing from [this fork](https://github.com/alexlur/rollup-plugin-typescript).
 
 This version is somewhat slower than the original, but it will print out TypeScript syntactic and semantic diagnostic messages (the main reason for using TypeScript after all).
 
