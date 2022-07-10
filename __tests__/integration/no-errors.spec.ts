@@ -9,15 +9,15 @@ import * as helpers from "./helpers";
 jest.setTimeout(15000);
 
 const local = (x: string) => path.resolve(__dirname, x);
-const cacheRoot = local("__temp/no-errors/rpt2-cache"); // don't use the one in node_modules
+const testDir = local("__temp/no-errors");
 
-afterAll(() => fs.remove(cacheRoot));
+afterAll(() => fs.remove(testDir));
 
 async function genBundle(relInput: string, extraOpts?: RPT2Options) {
   return helpers.genBundle({
     input: local(`fixtures/no-errors/${relInput}`),
     tsconfig: local("fixtures/no-errors/tsconfig.json"),
-    cacheRoot,
+    testDir,
     extraOpts,
   });
 }
