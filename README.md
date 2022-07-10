@@ -186,6 +186,8 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 	If you'd like to use a different version of TS than the peerDependency, you can import a different TypeScript module and pass it in as `typescript: require("path/to/other/typescript")`.
 
+	You can also use an alternative TypeScript implementation, such as [`ttypescript`](https://github.com/cevek/ttypescript), with this option.
+
 	Must be TS 2.0+; things might break if the compiler interfaces changed enough from what the plugin was built against.
 
 * `transformers`: `undefined`
