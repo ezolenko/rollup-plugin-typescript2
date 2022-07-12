@@ -2,7 +2,6 @@ import { jest, afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import * as fs from "fs-extra";
-import { red } from "colors/safe";
 
 import { RPT2Options } from "../../src/index";
 import * as helpers from "./helpers";
@@ -39,7 +38,7 @@ test("integration - tsconfig errors", async () => {
 });
 
 test("integration - semantic error", async () => {
-  expect(genBundle("semantic.ts")).rejects.toThrow(`semantic error TS2322: ${red("Type 'string' is not assignable to type 'number'.")}`);
+  expect(genBundle("semantic.ts")).rejects.toThrow("Type 'string' is not assignable to type 'number'.");
 });
 
 test("integration - semantic error - abortOnError: false / check: false", async () => {
@@ -56,7 +55,7 @@ test("integration - semantic error - abortOnError: false / check: false", async 
 });
 
 test("integration - syntax error", () => {
-  expect(genBundle("syntax.ts")).rejects.toThrow(`syntax error TS1005: ${red("';' expected.")}`);
+  expect(genBundle("syntax.ts")).rejects.toThrow("';' expected.");
 });
 
 test("integration - syntax error - abortOnError: false / check: false", () => {
