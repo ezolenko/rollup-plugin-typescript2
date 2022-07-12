@@ -15,6 +15,6 @@ try
 	tslibVersion = tslibPackage.version;
 } catch (e)
 {
-	console.warn("Error loading `tslib` helper library.");
+	console.warn("rpt2: Error loading `tslib` helper library.");
 	throw e;
 }
