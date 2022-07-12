@@ -1,4 +1,5 @@
 import { jest, afterAll, test, expect } from "@jest/globals";
+import { Mock } from "jest-mock"
 import * as path from "path";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import * as fs from "fs-extra";
@@ -11,7 +12,6 @@ jest.setTimeout(15000);
 
 const local = (x: string) => path.resolve(__dirname, x);
 const cacheRoot = local("__temp/errors/rpt2-cache"); // don't use the one in node_modules
-const onwarn = jest.fn();
 
 afterAll(async () => {
   // workaround: there seems to be some race condition causing fs.remove to fail, so give it a sec first (c.f. https://github.com/jprichardson/node-fs-extra/issues/532)
@@ -19,7 +19,7 @@ afterAll(async () => {
   await fs.remove(cacheRoot);
 });
 
-async function genBundle(relInput: string, extraOpts?: RPT2Options) {
+async function genBundle(relInput: string, extraOpts?: RPT2Options, onwarn?: Mock) {
   const input = normalize(local(`fixtures/errors/${relInput}`));
   return helpers.genBundle({
     input,
@@ -42,9 +42,10 @@ test("integration - semantic error", async () => {
 });
 
 test("integration - semantic error - abortOnError: false / check: false", async () => {
+  const onwarn = jest.fn();
   // either warning or not type-checking should result in the same bundle
-  const { output } = await genBundle("semantic.ts", { abortOnError: false });
-  const { output: output2 } = await genBundle("semantic.ts", { check: false });
+  const { output } = await genBundle("semantic.ts", { abortOnError: false }, onwarn);
+  const { output: output2 } = await genBundle("semantic.ts", { check: false }, onwarn);
   expect(output).toEqual(output2);
 
   expect(output[0].fileName).toEqual("index.js");
@@ -59,7 +60,38 @@ test("integration - syntax error", () => {
 });
 
 test("integration - syntax error - abortOnError: false / check: false", () => {
+  const onwarn = jest.fn();
   const err = "Unexpected token (Note that you need plugins to import files that are not JavaScript)";
-  expect(genBundle("syntax.ts", { abortOnError: false })).rejects.toThrow(err);
-  expect(genBundle("syntax.ts", { check: false })).rejects.toThrow(err);
+  expect(genBundle("syntax.ts", { abortOnError: false }, onwarn)).rejects.toThrow(err);
+  expect(genBundle("syntax.ts", { check: false }, onwarn)).rejects.toThrow(err);
+});
+
+const typeOnlyIncludes = ["**/import-type-error.ts", "**/type-only-import-with-error.ts"];
+
+test("integration - type-only import error", () => {
+  expect(genBundle("import-type-error.ts", {
+    include: typeOnlyIncludes,
+  })).rejects.toThrow("Property 'nonexistent' does not exist on type 'someObj'.");
+});
+
+test("integration - type-only import error - abortOnError: false / check: false", async () => {
+  const onwarn = jest.fn();
+  // either warning or not type-checking should result in the same bundle
+  const { output } = await genBundle("import-type-error.ts", {
+    include: typeOnlyIncludes,
+    abortOnError: false,
+  }, onwarn);
+  const { output: output2 } = await genBundle("import-type-error.ts", {
+    include: typeOnlyIncludes,
+    check: false,
+  }, onwarn);
+  expect(output).toEqual(output2);
+
+  expect(output[0].fileName).toEqual("index.js");
+  expect(output[1].fileName).toEqual("import-type-error.d.ts");
+  expect(output[2].fileName).toEqual("import-type-error.d.ts.map");
+  expect(output[3].fileName).toEqual("type-only-import-with-error.d.ts");
+  expect(output[4].fileName).toEqual("type-only-import-with-error.d.ts.map");
+  expect(output.length).toEqual(5); // no other files
+  expect(onwarn).toBeCalledTimes(1);
 });
