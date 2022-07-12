@@ -15,7 +15,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 
 	// if the value was provided, but no file, fail hard
 	if (pluginOptions.tsconfig !== undefined && !fileName)
-		throw new Error(`rpt2: failed to open '${fileName}'`);
+		throw new Error(`rpt2: failed to open '${pluginOptions.tsconfig}'`);
 
 	let loadedConfig: any = {};
 	let baseDir = pluginOptions.cwd;

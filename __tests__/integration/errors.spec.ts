@@ -34,7 +34,7 @@ test("integration - tsconfig errors", async () => {
   // TODO: move to parse-tsconfig unit tests?
   expect(genBundle("semantic.ts", {
     tsconfig: "non-existent-tsconfig",
-  })).rejects.toThrow("rpt2: failed to open 'undefined'"); // FIXME: bug: this should be "non-existent-tsconfig", not "undefined"
+  })).rejects.toThrow("rpt2: failed to open 'non-existent-tsconfig'");
 });
 
 test("integration - semantic error", async () => {
