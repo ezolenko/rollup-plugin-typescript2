@@ -198,6 +198,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				if (output.emitSkipped)
 				{
+					noErrors = false;
 					// always checking on fatal errors, even if options.check is set to false
 					typecheckFile(id, snapshot, contextWrapper);
 
