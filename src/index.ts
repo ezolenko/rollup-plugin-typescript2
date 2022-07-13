@@ -56,6 +56,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, tcContext: IContext) =>
 	{
+			id = normalize(id);
 			checkedFiles.add(id); // must come before print, as that could bail
 
 			const diagnostics = getDiagnostics(id, snapshot);
