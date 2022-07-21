@@ -10,7 +10,7 @@ import * as helpers from "./helpers";
 // increase timeout to 15s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
 jest.setTimeout(15000);
 
-const local = (x: string) => path.resolve(__dirname, x);
+const local = (x: string) => normalize(path.resolve(__dirname, x));
 const cacheRoot = local("__temp/errors/rpt2-cache"); // don't use the one in node_modules
 
 afterAll(async () => {
@@ -20,7 +20,7 @@ afterAll(async () => {
 });
 
 async function genBundle(relInput: string, extraOpts?: RPT2Options, onwarn?: Mock) {
-  const input = normalize(local(`fixtures/errors/${relInput}`));
+  const input = local(`fixtures/errors/${relInput}`);
   return helpers.genBundle({
     input,
     tsconfig: local("fixtures/errors/tsconfig.json"),
