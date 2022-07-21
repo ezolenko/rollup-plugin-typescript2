@@ -144,15 +144,17 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 
 * `clean`: false
 
-	Set to true for clean build (wipes out cache on every build).
+	Set to true to disable the cache and do a clean build.
+	This also wipes any existing cache.
 
 * `cacheRoot`: `node_modules/.cache/rollup-plugin-typescript2`
 
-	Path to cache. Defaults to a folder in node_modules.
+	Path to cache.
+	Defaults to a folder in `node_modules`.
 
 * `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
 
-	By default passes all .ts files through typescript compiler.
+	By default compiles all `.ts` and `.tsx` files with TypeScript.
 
 * `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
 
