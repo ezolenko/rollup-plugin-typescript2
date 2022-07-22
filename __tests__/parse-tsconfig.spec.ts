@@ -1,11 +1,12 @@
 import { test, expect } from "@jest/globals";
 import * as path from "path";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 
 import { makeOptions } from "./fixtures/options";
 import { makeStubbedContext } from "./fixtures/context";
 import { parseTsConfig } from "../src/parse-tsconfig";
 
-const local = (x: string) => path.resolve(__dirname, x);
+const local = (x: string) => normalize(path.resolve(__dirname, x));
 
 const defaultOpts = makeOptions("", "");
 const stubbedContext = makeStubbedContext({});
