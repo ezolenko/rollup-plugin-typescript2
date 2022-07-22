@@ -31,6 +31,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let tsConfigPath: string | undefined;
 	let servicesHost: LanguageServiceHost;
 	let service: tsTypes.LanguageService;
+	let documentRegistry: tsTypes.DocumentRegistry; // keep the same DocumentRegistry between watch cycles
 	let noErrors = true;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
 	const checkedFiles = new Set<string>();
@@ -98,6 +99,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		pluginOptions.typescript = require("typescript");
 	}
 	setTypescriptModule(pluginOptions.typescript);
+	documentRegistry = tsModule.createDocumentRegistry();
 
 	const self: Plugin = {
 
@@ -135,8 +137,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			filter = createFilter(context, pluginOptions, parsedConfig);
 
 			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
-
-			service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
+			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
 
 			// printing compiler option errors
