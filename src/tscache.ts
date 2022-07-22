@@ -247,7 +247,8 @@ export class TsCache
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
-		return this.getCached(cache, id, snapshot, true, () => convertDiagnostic(type, check()));
+		// don't need to check imports for syntactic diagnostics (per https://github.com/microsoft/TypeScript/wiki/Using-the-Language-Service-API#design-goals)
+		return this.getCached(cache, id, snapshot, type === "semantic", () => convertDiagnostic(type, check()));
 	}
 
 	private getCached<CacheType>(cache: ICache<CacheType>, id: string, snapshot: tsTypes.IScriptSnapshot, checkImports: boolean, convert: () => CacheType): CacheType
