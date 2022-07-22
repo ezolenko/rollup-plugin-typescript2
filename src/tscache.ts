@@ -161,14 +161,14 @@ export class TsCache
 			/* istanbul ignore if -- this is a safety check, but shouldn't happen when using a dedicated cache dir */
 			if (!e.startsWith(this.cachePrefix))
 			{
-				this.context.debug(`skipping cleaning ${dir} as it does not have prefix ${this.cachePrefix}`);
+				this.context.debug(`skipping cleaning '${dir}' as it does not have prefix '${this.cachePrefix}'`);
 				return;
 			}
 
 			/* istanbul ignore if -- this is a safety check, but should never happen in normal usage */
 			if (!fs.statSync(dir).isDirectory)
 			{
-				this.context.debug(`skipping cleaning ${dir} as it is not a directory`);
+				this.context.debug(`skipping cleaning '${dir}' as it is not a directory`);
 				return;
 			}
 
