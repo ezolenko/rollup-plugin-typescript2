@@ -23,10 +23,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 	let pretty = true;
 	if (fileName)
 	{
-		const text = tsModule.sys.readFile(fileName);
-		if (text === undefined)
-			throw new Error(`rpt2: failed to read '${fileName}'`);
-
+		const text = tsModule.sys.readFile(fileName)!; // readFile only returns undefined when the file doesn't exist, which we already checked above
 		const result = tsModule.parseConfigFileTextToJson(fileName, text);
 		pretty = result.config?.pretty ?? pretty;
 
