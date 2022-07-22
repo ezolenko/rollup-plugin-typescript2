@@ -54,16 +54,19 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		}));
 	}
 
-	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, tcContext: IContext) =>
+	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot | undefined, tcContext: IContext) =>
 	{
-			id = normalize(id);
-			checkedFiles.add(id); // must come before print, as that could bail
+		if (!snapshot)
+			return;
 
-			const diagnostics = getDiagnostics(id, snapshot);
-			printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty !== false);
+		id = normalize(id);
+		checkedFiles.add(id); // must come before print, as that could bail
 
-			if (diagnostics.length > 0)
-				noErrors = false;
+		const diagnostics = getDiagnostics(id, snapshot);
+		printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty !== false);
+
+		if (diagnostics.length > 0)
+			noErrors = false;
 	}
 
 	/** to be called at the end of Rollup's build phase, before output generation */
@@ -289,8 +292,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 						return;
 
 					const snapshot = servicesHost.getScriptSnapshot(id);
-					if (snapshot)
-						typecheckFile(id, snapshot, context);
+					typecheckFile(id, snapshot, context);
 				});
 			}
 
@@ -304,10 +306,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					return;
 
 				context.debug(() => `type-checking missed '${key}'`);
-
 				const snapshot = servicesHost.getScriptSnapshot(key);
-				if (snapshot)
-					typecheckFile(key, snapshot, contextWrapper);
+				typecheckFile(key, snapshot, contextWrapper);
 			});
 
 			buildDone();
