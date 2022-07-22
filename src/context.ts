@@ -20,6 +20,8 @@ function getText (message: string | (() => string)): string {
 	return typeof message === "string" ? message : message();
 }
 
+/* tslint:disable:max-classes-per-file -- generally a good rule to follow, but these two classes could basically be one */
+
 /** mainly to be used in options hook, but can be used in other hooks too */
 export class ConsoleContext implements IContext
 {
