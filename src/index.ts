@@ -8,7 +8,7 @@ import findCacheDir from "find-cache-dir";
 import { RollupContext } from "./rollupcontext";
 import { ConsoleContext, IContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences } from "./tscache";
+import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences, ICode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import { IOptions } from "./ioptions";
 import { parseTsConfig } from "./parse-tsconfig";
@@ -64,6 +64,16 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (diagnostics.length > 0)
 				noErrors = false;
+	}
+
+	const addDeclaration = (id: string, result: ICode) =>
+	{
+		if (!result.dts)
+			return;
+
+		const key = normalize(id);
+		declarations[key] = { type: result.dts, map: result.dtsmap };
+		context.debug(() => `${blue("generated declarations")} for '${key}'`);
 	}
 
 	/** to be called at the end of Rollup's build phase, before output generation */
@@ -238,12 +248,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				context.debug(() => `${green("    watching")}: ${result.references!.join("\nrpt2:               ")}`);
 			}
 
-			if (result.dts)
-			{
-				const key = normalize(id);
-				declarations[key] = { type: result.dts, map: result.dtsmap };
-				context.debug(() => `${blue("generated declarations")} for '${key}'`);
-			}
+			addDeclaration(id, result);
 
 			// if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
 			// note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
@@ -328,10 +333,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					return;
 
 				context.debug(() => `generating missed declarations for '${key}'`);
-				const output = service.getEmitOutput(key, true);
-				const out = convertEmitOutput(output);
-				if (out.dts)
-					declarations[key] = { type: out.dts, map: out.dtsmap };
+				const out = convertEmitOutput(service.getEmitOutput(key, true));
+				addDeclaration(key, out);
 			});
 
 			const emitDeclaration = (key: string, extension: string, entry?: tsTypes.OutputFile) =>
