@@ -1,11 +1,11 @@
-import { afterAll, test, expect, jest } from "@jest/globals";
+import { afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
 import * as ts from "typescript";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { remove } from "fs-extra";
 
 import { makeOptions } from "./fixtures/options";
-import { makeStubbedContext } from "./fixtures/context";
+import { makeContext } from "./fixtures/context";
 import { getOptionsOverrides, createFilter } from "../src/get-options-overrides";
 
 const local = (x: string) => normalize(path.resolve(__dirname, x));
@@ -100,9 +100,7 @@ test("getOptionsOverrides - with sourceMap", () => {
 test("createFilter", () => {
 	const config = { ...defaultConfig };
 	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
-
-	const stubbedContext = makeStubbedContext({});
-	const filter = createFilter(stubbedContext, config, preParsedTsConfig);
+	const filter = createFilter(makeContext(), config, preParsedTsConfig);
 
 	expect(filter(filtPath("src/test.ts"))).toBe(true);
 	expect(filter(filtPath("src/test.js"))).toBe(false);
@@ -112,14 +110,10 @@ test("createFilter", () => {
 test("createFilter - context.debug", () => {
 	const config = { ...defaultConfig };
 	const preParsedTsConfig = { ...defaultPreParsedTsConfig };
+	const context = makeContext();
+	createFilter(context, config, preParsedTsConfig);
 
-	// test context.debug() statements
-	const debug = jest.fn(x => x());
-	const data = { set debug(x: any) { debug(x) } };
-	const stubbedContext = makeStubbedContext(data);
-
-	createFilter(stubbedContext, config, preParsedTsConfig);
-	expect(debug.mock.calls.length).toBe(2);
+	expect(context.debug).toHaveBeenCalledTimes(2);
 });
 
 test("createFilter - rootDirs", () => {
@@ -130,9 +124,7 @@ test("createFilter - rootDirs", () => {
 			rootDirs: ["src", "lib"]
 		},
 	};
-
-	const stubbedContext = makeStubbedContext({});
-	const filter = createFilter(stubbedContext, config, preParsedTsConfig);
+	const filter = createFilter(makeContext(), config, preParsedTsConfig);
 
 	expect(filter(filtPath("src/test.ts"))).toBe(true);
 	expect(filter(filtPath("src/test.js"))).toBe(false);
@@ -155,9 +147,7 @@ test("createFilter - projectReferences", () => {
 			{ path: "lib" },
 		],
 	};
-
-	const stubbedContext = makeStubbedContext({});
-	const filter = createFilter(stubbedContext, config, preParsedTsConfig);
+	const filter = createFilter(makeContext(), config, preParsedTsConfig);
 
 	expect(filter(filtPath("src/test.ts"))).toBe(true);
 	expect(filter(filtPath("src/test.js"))).toBe(false);
