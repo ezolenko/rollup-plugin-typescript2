@@ -1,6 +1,8 @@
 import { jest, afterAll, test, expect } from "@jest/globals";
 import * as path from "path";
 import * as fs from "fs-extra";
+import { OutputAsset } from "rollup";
+import { normalizePath as normalize } from "@rollup/pluginutils";
 
 import { RPT2Options } from "../../src/index";
 import * as helpers from "./helpers";
@@ -10,13 +12,14 @@ jest.setTimeout(15000);
 
 const local = (x: string) => path.resolve(__dirname, x);
 const testDir = local("__temp/no-errors");
+const fixtureDir = local("fixtures/no-errors");
 
 afterAll(() => fs.remove(testDir));
 
 async function genBundle(relInput: string, extraOpts?: RPT2Options) {
   return helpers.genBundle({
-    input: local(`fixtures/no-errors/${relInput}`),
-    tsconfig: local("fixtures/no-errors/tsconfig.json"),
+    input: `${fixtureDir}/${relInput}`,
+    tsconfig: `${fixtureDir}/tsconfig.json`,
     testDir,
     extraOpts,
   });
@@ -41,6 +44,11 @@ test("integration - no errors", async () => {
 
   // JS file should be bundled by Rollup, even though rpt2 does not resolve it (as Rollup natively understands ESM)
   expect(output[0].code).toEqual(expect.stringContaining("identity"));
+
+  // declaration map sources should be correctly remapped (and not point to placeholder dir, c.f. https://github.com/ezolenko/rollup-plugin-typescript2/pull/221)
+  const decMapSources = JSON.parse((output[2] as OutputAsset).source as string).sources;
+  const decRelPath = normalize(path.relative(`${testDir}/dist`, `${fixtureDir}/index.ts`));
+  expect(decMapSources).toEqual([decRelPath]);
 });
 
 test("integration - no errors - no declaration maps", async () => {
