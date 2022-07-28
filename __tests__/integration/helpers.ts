@@ -1,4 +1,4 @@
-import { rollup, watch, RollupOptions, OutputOptions, OutputAsset, RollupWatcher } from "rollup";
+import { rollup, watch, RollupOptions, OutputOptions, RollupOutput, OutputAsset, RollupWatcher } from "rollup";
 import * as path from "path";
 
 import rpt2, { RPT2Options } from "../../src/index";
@@ -71,4 +71,9 @@ export async function watchBundle (inputArgs: Params) {
 
   await watchEnd(watcher); // wait for build to end before returning, similar to genBundle
   return watcher;
+}
+
+export function findName (output: RollupOutput['output'], name: string) {
+  // type-cast to simplify type-checking -- [0] is always chunk, rest are always asset in our case
+  return output.find(file => file.fileName === name) as OutputAsset;
 }

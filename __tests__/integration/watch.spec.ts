@@ -3,6 +3,7 @@ import * as path from "path";
 import * as fs from "fs-extra";
 
 import { RPT2Options } from "../../src/index";
+import { filesArr } from "./fixtures/no-errors";
 import * as helpers from "./helpers";
 
 // increase timeout to 15s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
@@ -36,15 +37,6 @@ test("integration - watch", async () => {
   const distPath = `${testDir}/dist/index.js`;
   const decPath = `${distDir}/index.d.ts`;
   const decMapPath = `${decPath}.map`;
-  const filesArr = [
-    "index.js",
-    "index.d.ts",
-    "index.d.ts.map",
-    "some-import.d.ts",
-    "some-import.d.ts.map",
-    "type-only-import.d.ts",
-    "type-only-import.d.ts.map",
-  ];
 
   const watcher = await watchBundle(srcPath);
 
