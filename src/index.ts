@@ -240,21 +240,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!result)
 				return undefined;
 
-			// handle all type-only imports by resolving + loading all of TS's references
-			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
-			if (result.references) {
-				let modules = await Promise.all(result.references
-					.filter(ref => !ref.endsWith(".d.ts"))
-					.map(ref => this.resolve(ref, id)));
-
-				// wait for all to be loaded (otherwise, as this is async, some may end up only loading after `generateBundle`)
-				await Promise.all(modules.map(async module => {
-					if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
-						return;
-					await this.load({id: module.id});
-				}));
-			}
-
 			if (watchMode && result.references)
 			{
 				if (tsConfigPath)
@@ -265,6 +250,21 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			}
 
 			addDeclaration(id, result);
+
+			// handle all type-only imports by resolving + loading all of TS's references
+			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
+			if (result.references) {
+				const modules = await Promise.all(result.references
+					.filter(ref => !ref.endsWith(".d.ts"))
+					.map(ref => this.resolve(ref, id)));
+
+				// wait for all to be loaded (otherwise, as this is async, some may end up only loading after `generateBundle`)
+				await Promise.all(modules.map(async module => {
+					if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
+						return;
+					await this.load({id: module.id});
+				}));
+			}
 
 			// if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
 			// note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
