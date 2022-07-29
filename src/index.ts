@@ -254,16 +254,17 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// handle all type-only imports by resolving + loading all of TS's references
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
 			if (result.references) {
-				const modules = await Promise.all(result.references
-					.filter(ref => !ref.endsWith(".d.ts"))
-					.map(ref => this.resolve(ref, id)));
+				for (const ref of result.references) {
+					if (ref.endsWith(".d.ts"))
+						continue;
 
-				// wait for all to be loaded (otherwise, as this is async, some may end up only loading after `generateBundle`)
-				await Promise.all(modules.map(async module => {
+					const module = await this.resolve(ref, id);
 					if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
-						return;
+						continue;
+
+					// wait for all to be loaded (otherwise, as this is async, some may end up only loading after `generateBundle`)
 					await this.load({id: module.id});
-				}));
+				}
 			}
 
 			// if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
