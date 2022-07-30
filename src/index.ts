@@ -209,7 +209,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		async transform(code, id)
 		{
-			transformedFiles.add(id);
+			transformedFiles.add(id); // note: this does not need normalization as we only compare Rollup <-> Rollup, and not Rollup <-> TS
 
 			if (!filter(id))
 				return undefined;
