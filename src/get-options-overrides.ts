@@ -4,7 +4,7 @@ import { createFilter as createRollupFilter, normalizePath as normalize } from "
 
 import { tsModule } from "./tsproxy";
 import { IOptions } from "./ioptions";
-import { IContext } from "./context";
+import { RollupContext } from "./context";
 
 export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IOptions, preParsedTsconfig?: tsTypes.ParsedCommandLine): tsTypes.CompilerOptions
 {
@@ -51,7 +51,7 @@ function expandIncludeWithDirs(include: string | string[], dirs: string[])
 	return newDirs;
 }
 
-export function createFilter(context: IContext, pluginOptions: IOptions, parsedConfig: tsTypes.ParsedCommandLine)
+export function createFilter(context: RollupContext, pluginOptions: IOptions, parsedConfig: tsTypes.ParsedCommandLine)
 {
 	let included = pluginOptions.include;
 	let excluded = pluginOptions.exclude;

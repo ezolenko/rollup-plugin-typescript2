@@ -11,41 +11,57 @@ const local = (x: string) => normalize(path.resolve(__dirname, x));
 const defaultOpts = makeOptions("", "");
 
 test("parseTsConfig", () => {
-	expect(() => parseTsConfig(makeContext(), defaultOpts)).not.toThrow();
+	const context = makeContext();
+
+	parseTsConfig(context, defaultOpts);
+
+	expect(context.error).not.toBeCalled();
 });
 
 test("parseTsConfig - incompatible module", () => {
-	expect(() => parseTsConfig(makeContext(), {
+	const context = makeContext();
+
+	parseTsConfig(context, {
 		...defaultOpts,
 		tsconfigOverride: { compilerOptions: { module: "none" } },
-	})).toThrow("Incompatible tsconfig option. Module resolves to 'None'. This is incompatible with Rollup, please use");
+	});
+
+	expect(context.error).toHaveBeenLastCalledWith(expect.stringContaining("Incompatible tsconfig option. Module resolves to 'None'. This is incompatible with Rollup, please use"));
 });
 
 test("parseTsConfig - tsconfig errors", () => {
 	const context = makeContext();
 
-	// should not throw when the tsconfig is buggy, but should still print an error (below)
-	expect(() => parseTsConfig(context, {
+	parseTsConfig(context, {
 		...defaultOpts,
 		tsconfigOverride: {
 			include: "should-be-an-array",
 		},
-	})).not.toThrow();
+	});
+
 	expect(context.error).toHaveBeenLastCalledWith(expect.stringContaining("Compiler option 'include' requires a value of type Array"));
 });
 
 test("parseTsConfig - failed to open", () => {
-	expect(() => parseTsConfig(makeContext(), {
+	const context = makeContext();
+	const nonExistentTsConfig = "non-existent-tsconfig";
+
+	parseTsConfig(context, {
 		...defaultOpts,
-		tsconfig: "non-existent-tsconfig",
-	})).toThrow("rpt2: failed to open 'non-existent-tsconfig'");
+		tsconfig: nonExistentTsConfig,
+	})
+
+	expect(context.error).toHaveBeenLastCalledWith(expect.stringContaining(`failed to open '${nonExistentTsConfig}`));
 });
 
 test("parseTsConfig - failed to parse", () => {
+	const context = makeContext();
 	const notTsConfigPath = local("fixtures/options.ts"); // a TS file should fail to parse
 
-	expect(() => parseTsConfig(makeContext(), {
+	parseTsConfig(context, {
 		...defaultOpts,
 		tsconfig: notTsConfigPath,
-	})).toThrow(`rpt2: failed to parse '${notTsConfigPath}'`);
+	})
+
+	expect(context.error).toHaveBeenLastCalledWith(expect.stringContaining(`failed to parse '${notTsConfigPath}'`));
 });
