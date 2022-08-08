@@ -188,13 +188,9 @@ export class TsCache
 	public walkTree(cb: (id: string) => void | false): void
 	{
 		if (alg.isAcyclic(this.dependencyTree))
-		{
-			alg.topsort(this.dependencyTree).forEach(id => cb(id));
-			return;
-		}
+			return alg.topsort(this.dependencyTree).forEach(id => cb(id));
 
 		this.context.info(yellow("import tree has cycles"));
-
 		this.dependencyTree.nodes().forEach(id => cb(id));
 	}
 
