@@ -216,7 +216,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					// always checking on fatal errors, even if options.check is set to false
 					typecheckFile(id, snapshot, contextWrapper);
 					// since no output was generated, aborting compilation
-					this.error(red(`failed to transpile '${id}'`));
+					this.error(red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
 				}
 
 				const references = getAllReferences(id, snapshot, parsedConfig.options);
