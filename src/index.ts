@@ -197,8 +197,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		transform(code, id)
 		{
-			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
-
 			if (!filter(id))
 				return undefined;
 
@@ -267,6 +265,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		buildEnd(err)
 		{
+			generateRound = 0; // in watch mode, buildEnd resets generate count just before generateBundle for each output
+
 			if (err)
 			{
 				buildDone();
