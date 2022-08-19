@@ -11,18 +11,23 @@ const defaultConfig = { fileNames: [], errors: [], options: {} };
 test("checkTsConfig", () => {
 	expect(() => checkTsConfig({
 		...defaultConfig,
-		options: { module: ts.ModuleKind.None },
-	})).toThrow(
-		"Incompatible tsconfig option. Module resolves to 'None'. This is incompatible with Rollup, please use",
-	);
-
-	expect(checkTsConfig({
-		...defaultConfig,
 		options: { module: ts.ModuleKind.ES2015 },
-	})).toBeFalsy();
+	})).not.toThrow();
 
-	expect(checkTsConfig({
+	expect(() => checkTsConfig({
+		...defaultConfig,
+		options: { module: ts.ModuleKind.ES2020 },
+	})).not.toThrow();
+
+	expect(() => checkTsConfig({
 		...defaultConfig,
 		options: { module: ts.ModuleKind.ESNext },
-	})).toBeFalsy();
+	})).not.toThrow();
+});
+
+test("checkTsConfig - errors", () => {
+	expect(() => checkTsConfig({
+		...defaultConfig,
+		options: { module: ts.ModuleKind.None },
+	})).toThrow("Incompatible tsconfig option. Module resolves to 'None'. This is incompatible with Rollup, please use");
 });
