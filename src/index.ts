@@ -5,8 +5,7 @@ import { normalizePath as normalize } from "@rollup/pluginutils";
 import { blue, red, yellow, green } from "colors/safe";
 import findCacheDir from "find-cache-dir";
 
-import { RollupContext } from "./rollupcontext";
-import { ConsoleContext, IContext, VerbosityLevel } from "./context";
+import { ConsoleContext, RollupContext, IContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
 import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences, ICode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
