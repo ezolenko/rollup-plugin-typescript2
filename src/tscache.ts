@@ -161,14 +161,14 @@ export class TsCache
 			/* istanbul ignore if -- this is a safety check, but shouldn't happen when using a dedicated cache dir */
 			if (!e.startsWith(this.cachePrefix))
 			{
-				this.context.debug(`skipping cleaning ${dir} as it does not have prefix ${this.cachePrefix}`);
+				this.context.debug(`skipping cleaning '${dir}' as it does not have prefix '${this.cachePrefix}'`);
 				return;
 			}
 
 			/* istanbul ignore if -- this is a safety check, but should never happen in normal usage */
 			if (!fs.statSync(dir).isDirectory)
 			{
-				this.context.debug(`skipping cleaning ${dir} as it is not a directory`);
+				this.context.debug(`skipping cleaning '${dir}' as it is not a directory`);
 				return;
 			}
 
@@ -188,13 +188,9 @@ export class TsCache
 	public walkTree(cb: (id: string) => void | false): void
 	{
 		if (alg.isAcyclic(this.dependencyTree))
-		{
-			alg.topsort(this.dependencyTree).forEach(id => cb(id));
-			return;
-		}
+			return alg.topsort(this.dependencyTree).forEach(id => cb(id));
 
 		this.context.info(yellow("import tree has cycles"));
-
 		this.dependencyTree.nodes().forEach(id => cb(id));
 	}
 
@@ -247,7 +243,8 @@ export class TsCache
 
 	private getDiagnostics(type: string, cache: ICache<IDiagnostics[]>, id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[]
 	{
-		return this.getCached(cache, id, snapshot, true, () => convertDiagnostic(type, check()));
+		// don't need to check imports for syntactic diagnostics (per https://github.com/microsoft/TypeScript/wiki/Using-the-Language-Service-API#design-goals)
+		return this.getCached(cache, id, snapshot, type === "semantic", () => convertDiagnostic(type, check()));
 	}
 
 	private getCached<CacheType>(cache: ICache<CacheType>, id: string, snapshot: tsTypes.IScriptSnapshot, checkImports: boolean, convert: () => CacheType): CacheType

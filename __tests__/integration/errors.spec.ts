@@ -11,12 +11,12 @@ import * as helpers from "./helpers";
 jest.setTimeout(15000);
 
 const local = (x: string) => normalize(path.resolve(__dirname, x));
-const cacheRoot = local("__temp/errors/rpt2-cache"); // don't use the one in node_modules
+const testDir = local("__temp/errors");
 
 afterAll(async () => {
   // workaround: there seems to be some race condition causing fs.remove to fail, so give it a sec first (c.f. https://github.com/jprichardson/node-fs-extra/issues/532)
   await new Promise(resolve => setTimeout(resolve, 1000));
-  await fs.remove(cacheRoot);
+  await fs.remove(testDir);
 });
 
 async function genBundle(relInput: string, extraOpts?: RPT2Options, onwarn?: Mock) {
@@ -24,14 +24,14 @@ async function genBundle(relInput: string, extraOpts?: RPT2Options, onwarn?: Moc
   return helpers.genBundle({
     input,
     tsconfig: local("fixtures/errors/tsconfig.json"),
-    cacheRoot,
+    testDir,
     extraOpts: { include: [input], ...extraOpts }, // only include the input itself, not other error files (to only generate types and type-check the one file)
     onwarn,
   });
 }
 
 test("integration - semantic error", async () => {
-  expect(genBundle("semantic.ts")).rejects.toThrow("Type 'string' is not assignable to type 'number'.");
+  await expect(genBundle("semantic.ts")).rejects.toThrow("Type 'string' is not assignable to type 'number'.");
 });
 
 test("integration - semantic error - abortOnError: false / check: false", async () => {
@@ -48,21 +48,21 @@ test("integration - semantic error - abortOnError: false / check: false", async 
   expect(onwarn).toBeCalledTimes(1);
 });
 
-test("integration - syntax error", () => {
-  expect(genBundle("syntax.ts")).rejects.toThrow("';' expected.");
+test("integration - syntax error", async () => {
+  await expect(genBundle("syntax.ts")).rejects.toThrow("';' expected.");
 });
 
-test("integration - syntax error - abortOnError: false / check: false", () => {
+test("integration - syntax error - abortOnError: false / check: false", async () => {
   const onwarn = jest.fn();
   const err = "Unexpected token (Note that you need plugins to import files that are not JavaScript)";
-  expect(genBundle("syntax.ts", { abortOnError: false }, onwarn)).rejects.toThrow(err);
-  expect(genBundle("syntax.ts", { check: false }, onwarn)).rejects.toThrow(err);
+  await expect(genBundle("syntax.ts", { abortOnError: false }, onwarn)).rejects.toThrow(err);
+  await expect(genBundle("syntax.ts", { check: false }, onwarn)).rejects.toThrow(err);
 });
 
 const typeOnlyIncludes = ["**/import-type-error.ts", "**/type-only-import-with-error.ts"];
 
-test("integration - type-only import error", () => {
-  expect(genBundle("import-type-error.ts", {
+test("integration - type-only import error", async () => {
+  await expect(genBundle("import-type-error.ts", {
     include: typeOnlyIncludes,
   })).rejects.toThrow("Property 'nonexistent' does not exist on type 'someObj'.");
 });

@@ -5,10 +5,9 @@ import { normalizePath as normalize } from "@rollup/pluginutils";
 import { blue, red, yellow, green } from "colors/safe";
 import findCacheDir from "find-cache-dir";
 
-import { RollupContext } from "./rollupcontext";
-import { ConsoleContext, IContext, VerbosityLevel } from "./context";
+import { ConsoleContext, RollupContext, IContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences } from "./tscache";
+import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences, ICode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import { IOptions } from "./ioptions";
 import { parseTsConfig } from "./parse-tsconfig";
@@ -31,6 +30,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let tsConfigPath: string | undefined;
 	let servicesHost: LanguageServiceHost;
 	let service: tsTypes.LanguageService;
+	let documentRegistry: tsTypes.DocumentRegistry; // keep the same DocumentRegistry between watch cycles
 	let noErrors = true;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
 	const checkedFiles = new Set<string>();
@@ -54,16 +54,29 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		}));
 	}
 
-	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot, tcContext: IContext) =>
+	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot | undefined, tcContext: IContext) =>
 	{
-			id = normalize(id);
-			checkedFiles.add(id); // must come before print, as that could bail
+		if (!snapshot)
+			return;
 
-			const diagnostics = getDiagnostics(id, snapshot);
-			printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty !== false);
+		id = normalize(id);
+		checkedFiles.add(id); // must come before print, as that could bail
 
-			if (diagnostics.length > 0)
-				noErrors = false;
+		const diagnostics = getDiagnostics(id, snapshot);
+		printDiagnostics(tcContext, diagnostics, parsedConfig.options.pretty !== false);
+
+		if (diagnostics.length > 0)
+			noErrors = false;
+	}
+
+	const addDeclaration = (id: string, result: ICode) =>
+	{
+		if (!result.dts)
+			return;
+
+		const key = normalize(id);
+		declarations[key] = { type: result.dts, map: result.dtsmap };
+		context.debug(() => `${blue("generated declarations")} for '${key}'`);
 	}
 
 	/** to be called at the end of Rollup's build phase, before output generation */
@@ -98,6 +111,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		pluginOptions.typescript = require("typescript");
 	}
 	setTypescriptModule(pluginOptions.typescript);
+	documentRegistry = tsModule.createDocumentRegistry();
 
 	const self: Plugin = {
 
@@ -135,8 +149,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			filter = createFilter(context, pluginOptions, parsedConfig);
 
 			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
-
-			service = tsModule.createLanguageService(servicesHost, tsModule.createDocumentRegistry());
+			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
 
 			// printing compiler option errors
@@ -196,8 +209,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		transform(code, id)
 		{
-			generateRound = 0; // in watch mode transform call resets generate count (used to avoid printing too many copies of the same error messages)
-
 			if (!filter(id))
 				return undefined;
 
@@ -216,7 +227,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					// always checking on fatal errors, even if options.check is set to false
 					typecheckFile(id, snapshot, contextWrapper);
 					// since no output was generated, aborting compilation
-					this.error(red(`failed to transpile '${id}'`));
+					this.error(red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
 				}
 
 				const references = getAllReferences(id, snapshot, parsedConfig.options);
@@ -238,12 +249,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				context.debug(() => `${green("    watching")}: ${result.references!.join("\nrpt2:               ")}`);
 			}
 
-			if (result.dts)
-			{
-				const key = normalize(id);
-				declarations[key] = { type: result.dts, map: result.dtsmap };
-				context.debug(() => `${blue("generated declarations")} for '${key}'`);
-			}
+			addDeclaration(id, result);
 
 			// if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
 			// note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
@@ -266,6 +272,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		buildEnd(err)
 		{
+			generateRound = 0; // in watch mode, buildEnd resets generate count just before generateBundle for each output
+
 			if (err)
 			{
 				buildDone();
@@ -289,8 +297,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 						return;
 
 					const snapshot = servicesHost.getScriptSnapshot(id);
-					if (snapshot)
-						typecheckFile(id, snapshot, context);
+					typecheckFile(id, snapshot, context);
 				});
 			}
 
@@ -304,10 +311,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					return;
 
 				context.debug(() => `type-checking missed '${key}'`);
-
 				const snapshot = servicesHost.getScriptSnapshot(key);
-				if (snapshot)
-					typecheckFile(key, snapshot, contextWrapper);
+				typecheckFile(key, snapshot, contextWrapper);
 			});
 
 			buildDone();
@@ -328,10 +333,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 					return;
 
 				context.debug(() => `generating missed declarations for '${key}'`);
-				const output = service.getEmitOutput(key, true);
-				const out = convertEmitOutput(output);
-				if (out.dts)
-					declarations[key] = { type: out.dts, map: out.dtsmap };
+				const out = convertEmitOutput(service.getEmitOutput(key, true));
+				addDeclaration(key, out);
 			});
 
 			const emitDeclaration = (key: string, extension: string, entry?: tsTypes.OutputFile) =>
@@ -341,7 +344,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				let fileName = entry.name;
 				if (fileName.includes("?")) // HACK for rollup-plugin-vue, it creates virtual modules in form 'file.vue?rollup-plugin-vue=script.ts'
-					fileName = fileName.split(".vue?", 1) + extension;
+					fileName = fileName.split("?", 1) + extension;
 
 				// If 'useTsconfigDeclarationDir' is in plugin options, directly write to 'declarationDir'.
 				// This may not be under Rollup's output directory, and thus can't be emitted as an asset.
