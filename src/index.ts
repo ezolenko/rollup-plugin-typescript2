@@ -125,26 +125,24 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			watchMode = process.env.ROLLUP_WATCH === "true" || !!this.meta.watchMode; // meta.watchMode was added in 2.14.0 to capture watch via Rollup API (i.e. no env var) (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2140)
 			({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
 
-			if (generateRound === 0)
-			{
-				context.info(`typescript version: ${tsModule.version}`);
-				context.info(`tslib version: ${tslibVersion}`);
-				context.info(`rollup version: ${this.meta.rollupVersion}`);
+			// print out all versions and configurations
+			context.info(`typescript version: ${tsModule.version}`);
+			context.info(`tslib version: ${tslibVersion}`);
+			context.info(`rollup version: ${this.meta.rollupVersion}`);
 
-				context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
-				context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
-				context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
-				context.debug(() => `tsconfig path: ${tsConfigPath}`);
+			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
+			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
+			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
+			context.debug(() => `tsconfig path: ${tsConfigPath}`);
 
-				if (pluginOptions.objectHashIgnoreUnknownHack)
-					context.warn(() => `${yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
+			if (pluginOptions.objectHashIgnoreUnknownHack)
+				context.warn(() => `${yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
 
-				if (pluginOptions.rollupCommonJSResolveHack)
-					context.warn(() => `${yellow("You are using 'rollupCommonJSResolveHack' option")}. This is no longer needed, try disabling it now.`);
+			if (pluginOptions.rollupCommonJSResolveHack)
+				context.warn(() => `${yellow("You are using 'rollupCommonJSResolveHack' option")}. This is no longer needed, try disabling it now.`);
 
-				if (watchMode)
-					context.info(`running in watch mode`);
-			}
+			if (watchMode)
+				context.info(`running in watch mode`);
 
 			filter = createFilter(context, pluginOptions, parsedConfig);
 
