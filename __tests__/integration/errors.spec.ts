@@ -30,13 +30,6 @@ async function genBundle(relInput: string, extraOpts?: RPT2Options, onwarn?: Moc
   });
 }
 
-test("integration - tsconfig errors", async () => {
-  // TODO: move to parse-tsconfig unit tests?
-  await expect(genBundle("semantic.ts", {
-    tsconfig: "non-existent-tsconfig",
-  })).rejects.toThrow("rpt2: failed to open 'non-existent-tsconfig'");
-});
-
 test("integration - semantic error", async () => {
   await expect(genBundle("semantic.ts")).rejects.toThrow("Type 'string' is not assignable to type 'number'.");
 });

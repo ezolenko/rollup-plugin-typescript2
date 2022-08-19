@@ -4,12 +4,9 @@ import * as ts from "typescript";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { remove } from "fs-extra";
 
+import { makeOptions } from "./fixtures/options";
 import { makeStubbedContext } from "./fixtures/context";
-import { setTypescriptModule } from "../src/tsproxy";
-import { IOptions } from "../src/ioptions";
 import { getOptionsOverrides, createFilter } from "../src/get-options-overrides";
-
-setTypescriptModule(ts);
 
 const local = (x: string) => normalize(path.resolve(__dirname, x));
 const cacheDir = local("__temp/get-options-overrides");
@@ -19,29 +16,7 @@ const filtPath = (relPath: string) => normalize(`${process.cwd()}/${relPath}`);
 
 afterAll(() => remove(cacheDir));
 
-const defaultConfig: IOptions = {
-	include: ["*.ts+(|x)", "**/*.ts+(|x)"],
-	exclude: ["*.d.ts", "**/*.d.ts"],
-	check: false,
-	verbosity: 5,
-	clean: false,
-	cacheRoot: cacheDir,
-	cwd: local(""),
-	abortOnError: false,
-	rollupCommonJSResolveHack: false,
-	typescript: ts,
-	objectHashIgnoreUnknownHack: false,
-	tsconfigOverride: null,
-	useTsconfigDeclarationDir: false,
-	tsconfigDefaults: null,
-	sourceMapCallback: (id: string, map: string): void => {
-		console.log(id + map);
-	},
-	transformers: [(ls: ts.LanguageService) => {
-		console.log(ls);
-		return {};
-	}],
-};
+const defaultConfig = makeOptions(cacheDir, local(""));
 
 const forcedOptions: ts.CompilerOptions = {
 	allowNonTsExtensions: true,
