@@ -265,7 +265,7 @@ export class TsCache
 				cache.write(hash, data);
 				return data;
 			}
-			else
+			else /* istanbul ignore next -- should only happen when corrupted cache */
 				this.context.warn(yellow("    cache broken, discarding"));
 		}
 
