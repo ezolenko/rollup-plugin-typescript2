@@ -11,22 +11,25 @@ export declare class LanguageServiceHost implements tsTypes.LanguageServiceHost 
     constructor(parsedConfig: tsTypes.ParsedCommandLine, transformers: TransformerFactoryCreator[], cwd: string);
     reset(): void;
     setLanguageService(service: tsTypes.LanguageService): void;
-    setSnapshot(fileName: string, data: string): tsTypes.IScriptSnapshot;
+    setSnapshot(fileName: string, source: string): tsTypes.IScriptSnapshot;
     getScriptSnapshot(fileName: string): tsTypes.IScriptSnapshot | undefined;
-    getCurrentDirectory(): string;
+    getScriptFileNames: () => string[];
     getScriptVersion(fileName: string): string;
-    getScriptFileNames(): string[];
-    getCompilationSettings(): tsTypes.CompilerOptions;
-    getDefaultLibFileName(opts: tsTypes.CompilerOptions): string;
-    useCaseSensitiveFileNames(): boolean;
-    readDirectory(path: string, extensions?: string[], exclude?: string[], include?: string[]): string[];
-    readFile(path: string, encoding?: string): string | undefined;
-    fileExists(path: string): boolean;
-    realpath(path: string): string;
-    getTypeRootsVersion(): number;
-    directoryExists(directoryName: string): boolean;
-    getDirectories(directoryName: string): string[];
     getCustomTransformers(): tsTypes.CustomTransformers | undefined;
-    trace(line: string): void;
+    getCompilationSettings: () => tsTypes.CompilerOptions;
+    getTypeRootsVersion: () => number;
+    getCurrentDirectory: () => string;
+    useCaseSensitiveFileNames: () => boolean;
+    getDefaultLibFileName: typeof tsTypes.getDefaultLibFilePath;
+    readDirectory: (path: string, extensions?: readonly string[] | undefined, exclude?: readonly string[] | undefined, include?: readonly string[] | undefined, depth?: number | undefined) => string[];
+    readFile: (path: string, encoding?: string | undefined) => string | undefined;
+    fileExists: (path: string) => boolean;
+    directoryExists: (path: string) => boolean;
+    getDirectories: (path: string) => string[];
+    realpath: (path: string) => string;
+    trace: {
+        (...data: any[]): void;
+        (message?: any, ...optionalParams: any[]): void;
+    };
 }
 //# sourceMappingURL=host.d.ts.map

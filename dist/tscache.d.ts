@@ -37,7 +37,7 @@ export declare class TsCache {
     private syntacticDiagnosticsCache;
     private hashOptions;
     constructor(noCache: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
-    clean(): void;
+    private clean;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;
     done(): void;
@@ -46,9 +46,12 @@ export declare class TsCache {
     getSemanticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
     private checkAmbientTypes;
     private getDiagnostics;
+    private getCached;
     private init;
     private markAsDirty;
+    /** @returns true if node, any of its imports, or any ambient types changed */
     private isDirty;
-    private makeName;
+    /** @returns an FS-safe hash string for use as a path to the cached content */
+    private createHash;
 }
 //# sourceMappingURL=tscache.d.ts.map
