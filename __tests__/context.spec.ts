@@ -1,6 +1,6 @@
 import { jest, test, expect } from "@jest/globals";
 
-import { makeStubbedContext } from "./fixtures/context";
+import { makeContext } from "./fixtures/context";
 import { ConsoleContext, RollupContext } from "../src/context";
 
 (global as any).console = {
@@ -54,21 +54,20 @@ test("ConsoleContext 0 verbosity", () => {
 });
 
 test("RollupContext", () => {
-	const data = {};
-	const stubbedContext = makeStubbedContext(data);
-	const context = new RollupContext(5, false, stubbedContext);
+	const innerContext = makeContext();
+	const context = new RollupContext(5, false, innerContext);
 
 	context.warn("test");
-	expect((data as any).warn).toEqual("test");
+	expect(innerContext.warn).toHaveBeenLastCalledWith("test");
 
 	context.warn(() => "test2");
-	expect((data as any).warn).toEqual("test2");
+	expect(innerContext.warn).toHaveBeenLastCalledWith("test2");
 
 	context.error("test!");
-	expect((data as any).warn).toEqual("test!");
+	expect(innerContext.warn).toHaveBeenLastCalledWith("test!");
 
 	context.error(() => "test2!");
-	expect((data as any).warn).toEqual("test2!");
+	expect(innerContext.warn).toHaveBeenLastCalledWith("test2!");
 
 	context.info("test3");
 	expect(console.log).toHaveBeenLastCalledWith("test3");
@@ -84,29 +83,31 @@ test("RollupContext", () => {
 });
 
 test("RollupContext with 0 verbosity", () => {
-	const data = {};
-	const stubbedContext = makeStubbedContext(data);
-	const context = new RollupContext(0, false, stubbedContext);
+	const innerContext = makeContext();
+	const context = new RollupContext(0, false, innerContext);
 
-	expect(context.debug("verbosity is too low here")).toBeFalsy();
-	expect(context.info("verbosity is too low here")).toBeFalsy();
-	expect(context.warn("verbosity is too low here")).toBeFalsy();
+	context.debug("verbosity is too low here");
+	expect(innerContext.debug).not.toBeCalled();
+	context.info("verbosity is too low here");
+	expect(innerContext.debug).not.toBeCalled();
+	context.warn("verbosity is too low here")
+	expect(innerContext.warn).not.toBeCalled();
 });
 
 test("RollupContext.error + debug negative verbosity", () => {
-	const data = {};
-	const stubbedContext = makeStubbedContext(data);
-	const context = new RollupContext(-100, true, stubbedContext);
+	const innerContext = makeContext();
+	const context = new RollupContext(-100, true, innerContext);
 
-	expect(context.error("whatever")).toBeFalsy();
-	expect(context.debug("whatever")).toBeFalsy();
+	context.error("verbosity is too low here");
+	expect(innerContext.error).not.toBeCalled();
+	context.debug("verbosity is too low here");
+	expect(innerContext.debug).not.toBeCalled();
 });
 
 test("RollupContext.error with bail", () => {
-	const data = {};
-	const stubbedContext = makeStubbedContext(data);
-	const context = new RollupContext(5, true, stubbedContext);
+	const innerContext = makeContext();
+	const context = new RollupContext(5, true, innerContext);
 
-	expect(context.error("whatever")).toBeFalsy();
-	expect((data as any).error).toEqual("whatever");
+	context.error("bail");
+	expect(innerContext.error).toHaveBeenLastCalledWith("bail");
 });

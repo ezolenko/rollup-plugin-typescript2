@@ -1,51 +1,21 @@
+import { jest } from "@jest/globals";
 import { PluginContext } from "rollup";
 
 import { IContext } from "../../src/context";
 
-const stub = (x: any) => x;
+// if given a function, make sure to call it (for code coverage etc)
+function returnText (message: string | (() => string)) {
+	if (typeof message === "string")
+		return message;
 
-const contextualLogger = (data: any): IContext => {
-	return {
-		warn: (x: any) => {
-			data.warn = x;
-		},
-		error: (x: any) => {
-			data.error = x;
-		},
-		info: (x: any) => {
-			data.info = x;
-		},
-		debug: (x: any) => {
-			data.debug = x;
-		},
-	};
-};
+	return message();
+}
 
-export function makeStubbedContext (data: any): PluginContext & IContext {
-	const { warn, error, info, debug } = contextualLogger(data);
+export function makeContext(): PluginContext & IContext {
 	return {
-		addWatchFile: stub as any,
-		getWatchFiles: stub as any,
-		cache: stub as any,
-		load: stub as any,
-		resolve: stub as any,
-		resolveId: stub as any,
-		isExternal: stub as any,
-		meta: stub as any,
-		emitAsset: stub as any,
-		emitChunk: stub as any,
-		emitFile: stub as any,
-		setAssetSource: stub as any,
-		getAssetFileName: stub as any,
-		getChunkFileName: stub as any,
-		getFileName: stub as any,
-		parse: stub as any,
-		warn: warn as any,
-		error: error as any,
-		info: info as any,
-		debug: debug as any,
-		moduleIds: stub as any,
-		getModuleIds: stub as any,
-		getModuleInfo: stub as any
-	};
+		error: jest.fn(returnText),
+		warn: jest.fn(returnText),
+		info: jest.fn(returnText),
+		debug: jest.fn(returnText),
+	} as unknown as PluginContext & IContext;
 };
