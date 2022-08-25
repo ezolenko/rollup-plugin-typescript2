@@ -7,7 +7,6 @@ import { printDiagnostics } from "./print-diagnostics";
 import { convertDiagnostic } from "./tscache";
 import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
-import { checkTsConfig } from "./check-tsconfig";
 
 export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 {
@@ -45,7 +44,10 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 	const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
 	const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
 
-	checkTsConfig(parsedTsConfig);
+	const module = parsedTsConfig.options.module!;
+	if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ESNext)
+		throw new Error(`rpt2: Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
+
 	printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
 
 	context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);

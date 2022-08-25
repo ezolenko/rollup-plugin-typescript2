@@ -65,7 +65,7 @@ It can also be useful to review some issues and have a "goal" in mind (especiall
 Once you have some understanding of the codebase's main workflow, you can start to dive deeper into pieces that require more domain knowledge.<br />
 A useful resource as you dive deeper are the [unit tests](__tests__/). They're good to look through as you dig into a module to understand how it's used.
 
-1. From here, you can start to read more of the modules that integrate with the TypeScript API, such as [`host`](src/host.ts), [`parse-tsconfig`](src/parse-tsconfig.ts), [`check-tsconfig`](src/check-tsconfig.ts), and maybe how TS is imported in [`tsproxy`](src/tsproxy.ts) and [`tslib`](src/tslib.ts)
+1. From here, you can start to read more of the modules that integrate with the TypeScript API, such as [`host`](src/host.ts) and [`parse-tsconfig`](src/parse-tsconfig.ts), and maybe how TS is imported in [`tsproxy`](src/tsproxy.ts) and [`tslib`](src/tslib.ts)
     - A _very_ useful reference here is the [TypeScript Wiki](https://github.com/microsoft/TypeScript/wiki), which has two main articles that are the basis for most Compiler integrations:
       - [Using the Compiler API](https://github.com/microsoft/TypeScript/wiki/Using-the-Compiler-API)
       - [Using the Language Service API](https://github.com/microsoft/TypeScript/wiki/Using-the-Language-Service-API)

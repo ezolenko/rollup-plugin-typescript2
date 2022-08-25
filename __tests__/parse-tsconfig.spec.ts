@@ -14,6 +14,13 @@ test("parseTsConfig", () => {
 	expect(() => parseTsConfig(makeContext(), defaultOpts)).not.toThrow();
 });
 
+test("parseTsConfig - incompatible module", () => {
+	expect(() => parseTsConfig(makeContext(), {
+		...defaultOpts,
+		tsconfigOverride: { compilerOptions: { module: "none" } },
+	})).toThrow("Incompatible tsconfig option. Module resolves to 'None'. This is incompatible with Rollup, please use");
+});
+
 test("parseTsConfig - tsconfig errors", () => {
 	const context = makeContext();
 
