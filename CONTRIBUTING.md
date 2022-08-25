@@ -31,7 +31,6 @@ Use the [standard GitHub process](https://docs.github.com/en/pull-requests/colla
 1. `npm run test:coverage` to run tests and output a test coverage report
 
 While this repo now has an assortment of unit tests and integration tests, it still needs more integration tests with various scenarios and expected outcomes.
-Test coverage improvements for existing files and untested files is needed as well.
 
 ### Building and Self-Build
 
