@@ -253,7 +253,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
 			if (parsedConfig.options.emitDeclarationOnly)
 			{
-				context.debug(() => `${blue("emitDeclarationOnly")} enabled, not transforming TS'`);
+				context.debug(() => `${blue("emitDeclarationOnly")} enabled, not transforming TS`);
 				return undefined;
 			}
 
