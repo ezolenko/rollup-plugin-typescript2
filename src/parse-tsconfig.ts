@@ -2,19 +2,19 @@ import { dirname } from "path";
 import * as _ from "lodash";
 
 import { tsModule } from "./tsproxy";
-import { IContext } from "./context";
+import { RollupContext } from "./context";
 import { printDiagnostics } from "./print-diagnostics";
 import { convertDiagnostic } from "./tscache";
 import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
 
-export function parseTsConfig(context: IContext, pluginOptions: IOptions)
+export function parseTsConfig(context: RollupContext, pluginOptions: IOptions)
 {
 	const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
 
 	// if the value was provided, but no file, fail hard
 	if (pluginOptions.tsconfig !== undefined && !fileName)
-		throw new Error(`rpt2: failed to open '${pluginOptions.tsconfig}'`);
+		context.error(`failed to open '${pluginOptions.tsconfig}'`);
 
 	let loadedConfig: any = {};
 	let baseDir = pluginOptions.cwd;
@@ -29,7 +29,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 		if (result.error !== undefined)
 		{
 			printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
-			throw new Error(`rpt2: failed to parse '${fileName}'`);
+			context.error(`failed to parse '${fileName}'`);
 		}
 
 		loadedConfig = result.config;
@@ -46,7 +46,7 @@ export function parseTsConfig(context: IContext, pluginOptions: IOptions)
 
 	const module = parsedTsConfig.options.module!;
 	if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ESNext)
-		throw new Error(`rpt2: Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
+		context.error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
 
 	printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
 

@@ -5,7 +5,7 @@ import { Graph, alg } from "graphlib";
 import objHash from "object-hash";
 import { blue, yellow, green } from "colors/safe";
 
-import { IContext } from "./context";
+import { RollupContext } from "./context";
 import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
 import { tsModule } from "./tsproxy";
@@ -111,7 +111,7 @@ export class TsCache
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private hashOptions = { algorithm: "sha1", ignoreUnknown: false };
 
-	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: IContext)
+	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: RollupContext)
 	{
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));

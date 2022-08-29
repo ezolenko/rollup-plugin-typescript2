@@ -1,10 +1,10 @@
 import { red, white, yellow } from "colors/safe";
 
 import { tsModule } from "./tsproxy";
-import { IContext } from "./context";
+import { RollupContext } from "./context";
 import { IDiagnostics } from "./tscache";
 
-export function printDiagnostics(context: IContext, diagnostics: IDiagnostics[], pretty = true): void
+export function printDiagnostics(context: RollupContext, diagnostics: IDiagnostics[], pretty = true): void
 {
 	diagnostics.forEach((diagnostic) =>
 	{

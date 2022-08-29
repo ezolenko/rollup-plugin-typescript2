@@ -5,7 +5,7 @@ import { normalizePath as normalize } from "@rollup/pluginutils";
 import { blue, red, yellow, green } from "colors/safe";
 import findCacheDir from "find-cache-dir";
 
-import { ConsoleContext, RollupContext, IContext, VerbosityLevel } from "./context";
+import { RollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
 import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences, ICode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
@@ -24,7 +24,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let watchMode = false;
 	let generateRound = 0;
 	let rollupOptions: InputOptions;
-	let context: ConsoleContext;
+	let context: RollupContext;
 	let filter: any;
 	let parsedConfig: tsTypes.ParsedCommandLine;
 	let tsConfigPath: string | undefined;
@@ -54,7 +54,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		}));
 	}
 
-	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot | undefined, tcContext: IContext) =>
+	const typecheckFile = (id: string, snapshot: tsTypes.IScriptSnapshot | undefined, tcContext: RollupContext) =>
 	{
 		if (!snapshot)
 			return;
@@ -119,8 +119,13 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 		options(config)
 		{
-			rollupOptions = {... config};
-			context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
+			rollupOptions = { ...config };
+			return config;
+		},
+
+		buildStart()
+		{
+			context = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
 
 			watchMode = process.env.ROLLUP_WATCH === "true" || !!this.meta.watchMode; // meta.watchMode was added in 2.14.0 to capture watch via Rollup API (i.e. no env var) (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2140)
 			({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
@@ -157,8 +162,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				if (diagnostics.length > 0)
 					noErrors = false;
 			}
-
-			return config;
 		},
 
 		watchChange(id)
@@ -210,8 +213,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!filter(id))
 				return undefined;
 
-			const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
-
 			const snapshot = servicesHost.setSnapshot(id, code);
 
 			// getting compiled file from cache or from ts
@@ -223,7 +224,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				{
 					noErrors = false;
 					// always checking on fatal errors, even if options.check is set to false
-					typecheckFile(id, snapshot, contextWrapper);
+					typecheckFile(id, snapshot, context);
 					// since no output was generated, aborting compilation
 					this.error(red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
 				}
@@ -233,7 +234,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			});
 
 			if (pluginOptions.check)
-				typecheckFile(id, snapshot, contextWrapper);
+				typecheckFile(id, snapshot, context);
 
 			if (!result)
 				return undefined;
@@ -299,8 +300,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				});
 			}
 
-			const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
-
 			// type-check missed files as well
 			parsedConfig.fileNames.forEach((name) =>
 			{
@@ -310,7 +309,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				context.debug(() => `type-checking missed '${key}'`);
 				const snapshot = servicesHost.getScriptSnapshot(key);
-				typecheckFile(key, snapshot, contextWrapper);
+				typecheckFile(key, snapshot, context);
 			});
 
 			buildDone();
