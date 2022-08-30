@@ -33,6 +33,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let documentRegistry: tsTypes.DocumentRegistry; // keep the same DocumentRegistry between watch cycles
 	let cache: TsCache;
 	let noErrors = true;
+	let transformedFiles: Set<string>;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
 	const checkedFiles = new Set<string>();
 
@@ -150,6 +151,9 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 
+			// reset transformedFiles Set on each watch cycle
+			transformedFiles = new Set<string>();
+
 			// printing compiler option errors
 			if (pluginOptions.check) {
 				const diagnostics = convertDiagnostic("options", service.getCompilerOptionsDiagnostics());
@@ -203,8 +207,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			return null;
 		},
 
-		transform(code, id)
+		async transform(code, id)
 		{
+			transformedFiles.add(id); // note: this does not need normalization as we only compare Rollup <-> Rollup, and not Rollup <-> TS
+
 			if (!filter(id))
 				return undefined;
 
@@ -244,6 +250,22 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			}
 
 			addDeclaration(id, result);
+
+			// handle all type-only imports by resolving + loading all of TS's references
+			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
+			if (result.references) {
+				for (const ref of result.references) {
+					if (ref.endsWith(".d.ts"))
+						continue;
+
+					const module = await this.resolve(ref, id);
+					if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
+						continue;
+
+					// wait for all to be loaded (otherwise, as this is async, some may end up only loading after `generateBundle`)
+					await this.load({id: module.id});
+				}
+			}
 
 			// if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
 			// note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268

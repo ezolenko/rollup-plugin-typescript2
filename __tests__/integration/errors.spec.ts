@@ -5,7 +5,7 @@ import { normalizePath as normalize } from "@rollup/pluginutils";
 import * as fs from "fs-extra";
 
 import { RPT2Options } from "../../src/index";
-import * as helpers from "./helpers";
+import { findName, genBundle as genBundleH } from "./helpers";
 
 // increase timeout to 15s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
 jest.setTimeout(15000);
@@ -21,7 +21,7 @@ afterAll(async () => {
 
 async function genBundle(relInput: string, extraOpts?: RPT2Options, onwarn?: Mock) {
   const input = local(`fixtures/errors/${relInput}`);
-  return helpers.genBundle({
+  return genBundleH({
     input,
     tsconfig: local("fixtures/errors/tsconfig.json"),
     testDir,
@@ -41,10 +41,11 @@ test("integration - semantic error - abortOnError: false / check: false", async 
   const { output: output2 } = await genBundle("semantic.ts", { check: false }, onwarn);
   expect(output).toEqual(output2);
 
-  expect(output[0].fileName).toEqual("index.js");
-  expect(output[1].fileName).toEqual("semantic.d.ts");
-  expect(output[2].fileName).toEqual("semantic.d.ts.map");
-  expect(output.length).toEqual(3); // no other files
+  const files = ["index.js", "semantic.d.ts", "semantic.d.ts.map"];
+  files.forEach(file => {
+    expect(findName(output, file)).toBeTruthy();
+  });
+  expect(output.length).toEqual(files.length); // no other files
   expect(onwarn).toBeCalledTimes(1);
 });
 
@@ -80,11 +81,10 @@ test("integration - type-only import error - abortOnError: false / check: false"
   }, onwarn);
   expect(output).toEqual(output2);
 
-  expect(output[0].fileName).toEqual("index.js");
-  expect(output[1].fileName).toEqual("import-type-error.d.ts");
-  expect(output[2].fileName).toEqual("import-type-error.d.ts.map");
-  expect(output[3].fileName).toEqual("type-only-import-with-error.d.ts");
-  expect(output[4].fileName).toEqual("type-only-import-with-error.d.ts.map");
-  expect(output.length).toEqual(5); // no other files
+  const files = ["index.js", "import-type-error.d.ts", "import-type-error.d.ts.map", "type-only-import-with-error.d.ts.map", "type-only-import-with-error.d.ts.map"];
+  files.forEach(file => {
+    expect(findName(output, file)).toBeTruthy();
+  });
+  expect(output.length).toEqual(files.length); // no other files
   expect(onwarn).toBeCalledTimes(1);
 });
