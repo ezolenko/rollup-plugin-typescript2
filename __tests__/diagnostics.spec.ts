@@ -4,17 +4,32 @@ import { red } from "colors/safe";
 
 import { makeContext } from "./fixtures/context";
 import { setTypescriptModule } from "../src/tsproxy";
-import { printDiagnostics } from "../src/diagnostics";
+import { convertDiagnostic, printDiagnostics } from "../src/diagnostics";
 
 setTypescriptModule(ts);
+
+const tsDiagnostic = {
+	file: undefined,
+	start: undefined,
+	length: undefined,
+	messageText: "Compiler option 'include' requires a value of type Array.",
+	category: ts.DiagnosticCategory.Error,
+	code: 5024,
+	reportsUnnecessary: undefined,
+	reportsDeprecated: undefined,
+};
 
 const diagnostic = {
 	flatMessage: "Compiler option 'include' requires a value of type Array.",
 	formatted: "\x1B[91merror\x1B[0m\x1B[90m TS5024: \x1B[0mCompiler option 'include' requires a value of type Array.\n",
 	category: ts.DiagnosticCategory.Error,
 	code: 5024,
-	type: 'config'
+	type: "config",
 };
+
+test("convertDiagnostic", () => {
+	expect(convertDiagnostic("config", [tsDiagnostic])).toStrictEqual([diagnostic]);
+});
 
 test("printDiagnostics - categories", () => {
 	const context = makeContext();
