@@ -31,24 +31,17 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let servicesHost: LanguageServiceHost;
 	let service: tsTypes.LanguageService;
 	let documentRegistry: tsTypes.DocumentRegistry; // keep the same DocumentRegistry between watch cycles
+	let cache: TsCache;
 	let noErrors = true;
 	const declarations: { [name: string]: { type: tsTypes.OutputFile; map?: tsTypes.OutputFile } } = {};
 	const checkedFiles = new Set<string>();
 
-	let _cache: TsCache;
-	const cache = (): TsCache =>
-	{
-		if (!_cache)
-			_cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
-		return _cache;
-	};
-
 	const getDiagnostics = (id: string, snapshot: tsTypes.IScriptSnapshot) =>
 	{
-		return cache().getSyntacticDiagnostics(id, snapshot, () =>
+		return cache.getSyntacticDiagnostics(id, snapshot, () =>
 		{
 			return service.getSyntacticDiagnostics(id);
-		}).concat(cache().getSemanticDiagnostics(id, snapshot, () =>
+		}).concat(cache.getSemanticDiagnostics(id, snapshot, () =>
 		{
 			return service.getSemanticDiagnostics(id);
 		}));
@@ -85,7 +78,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		if (!watchMode && !noErrors)
 			context.info(yellow("there were errors or warnings."));
 
-		cache().done();
+		cache.done();
 	}
 
 	const pluginOptions: IOptions = Object.assign({},
@@ -155,6 +148,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
 
+			cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+
 			// printing compiler option errors
 			if (pluginOptions.check) {
 				const diagnostics = convertDiagnostic("options", service.getCompilerOptionsDiagnostics());
@@ -189,7 +184,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 				return;
 
 			if (filter(resolved))
-				cache().setDependency(resolved, importer);
+				cache.setDependency(resolved, importer);
 
 			if (resolved.endsWith(".d.ts"))
 				return;
@@ -216,7 +211,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			const snapshot = servicesHost.setSnapshot(id, code);
 
 			// getting compiled file from cache or from ts
-			const result = cache().getCompiled(id, snapshot, () =>
+			const result = cache.getCompiled(id, snapshot, () =>
 			{
 				const output = service.getEmitOutput(id);
 
@@ -290,7 +285,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// walkTree once on each cycle when in watch mode
 			if (watchMode)
 			{
-				cache().walkTree((id) =>
+				cache.walkTree((id) =>
 				{
 					if (!filter(id))
 						return;
