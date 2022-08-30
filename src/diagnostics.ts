@@ -20,7 +20,7 @@ export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDi
 	return data.map((diagnostic) =>
 	{
 		const entry: IDiagnostics = {
-			flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
+			flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, formatHost.getNewLine()),
 			formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
 			category: diagnostic.category,
 			code: diagnostic.code,
