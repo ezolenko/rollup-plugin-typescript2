@@ -73,5 +73,5 @@ A useful resource as you dive deeper are the [unit tests](__tests__/). They're g
 1. At this point, you may be ready to read the more complicated bits of [`index`](src/index.ts) in detail and see how it interacts with the other modules.
     - The [integration tests](__tests__/integration/) could be useful to review at this point as well.
 1. Once you're pretty familiar with `index`, you can dive into some of the cache code in [`tscache`](src/tscache.ts) and [`rollingcache`](src/rollingcache.ts).
-1. And finally, you can see some of the Rollup logging nuances in [`context`](src/context.ts) and then the TS logging nuances in [`print-diagnostics`](src/print-diagnostics.ts), and [`diagnostics-format-host`](src/diagnostics-format-host.ts)
+1. And finally, you can see some of the Rollup logging nuances in [`context`](src/context.ts) and then the TS logging nuances in [`diagnostics`](src/diagnostics.ts), and [`diagnostics-format-host`](src/diagnostics-format-host.ts)
     - While these are necessary to the implementation, they are fairly ancillary to understanding and working with the codebase.

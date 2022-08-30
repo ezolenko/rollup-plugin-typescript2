@@ -4,7 +4,7 @@ import { red } from "colors/safe";
 
 import { makeContext } from "./fixtures/context";
 import { setTypescriptModule } from "../src/tsproxy";
-import { printDiagnostics } from "../src/print-diagnostics";
+import { printDiagnostics } from "../src/diagnostics";
 
 setTypescriptModule(ts);
 
@@ -16,7 +16,7 @@ const diagnostic = {
 	type: 'config'
 };
 
-test("print-diagnostics - categories", () => {
+test("printDiagnostics - categories", () => {
 	const context = makeContext();
 
 	printDiagnostics(context, [diagnostic]);
@@ -38,7 +38,7 @@ test("print-diagnostics - categories", () => {
 	expect(context.debug).toBeCalledTimes(0);
 });
 
-test("print-diagnostics - formatting / style", () => {
+test("printDiagnostics - formatting / style", () => {
 	const context = makeContext();
 	const category = "error"; // string version
 

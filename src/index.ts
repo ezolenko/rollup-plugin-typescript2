@@ -7,11 +7,11 @@ import findCacheDir from "find-cache-dir";
 
 import { RollupContext, VerbosityLevel } from "./context";
 import { LanguageServiceHost } from "./host";
-import { TsCache, convertDiagnostic, convertEmitOutput, getAllReferences, ICode } from "./tscache";
+import { TsCache, convertEmitOutput, getAllReferences, ICode } from "./tscache";
 import { tsModule, setTypescriptModule } from "./tsproxy";
 import { IOptions } from "./ioptions";
 import { parseTsConfig } from "./parse-tsconfig";
-import { printDiagnostics } from "./print-diagnostics";
+import { convertDiagnostic, printDiagnostics } from "./diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { createFilter } from "./get-options-overrides";
 
