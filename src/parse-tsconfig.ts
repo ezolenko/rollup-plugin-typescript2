@@ -3,8 +3,7 @@ import * as _ from "lodash";
 
 import { tsModule } from "./tsproxy";
 import { RollupContext } from "./context";
-import { printDiagnostics } from "./print-diagnostics";
-import { convertDiagnostic } from "./tscache";
+import { convertDiagnostic, printDiagnostics } from "./diagnostics";
 import { getOptionsOverrides } from "./get-options-overrides";
 import { IOptions } from "./ioptions";
 

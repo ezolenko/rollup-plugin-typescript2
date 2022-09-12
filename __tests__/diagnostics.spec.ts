@@ -4,19 +4,35 @@ import { red } from "colors/safe";
 
 import { makeContext } from "./fixtures/context";
 import { setTypescriptModule } from "../src/tsproxy";
-import { printDiagnostics } from "../src/print-diagnostics";
+import { formatHost } from "../src/diagnostics-format-host";
+import { convertDiagnostic, printDiagnostics } from "../src/diagnostics";
 
 setTypescriptModule(ts);
 
-const diagnostic = {
-	flatMessage: "Compiler option 'include' requires a value of type Array.",
-	formatted: "\x1B[91merror\x1B[0m\x1B[90m TS5024: \x1B[0mCompiler option 'include' requires a value of type Array.\n",
+const tsDiagnostic = {
+	file: undefined,
+	start: undefined,
+	length: undefined,
+	messageText: "Compiler option 'include' requires a value of type Array.",
 	category: ts.DiagnosticCategory.Error,
 	code: 5024,
-	type: 'config'
+	reportsUnnecessary: undefined,
+	reportsDeprecated: undefined,
 };
 
-test("print-diagnostics - categories", () => {
+const diagnostic = {
+	flatMessage: "Compiler option 'include' requires a value of type Array.",
+	formatted: `\x1B[91merror\x1B[0m\x1B[90m TS5024: \x1B[0mCompiler option 'include' requires a value of type Array.${formatHost.getNewLine()}`,
+	category: ts.DiagnosticCategory.Error,
+	code: 5024,
+	type: "config",
+};
+
+test("convertDiagnostic", () => {
+	expect(convertDiagnostic("config", [tsDiagnostic])).toStrictEqual([diagnostic]);
+});
+
+test("printDiagnostics - categories", () => {
 	const context = makeContext();
 
 	printDiagnostics(context, [diagnostic]);
@@ -38,7 +54,7 @@ test("print-diagnostics - categories", () => {
 	expect(context.debug).toBeCalledTimes(0);
 });
 
-test("print-diagnostics - formatting / style", () => {
+test("printDiagnostics - formatting / style", () => {
 	const context = makeContext();
 	const category = "error"; // string version
 

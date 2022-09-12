@@ -9,7 +9,7 @@ import { RollupContext } from "./context";
 import { RollingCache } from "./rollingcache";
 import { ICache } from "./icache";
 import { tsModule } from "./tsproxy";
-import { formatHost } from "./diagnostics-format-host";
+import { IDiagnostics, convertDiagnostic } from "./diagnostics";
 
 export interface ICode
 {
@@ -23,16 +23,6 @@ export interface ICode
 interface INodeLabel
 {
 	dirty: boolean;
-}
-
-export interface IDiagnostics
-{
-	flatMessage: string;
-	formatted: string;
-	fileLine?: string;
-	category: tsTypes.DiagnosticCategory;
-	code: number;
-	type: string;
 }
 
 interface ITypeSnapshot
@@ -72,29 +62,6 @@ export function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnap
 		const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
 		return resolved.resolvedModule?.resolvedFileName;
 	}));
-}
-
-export function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[]
-{
-	return data.map((diagnostic) =>
-	{
-		const entry: IDiagnostics =
-			{
-				flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-				formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
-				category: diagnostic.category,
-				code: diagnostic.code,
-				type,
-			};
-
-		if (diagnostic.file && diagnostic.start !== undefined)
-		{
-			const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-			entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
-		}
-
-		return entry;
-	});
 }
 
 export class TsCache
