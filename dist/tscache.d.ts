@@ -1,5 +1,6 @@
 import * as tsTypes from "typescript";
-import { IContext } from "./context";
+import { RollupContext } from "./context";
+import { IDiagnostics } from "./diagnostics";
 export interface ICode {
     code: string;
     map?: string;
@@ -7,17 +8,8 @@ export interface ICode {
     dtsmap?: tsTypes.OutputFile;
     references?: string[];
 }
-export interface IDiagnostics {
-    flatMessage: string;
-    formatted: string;
-    fileLine?: string;
-    category: tsTypes.DiagnosticCategory;
-    code: number;
-    type: string;
-}
 export declare function convertEmitOutput(output: tsTypes.EmitOutput, references?: string[]): ICode;
 export declare function getAllReferences(importer: string, snapshot: tsTypes.IScriptSnapshot | undefined, options: tsTypes.CompilerOptions): string[];
-export declare function convertDiagnostic(type: string, data: tsTypes.Diagnostic[]): IDiagnostics[];
 export declare class TsCache {
     private noCache;
     private host;
@@ -36,7 +28,7 @@ export declare class TsCache {
     private semanticDiagnosticsCache;
     private syntacticDiagnosticsCache;
     private hashOptions;
-    constructor(noCache: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: IContext);
+    constructor(noCache: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: RollupContext);
     private clean;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;

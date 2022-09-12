@@ -12,21 +12,21 @@ var require$$0$3 = require('crypto');
 function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
 
 function _interopNamespace(e) {
-	if (e && e.__esModule) return e;
-	var n = Object.create(null);
-	if (e) {
-		Object.keys(e).forEach(function (k) {
-			if (k !== 'default') {
-				var d = Object.getOwnPropertyDescriptor(e, k);
-				Object.defineProperty(n, k, d.get ? d : {
-					enumerable: true,
-					get: function () { return e[k]; }
-				});
-			}
-		});
-	}
-	n["default"] = e;
-	return Object.freeze(n);
+    if (e && e.__esModule) return e;
+    var n = Object.create(null);
+    if (e) {
+        Object.keys(e).forEach(function (k) {
+            if (k !== 'default') {
+                var d = Object.getOwnPropertyDescriptor(e, k);
+                Object.defineProperty(n, k, d.get ? d : {
+                    enumerable: true,
+                    get: function () { return e[k]; }
+                });
+            }
+        });
+    }
+    n["default"] = e;
+    return Object.freeze(n);
 }
 
 var require$$0__default$1 = /*#__PURE__*/_interopDefaultLegacy(require$$0$1);
@@ -36,6 +36,31 @@ var require$$0__default = /*#__PURE__*/_interopDefaultLegacy(require$$0);
 var require$$0__default$2 = /*#__PURE__*/_interopDefaultLegacy(require$$0$2);
 var fs__namespace = /*#__PURE__*/_interopNamespace(fs$4);
 var require$$0__default$3 = /*#__PURE__*/_interopDefaultLegacy(require$$0$3);
+
+/******************************************************************************
+Copyright (c) Microsoft Corporation.
+
+Permission to use, copy, modify, and/or distribute this software for any
+purpose with or without fee is hereby granted.
+
+THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
+REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
+AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
+INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
+OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
+PERFORMANCE OF THIS SOFTWARE.
+***************************************************************************** */
+
+function __awaiter(thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+}
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -3005,34 +3030,6 @@ var VerbosityLevel;
 })(VerbosityLevel || (VerbosityLevel = {}));
 function getText(message) {
     return typeof message === "string" ? message : message();
-}
-/* tslint:disable:max-classes-per-file -- generally a good rule to follow, but these two classes could basically be one */
-/** mainly to be used in options hook, but can be used in other hooks too */
-class ConsoleContext {
-    constructor(verbosity, prefix = "") {
-        this.verbosity = verbosity;
-        this.prefix = prefix;
-    }
-    warn(message) {
-        if (this.verbosity < VerbosityLevel.Warning)
-            return;
-        console.log(`${this.prefix}${getText(message)}`);
-    }
-    error(message) {
-        if (this.verbosity < VerbosityLevel.Error)
-            return;
-        console.log(`${this.prefix}${getText(message)}`);
-    }
-    info(message) {
-        if (this.verbosity < VerbosityLevel.Info)
-            return;
-        console.log(`${this.prefix}${getText(message)}`);
-    }
-    debug(message) {
-        if (this.verbosity < VerbosityLevel.Debug)
-            return;
-        console.log(`${this.prefix}${getText(message)}`);
-    }
 }
 /** cannot be used in options hook (which does not have this.warn and this.error), but can be in other hooks */
 class RollupContext {
@@ -29192,6 +29189,54 @@ class FormatHost {
 }
 const formatHost = new FormatHost();
 
+function convertDiagnostic(type, data) {
+    return data.map((diagnostic) => {
+        const entry = {
+            flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, formatHost.getNewLine()),
+            formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
+            category: diagnostic.category,
+            code: diagnostic.code,
+            type,
+        };
+        if (diagnostic.file && diagnostic.start !== undefined) {
+            const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+            entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
+        }
+        return entry;
+    });
+}
+function printDiagnostics(context, diagnostics, pretty = true) {
+    diagnostics.forEach((diagnostic) => {
+        let print;
+        let color;
+        let category;
+        switch (diagnostic.category) {
+            case tsModule.DiagnosticCategory.Message:
+                print = context.info;
+                color = safe.exports.white;
+                category = "";
+                break;
+            case tsModule.DiagnosticCategory.Error:
+                print = context.error;
+                color = safe.exports.red;
+                category = "error";
+                break;
+            case tsModule.DiagnosticCategory.Warning:
+            default:
+                print = context.warn;
+                color = safe.exports.yellow;
+                category = "warning";
+                break;
+        }
+        const type = diagnostic.type + " ";
+        if (pretty)
+            return print.call(context, `${diagnostic.formatted}`);
+        if (diagnostic.fileLine !== undefined)
+            return print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
+        return print.call(context, `${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
+    });
+}
+
 function convertEmitOutput(output, references) {
     const out = { code: "", references };
     output.outputFiles.forEach((e) => {
@@ -29215,22 +29260,6 @@ function getAllReferences(importer, snapshot, options) {
         const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
         return (_a = resolved.resolvedModule) === null || _a === void 0 ? void 0 : _a.resolvedFileName;
     }));
-}
-function convertDiagnostic(type, data) {
-    return data.map((diagnostic) => {
-        const entry = {
-            flatMessage: tsModule.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
-            formatted: tsModule.formatDiagnosticsWithColorAndContext(data, formatHost),
-            category: diagnostic.category,
-            code: diagnostic.code,
-            type,
-        };
-        if (diagnostic.file && diagnostic.start !== undefined) {
-            const { line, character } = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
-            entry.fileLine = `${diagnostic.file.fileName}(${line + 1},${character + 1})`;
-        }
-        return entry;
-    });
 }
 class TsCache {
     constructor(noCache, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
@@ -29395,38 +29424,6 @@ class TsCache {
     }
 }
 
-function printDiagnostics(context, diagnostics, pretty = true) {
-    diagnostics.forEach((diagnostic) => {
-        let print;
-        let color;
-        let category;
-        switch (diagnostic.category) {
-            case tsModule.DiagnosticCategory.Message:
-                print = context.info;
-                color = safe.exports.white;
-                category = "";
-                break;
-            case tsModule.DiagnosticCategory.Error:
-                print = context.error;
-                color = safe.exports.red;
-                category = "error";
-                break;
-            case tsModule.DiagnosticCategory.Warning:
-            default:
-                print = context.warn;
-                color = safe.exports.yellow;
-                category = "warning";
-                break;
-        }
-        const type = diagnostic.type + " ";
-        if (pretty)
-            return print.call(context, `${diagnostic.formatted}`);
-        if (diagnostic.fileLine !== undefined)
-            return print.call(context, `${diagnostic.fileLine}: ${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
-        return print.call(context, `${type}${category} TS${diagnostic.code}: ${color(diagnostic.flatMessage)}`);
-    });
-}
-
 function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsedTsconfig) {
     const overrides = {
         noEmitHelpers: false,
@@ -29478,18 +29475,12 @@ function createFilter(context, pluginOptions, parsedConfig) {
     return pluginutils.createFilter(included, excluded, { resolve: parsedConfig.options.rootDir });
 }
 
-function checkTsConfig(parsedConfig) {
-    const module = parsedConfig.options.module;
-    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ESNext)
-        throw new Error(`rpt2: Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
-}
-
 function parseTsConfig(context, pluginOptions) {
     var _a, _b;
     const fileName = tsModule.findConfigFile(pluginOptions.cwd, tsModule.sys.fileExists, pluginOptions.tsconfig);
     // if the value was provided, but no file, fail hard
     if (pluginOptions.tsconfig !== undefined && !fileName)
-        throw new Error(`rpt2: failed to open '${pluginOptions.tsconfig}'`);
+        context.error(`failed to open '${pluginOptions.tsconfig}'`);
     let loadedConfig = {};
     let baseDir = pluginOptions.cwd;
     let configFileName;
@@ -29500,7 +29491,7 @@ function parseTsConfig(context, pluginOptions) {
         pretty = (_b = (_a = result.config) === null || _a === void 0 ? void 0 : _a.pretty) !== null && _b !== void 0 ? _b : pretty;
         if (result.error !== undefined) {
             printDiagnostics(context, convertDiagnostic("config", [result.error]), pretty);
-            throw new Error(`rpt2: failed to parse '${fileName}'`);
+            context.error(`failed to parse '${fileName}'`);
         }
         loadedConfig = result.config;
         baseDir = require$$0$1.dirname(fileName);
@@ -29511,7 +29502,9 @@ function parseTsConfig(context, pluginOptions) {
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
-    checkTsConfig(parsedTsConfig);
+    const module = parsedTsConfig.options.module;
+    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ESNext)
+        context.error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
     printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
     context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
     context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
@@ -29546,19 +29539,15 @@ const typescript = (options) => {
     let servicesHost;
     let service;
     let documentRegistry; // keep the same DocumentRegistry between watch cycles
+    let cache;
     let noErrors = true;
+    let transformedFiles;
     const declarations = {};
     const checkedFiles = new Set();
-    let _cache;
-    const cache = () => {
-        if (!_cache)
-            _cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
-        return _cache;
-    };
     const getDiagnostics = (id, snapshot) => {
-        return cache().getSyntacticDiagnostics(id, snapshot, () => {
+        return cache.getSyntacticDiagnostics(id, snapshot, () => {
             return service.getSyntacticDiagnostics(id);
-        }).concat(cache().getSemanticDiagnostics(id, snapshot, () => {
+        }).concat(cache.getSemanticDiagnostics(id, snapshot, () => {
             return service.getSemanticDiagnostics(id);
         }));
     };
@@ -29583,7 +29572,7 @@ const typescript = (options) => {
     const buildDone = () => {
         if (!watchMode && !noErrors)
             context.info(safe.exports.yellow("there were errors or warnings."));
-        cache().done();
+        cache.done();
     };
     const pluginOptions = Object.assign({}, {
         check: true,
@@ -29611,14 +29600,17 @@ const typescript = (options) => {
         name: "rpt2",
         options(config) {
             rollupOptions = Object.assign({}, config);
-            context = new ConsoleContext(pluginOptions.verbosity, "rpt2: ");
+            return config;
+        },
+        buildStart() {
+            context = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
             watchMode = process.env.ROLLUP_WATCH === "true" || !!this.meta.watchMode; // meta.watchMode was added in 2.14.0 to capture watch via Rollup API (i.e. no env var) (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2140)
             ({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
             // print out all versions and configurations
             context.info(`typescript version: ${tsModule.version}`);
             context.info(`tslib version: ${tslibVersion}`);
             context.info(`rollup version: ${this.meta.rollupVersion}`);
-            context.info(`rollup-plugin-typescript2 version: 0.33.0`);
+            context.info(`rollup-plugin-typescript2 version: 0.34.0`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             context.debug(() => `tsconfig path: ${tsConfigPath}`);
@@ -29632,6 +29624,9 @@ const typescript = (options) => {
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
             service = tsModule.createLanguageService(servicesHost, documentRegistry);
             servicesHost.setLanguageService(service);
+            cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+            // reset transformedFiles Set on each watch cycle
+            transformedFiles = new Set();
             // printing compiler option errors
             if (pluginOptions.check) {
                 const diagnostics = convertDiagnostic("options", service.getCompilerOptionsDiagnostics());
@@ -29639,7 +29634,6 @@ const typescript = (options) => {
                 if (diagnostics.length > 0)
                     noErrors = false;
             }
-            return config;
         },
         watchChange(id) {
             const key = pluginutils.normalizePath(id);
@@ -29659,7 +29653,7 @@ const typescript = (options) => {
             if (!resolved)
                 return;
             if (filter(resolved))
-                cache().setDependency(resolved, importer);
+                cache.setDependency(resolved, importer);
             if (resolved.endsWith(".d.ts"))
                 return;
             context.debug(() => `${safe.exports.blue("resolving")} '${importee}' imported by '${importer}'`);
@@ -29673,46 +29667,61 @@ const typescript = (options) => {
         },
         transform(code, id) {
             var _a;
-            if (!filter(id))
-                return undefined;
-            const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
-            const snapshot = servicesHost.setSnapshot(id, code);
-            // getting compiled file from cache or from ts
-            const result = cache().getCompiled(id, snapshot, () => {
-                const output = service.getEmitOutput(id);
-                if (output.emitSkipped) {
-                    noErrors = false;
-                    // always checking on fatal errors, even if options.check is set to false
-                    typecheckFile(id, snapshot, contextWrapper);
-                    // since no output was generated, aborting compilation
-                    this.error(safe.exports.red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
+            return __awaiter(this, void 0, void 0, function* () {
+                transformedFiles.add(id); // note: this does not need normalization as we only compare Rollup <-> Rollup, and not Rollup <-> TS
+                if (!filter(id))
+                    return undefined;
+                const snapshot = servicesHost.setSnapshot(id, code);
+                // getting compiled file from cache or from ts
+                const result = cache.getCompiled(id, snapshot, () => {
+                    const output = service.getEmitOutput(id);
+                    if (output.emitSkipped) {
+                        noErrors = false;
+                        // always checking on fatal errors, even if options.check is set to false
+                        typecheckFile(id, snapshot, context);
+                        // since no output was generated, aborting compilation
+                        this.error(safe.exports.red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
+                    }
+                    const references = getAllReferences(id, snapshot, parsedConfig.options);
+                    return convertEmitOutput(output, references);
+                });
+                if (pluginOptions.check)
+                    typecheckFile(id, snapshot, context);
+                if (!result)
+                    return undefined;
+                if (watchMode && result.references) {
+                    if (tsConfigPath)
+                        this.addWatchFile(tsConfigPath);
+                    result.references.map(this.addWatchFile, this);
+                    context.debug(() => `${safe.exports.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
                 }
-                const references = getAllReferences(id, snapshot, parsedConfig.options);
-                return convertEmitOutput(output, references);
+                addDeclaration(id, result);
+                // handle all type-only imports by resolving + loading all of TS's references
+                // Rollup can't see these otherwise, because they are "emit-less" and produce no JS
+                if (result.references) {
+                    for (const ref of result.references) {
+                        if (ref.endsWith(".d.ts"))
+                            continue;
+                        const module = yield this.resolve(ref, id);
+                        if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
+                            continue;
+                        // wait for all to be loaded (otherwise, as this is async, some may end up only loading after `generateBundle`)
+                        yield this.load({ id: module.id });
+                    }
+                }
+                // if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
+                // note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
+                if (parsedConfig.options.emitDeclarationOnly) {
+                    context.debug(() => `${safe.exports.blue("emitDeclarationOnly")} enabled, not transforming TS`);
+                    return undefined;
+                }
+                const transformResult = { code: result.code, map: { mappings: "" } };
+                if (result.map) {
+                    (_a = pluginOptions.sourceMapCallback) === null || _a === void 0 ? void 0 : _a.call(pluginOptions, id, result.map);
+                    transformResult.map = JSON.parse(result.map);
+                }
+                return transformResult;
             });
-            if (pluginOptions.check)
-                typecheckFile(id, snapshot, contextWrapper);
-            if (!result)
-                return undefined;
-            if (watchMode && result.references) {
-                if (tsConfigPath)
-                    this.addWatchFile(tsConfigPath);
-                result.references.map(this.addWatchFile, this);
-                context.debug(() => `${safe.exports.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
-            }
-            addDeclaration(id, result);
-            // if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
-            // note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
-            if (parsedConfig.options.emitDeclarationOnly) {
-                context.debug(() => `${safe.exports.blue("emitDeclarationOnly")} enabled, not transforming TS'`);
-                return undefined;
-            }
-            const transformResult = { code: result.code, map: { mappings: "" } };
-            if (result.map) {
-                (_a = pluginOptions.sourceMapCallback) === null || _a === void 0 ? void 0 : _a.call(pluginOptions, id, result.map);
-                transformResult.map = JSON.parse(result.map);
-            }
-            return transformResult;
         },
         buildEnd(err) {
             var _a;
@@ -29730,14 +29739,13 @@ const typescript = (options) => {
                 return buildDone();
             // walkTree once on each cycle when in watch mode
             if (watchMode) {
-                cache().walkTree((id) => {
+                cache.walkTree((id) => {
                     if (!filter(id))
                         return;
                     const snapshot = servicesHost.getScriptSnapshot(id);
                     typecheckFile(id, snapshot, context);
                 });
             }
-            const contextWrapper = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
             // type-check missed files as well
             parsedConfig.fileNames.forEach((name) => {
                 const key = pluginutils.normalizePath(name);
@@ -29745,7 +29753,7 @@ const typescript = (options) => {
                     return;
                 context.debug(() => `type-checking missed '${key}'`);
                 const snapshot = servicesHost.getScriptSnapshot(key);
-                typecheckFile(key, snapshot, contextWrapper);
+                typecheckFile(key, snapshot, context);
             });
             buildDone();
         },

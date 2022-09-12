@@ -1,6 +1,6 @@
-import { IContext } from "./context";
+import { RollupContext } from "./context";
 import { IOptions } from "./ioptions";
-export declare function parseTsConfig(context: IContext, pluginOptions: IOptions): {
+export declare function parseTsConfig(context: RollupContext, pluginOptions: IOptions): {
     parsedTsConfig: import("typescript").ParsedCommandLine;
     fileName: string | undefined;
 };
