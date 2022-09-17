@@ -253,7 +253,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			// handle all type-only imports by resolving + loading all of TS's references
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
-			if (result.references) {
+			if (result.references && this.meta.rollupVersion >= "2.60.0") { // this won't work for 2.100.0 b/c this is string (lexical) comparison, not SemVer comparison. but works for now / temporarily
 				for (const ref of result.references) {
 					if (ref.endsWith(".d.ts"))
 						continue;
