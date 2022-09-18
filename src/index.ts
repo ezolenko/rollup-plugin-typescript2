@@ -82,11 +82,14 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		cache.done();
 	}
 
+	const hasTransformersOrSourceMapCallback = options?.sourceMapCallback || options?.transformers?.length;
+	const shouldEnableDefaultClean = !options?.extraCacheKeys && hasTransformersOrSourceMapCallback
+
 	const pluginOptions: IOptions = Object.assign({},
 		{
 			check: true,
 			verbosity: VerbosityLevel.Warning,
-			clean: true,
+			clean: shouldEnableDefaultClean,
 			cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
 			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 			exclude: ["*.d.ts", "**/*.d.ts"],
@@ -99,6 +102,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			tsconfigDefaults: {},
 			objectHashIgnoreUnknownHack: false,
 			cwd: process.cwd(),
+			extraCacheKeys: []
 		}, options as IOptions);
 
 	if (!pluginOptions.typescript) {
@@ -148,6 +152,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
 			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
+
+			if(!pluginOptions.clean && shouldEnableDefaultClean) {
+				context.warn("You have enabled transformers or sourceMapCallback, but have disabled the default clean option. You may need to use 'extraCacheKeys' option to enable it again.")
+			}
 
 			cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 

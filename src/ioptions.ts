@@ -30,4 +30,5 @@ export interface IOptions
 	tsconfigDefaults: any;
 	sourceMapCallback: (id: string, map: string) => void;
 	objectHashIgnoreUnknownHack: boolean;
+	extraCacheKeys: string[]
 }
