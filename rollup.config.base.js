@@ -8,9 +8,8 @@ export default {
 	input: "src/index.ts",
 
 	external: [
+		// Node built-ins
 		"fs",
-		"fs-extra",
-		"resolve",
 		"crypto",
 		"path",
 		"constants",
@@ -18,6 +17,9 @@ export default {
 		"util",
 		"assert",
 		"os",
+		// deps
+		"fs-extra",
+		"semver",
 		"@rollup/pluginutils",
 	],
 
@@ -28,6 +30,7 @@ export default {
 			{
 				"$RPT2_VERSION": pkg.version,
 				"$TS_VERSION_RANGE": pkg.peerDependencies.typescript,
+				"$ROLLUP_VERSION_RANGE": pkg.peerDependencies.rollup,
 			},
 		}),
 		resolve({ jsnext: true, preferBuiltins: true, }),

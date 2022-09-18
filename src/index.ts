@@ -3,6 +3,7 @@ import * as tsTypes from "typescript";
 import { PluginImpl, InputOptions, TransformResult, SourceMap, Plugin } from "rollup";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { blue, red, yellow, green } from "colors/safe";
+import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
 
 import { RollupContext, VerbosityLevel } from "./context";
@@ -129,6 +130,12 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			context.info(`tslib version: ${tslibVersion}`);
 			context.info(`rollup version: ${this.meta.rollupVersion}`);
 
+			if (!satisfies(tsModule.version, "$TS_VERSION_RANGE", { includePrerelease: true }))
+				context.error(`Installed TypeScript version '${tsModule.version}' is outside of supported range '$TS_VERSION_RANGE'`);
+
+			if (!satisfies(this.meta.rollupVersion, "$ROLLUP_VERSION_RANGE", { includePrerelease: true }))
+				context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '$ROLLUP_VERSION_RANGE'`);
+
 			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
 			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
@@ -253,7 +260,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			// handle all type-only imports by resolving + loading all of TS's references
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
-			if (result.references && this.meta.rollupVersion >= "2.60.0") { // this won't work for 2.100.0 b/c this is string (lexical) comparison, not SemVer comparison. but works for now / temporarily
+			if (result.references && satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease : true })) { // this.load is 2.60.0+ only
 				for (const ref of result.references) {
 					if (ref.endsWith(".d.ts"))
 						continue;
