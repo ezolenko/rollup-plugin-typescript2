@@ -27900,6 +27900,10 @@ catch (e) {
     throw e;
 }
 
+// these use globals during testing and are substituted by rollup-plugin-re during builds
+const TS_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__TS_VERSION_RANGE) || ">=2.4.0";
+const ROLLUP_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || ">=1.26.3";
+const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.34.0";
 const typescript = (options) => {
     let watchMode = false;
     let supportsThisLoad = false;
@@ -27983,14 +27987,14 @@ const typescript = (options) => {
             context.info(`typescript version: ${tsModule.version}`);
             context.info(`tslib version: ${tslibVersion}`);
             context.info(`rollup version: ${this.meta.rollupVersion}`);
-            if (!satisfies(tsModule.version, ">=2.4.0", { includePrerelease: true }))
-                context.error(`Installed TypeScript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
-            if (!satisfies(this.meta.rollupVersion, ">=1.26.3", { includePrerelease: true }))
-                context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '>=1.26.3'`);
+            if (!satisfies(tsModule.version, TS_VERSION_RANGE, { includePrerelease: true }))
+                context.error(`Installed TypeScript version '${tsModule.version}' is outside of supported range '${TS_VERSION_RANGE}'`);
+            if (!satisfies(this.meta.rollupVersion, ROLLUP_VERSION_RANGE, { includePrerelease: true }))
+                context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '${ROLLUP_VERSION_RANGE}'`);
             supportsThisLoad = satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease: true }); // this.load is 2.60.0+ only (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2600)
             if (!supportsThisLoad)
                 context.warn(() => `${safe.exports.yellow("You are using a Rollup version '<2.60.0'")}. This may result in type-only files being ignored.`);
-            context.info(`rollup-plugin-typescript2 version: 0.34.0`);
+            context.info(`rollup-plugin-typescript2 version: ${RPT2_VERSION}`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             context.debug(() => `tsconfig path: ${tsConfigPath}`);

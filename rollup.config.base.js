@@ -28,9 +28,9 @@ export default {
 		({
 			replaces:
 			{
-				"$RPT2_VERSION": pkg.version,
 				"$TS_VERSION_RANGE": pkg.peerDependencies.typescript,
 				"$ROLLUP_VERSION_RANGE": pkg.peerDependencies.rollup,
+				"$RPT2_VERSION": pkg.version,
 			},
 		}),
 		resolve({ jsnext: true, preferBuiltins: true, }),
