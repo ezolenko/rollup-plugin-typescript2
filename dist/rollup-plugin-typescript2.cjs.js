@@ -27931,6 +27931,7 @@ catch (e) {
 
 const typescript = (options) => {
     let watchMode = false;
+    let supportsThisLoad = false;
     let generateRound = 0;
     let rollupOptions;
     let context;
@@ -28015,6 +28016,9 @@ const typescript = (options) => {
                 context.error(`Installed TypeScript version '${tsModule.version}' is outside of supported range '>=2.4.0'`);
             if (!require$$3.satisfies(this.meta.rollupVersion, ">=1.26.3", { includePrerelease: true }))
                 context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '>=1.26.3'`);
+            supportsThisLoad = require$$3.satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease: true }); // this.load is 2.60.0+ only (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2600)
+            if (!supportsThisLoad)
+                context.warn(() => `${safe.exports.yellow("You are using a Rollup version '<2.60.0'")}. This may result in type-only files being ignored.`);
             context.info(`rollup-plugin-typescript2 version: 0.34.0`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
@@ -28103,7 +28107,7 @@ const typescript = (options) => {
                 addDeclaration(id, result);
                 // handle all type-only imports by resolving + loading all of TS's references
                 // Rollup can't see these otherwise, because they are "emit-less" and produce no JS
-                if (result.references && require$$3.satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease: true })) { // this.load is 2.60.0+ only
+                if (result.references && supportsThisLoad) {
                     for (const ref of result.references) {
                         if (ref.endsWith(".d.ts"))
                             continue;
