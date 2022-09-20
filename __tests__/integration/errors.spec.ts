@@ -88,3 +88,10 @@ test("integration - type-only import error - abortOnError: false / check: false"
   expect(output.length).toEqual(files.length); // no other files
   expect(onwarn).toBeCalledTimes(1);
 });
+
+// integration test variant of parse-tsconfig unit test, to test how other hooks interact with an error thrown in buildStart
+test("integration - tsconfig error", async () => {
+  await expect(genBundle("semantic.ts", {
+    tsconfigOverride: { compilerOptions: { module: "none" } },
+  })).rejects.toThrow("Incompatible tsconfig option. Module resolves to 'None'. This is incompatible with Rollup, please use");
+});

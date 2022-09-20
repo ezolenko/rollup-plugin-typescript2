@@ -86,7 +86,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		if (!watchMode && !noErrors)
 			context.info(yellow("there were errors or warnings."));
 
-		cache.done();
+		cache?.done(); // if there's an initialization error in `buildStart`, such as a `tsconfig` error, the cache may not exist yet
 	}
 
 	const pluginOptions: IOptions = Object.assign({},
