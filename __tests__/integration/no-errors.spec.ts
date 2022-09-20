@@ -7,8 +7,8 @@ import { RPT2Options } from "../../src/index";
 import { filesArr } from "./fixtures/no-errors";
 import { findName, genBundle as genBundleH } from "./helpers";
 
-// increase timeout to 15s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
-jest.setTimeout(15000);
+// increase timeout to 20s for whole file since CI occassionally timed out -- these are integration and cache tests, so longer timeout is warranted
+jest.setTimeout(20000);
 
 const local = (x: string) => path.resolve(__dirname, x);
 const testDir = local("__temp/no-errors");
