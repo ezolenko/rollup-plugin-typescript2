@@ -3,6 +3,7 @@ import * as tsTypes from "typescript";
 import { PluginImpl, InputOptions, TransformResult, SourceMap, Plugin } from "rollup";
 import { normalizePath as normalize } from "@rollup/pluginutils";
 import { blue, red, yellow, green } from "colors/safe";
+import { satisfies } from "semver";
 import findCacheDir from "find-cache-dir";
 
 import { RollupContext, VerbosityLevel } from "./context";
@@ -15,6 +16,11 @@ import { convertDiagnostic, printDiagnostics } from "./diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { createFilter } from "./get-options-overrides";
 
+// these use globals during testing and are substituted by rollup-plugin-re during builds
+const TS_VERSION_RANGE = (global as any)?.rpt2__TS_VERSION_RANGE || "$TS_VERSION_RANGE";
+const ROLLUP_VERSION_RANGE = (global as any)?.rpt2__ROLLUP_VERSION_RANGE || "$ROLLUP_VERSION_RANGE";
+const RPT2_VERSION = (global as any)?.rpt2__ROLLUP_VERSION_RANGE || "$RPT2_VERSION";
+
 type RPT2Options = Partial<IOptions>;
 
 export { RPT2Options }
@@ -22,6 +28,7 @@ export { RPT2Options }
 const typescript: PluginImpl<RPT2Options> = (options) =>
 {
 	let watchMode = false;
+	let supportsThisLoad = false;
 	let generateRound = 0;
 	let rollupOptions: InputOptions;
 	let context: RollupContext;
@@ -129,7 +136,17 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			context.info(`tslib version: ${tslibVersion}`);
 			context.info(`rollup version: ${this.meta.rollupVersion}`);
 
-			context.info(`rollup-plugin-typescript2 version: $RPT2_VERSION`);
+			if (!satisfies(tsModule.version, TS_VERSION_RANGE, { includePrerelease: true }))
+				context.error(`Installed TypeScript version '${tsModule.version}' is outside of supported range '${TS_VERSION_RANGE}'`);
+
+			if (!satisfies(this.meta.rollupVersion, ROLLUP_VERSION_RANGE, { includePrerelease: true }))
+				context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '${ROLLUP_VERSION_RANGE}'`);
+
+			supportsThisLoad = satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease : true }); // this.load is 2.60.0+ only (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2600)
+			if (!supportsThisLoad)
+				context.warn(() => `${yellow("You are using a Rollup version '<2.60.0'")}. This may result in type-only files being ignored.`);
+
+			context.info(`rollup-plugin-typescript2 version: ${RPT2_VERSION}`);
 			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 			context.debug(() => `tsconfig path: ${tsConfigPath}`);
@@ -253,7 +270,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			// handle all type-only imports by resolving + loading all of TS's references
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
-			if (result.references) {
+			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
 					if (ref.endsWith(".d.ts"))
 						continue;
