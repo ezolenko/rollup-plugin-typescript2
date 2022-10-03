@@ -32,7 +32,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	let generateRound = 0;
 	let rollupOptions: InputOptions;
 	let context: RollupContext;
-	let filter: any;
+	let filter: ReturnType<typeof createFilter>;
 	let parsedConfig: tsTypes.ParsedCommandLine;
 	let tsConfigPath: string | undefined;
 	let servicesHost: LanguageServiceHost;
@@ -204,11 +204,13 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!resolved)
 				return;
 
-			if (filter(resolved))
-				cache.setDependency(resolved, importer);
-
 			if (resolved.endsWith(".d.ts"))
 				return;
+
+			if (!filter(resolved))
+				return;
+
+			cache.setDependency(resolved, importer);
 
 			context.debug(() => `${blue("resolving")} '${importee}' imported by '${importer}'`);
 			context.debug(() => `    to '${resolved}'`);
