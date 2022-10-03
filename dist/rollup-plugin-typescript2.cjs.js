@@ -27978,7 +27978,7 @@ const typescript = (options) => {
     const buildDone = () => {
         if (!watchMode && !noErrors)
             context.info(safe.exports.yellow("there were errors or warnings."));
-        cache.done();
+        cache === null || cache === void 0 ? void 0 : cache.done(); // if there's an initialization error in `buildStart`, such as a `tsconfig` error, the cache may not exist yet
     };
     const pluginOptions = Object.assign({}, {
         check: true,
@@ -28065,10 +28065,11 @@ const typescript = (options) => {
             const resolved = (_a = result.resolvedModule) === null || _a === void 0 ? void 0 : _a.resolvedFileName;
             if (!resolved)
                 return;
-            if (filter(resolved))
-                cache.setDependency(resolved, importer);
             if (resolved.endsWith(".d.ts"))
                 return;
+            if (!filter(resolved))
+                return;
+            cache.setDependency(resolved, importer);
             context.debug(() => `${safe.exports.blue("resolving")} '${importee}' imported by '${importer}'`);
             context.debug(() => `    to '${resolved}'`);
             return require$$0$1.normalize(resolved); // use host OS separators to fix Windows issue: https://github.com/ezolenko/rollup-plugin-typescript2/pull/251
