@@ -277,6 +277,9 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
 			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
+					// pre-emptively filter out some files (for efficiency, as well as to workaround a Rollup bug: https://github.com/ezolenko/rollup-plugin-typescript2/issues/426#issuecomment-1264812897)
+					if (ref.endsWith(".d.ts"))
+						continue;
 					if (!filter(ref))
 						continue;
 
