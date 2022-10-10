@@ -80,6 +80,17 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		context.debug(() => `${blue("generated declarations")} for '${key}'`);
 	}
 
+	/** common resolution check -- only resolve files that aren't declarations and pass `filter` */
+	const shouldResolve = (id: string): boolean => {
+		if (id.endsWith(".d.ts"))
+			return false;
+
+		if (!filter(id))
+			return false;
+
+		return true;
+	}
+
 	/** to be called at the end of Rollup's build phase, before output generation */
 	const buildDone = (): void =>
 	{
@@ -207,10 +218,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!resolved)
 				return;
 
-			if (resolved.endsWith(".d.ts"))
-				return;
-
-			if (!filter(resolved))
+			if (!shouldResolve(resolved))
 				return;
 
 			cache.setDependency(resolved, importer);
@@ -278,9 +286,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
 					// pre-emptively filter out some files (for efficiency, as well as to workaround a Rollup bug: https://github.com/ezolenko/rollup-plugin-typescript2/issues/426#issuecomment-1264812897)
-					if (ref.endsWith(".d.ts"))
-						continue;
-					if (!filter(ref))
+					if (!shouldResolve(ref))
 						continue;
 
 					const module = await this.resolve(ref, id);
