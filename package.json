@@ -23,9 +23,10 @@
   "author": "@ezolenko",
   "scripts": {
     "prebuild": "rimraf dist/*",
-    "build": "rimraf dist/* && rollup -c",
-    "watch": "rollup -c rollup.config.self.js -w ",
-    "build-self": "rimraf dist/* && rollup -c rollup.config.self.js",
+    "build": "rollup -c rollup.config.ts --configPlugin typescript2",
+    "_build-self": "rollup -c rollup.config.self.ts --configPlugin ./build-self/dist/rollup-plugin-typescript2.es",
+    "watch": "npm run _build-self -- -w ",
+    "build-self": "rimraf dist/* && npm run _build-self",
     "lint": "tslint -c ./tslint.json src/*.ts __tests__/*.ts ./*.js",
     "test": "jest",
     "test:watch": "jest --watch",
