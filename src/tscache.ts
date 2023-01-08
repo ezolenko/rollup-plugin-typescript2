@@ -118,7 +118,6 @@ export class TsCache
 
 		if (noCache)
 		{
-			this.context.warn(yellow("Cleaning cache... If you want to use caching, please set `clean` option to false."));
 			this.clean();
 			return;
 		}

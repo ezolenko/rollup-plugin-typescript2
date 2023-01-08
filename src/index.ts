@@ -82,14 +82,15 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		cache.done();
 	}
 
-	const hasTransformersOrSourceMapCallback = options?.sourceMapCallback || options?.transformers?.length;
-	const shouldEnableDefaultClean = !options?.extraCacheKeys && hasTransformersOrSourceMapCallback
+	// function scope can't be properly hashed: https://github.com/ezolenko/rollup-plugin-typescript2/issues/228
+	const hasFunctions = options?.sourceMapCallback || options?.transformers?.length;
+	const defaultClean = hasFunctions && !options?.extraCacheKeys
 
 	const pluginOptions: IOptions = Object.assign({},
 		{
 			check: true,
 			verbosity: VerbosityLevel.Warning,
-			clean: shouldEnableDefaultClean,
+			clean: defaultClean,
 			cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
 			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 			exclude: ["*.d.ts", "**/*.d.ts"],
@@ -102,7 +103,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			tsconfigDefaults: {},
 			objectHashIgnoreUnknownHack: false,
 			cwd: process.cwd(),
-			extraCacheKeys: []
 		}, options as IOptions);
 
 	if (!pluginOptions.typescript) {
@@ -153,8 +153,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
 
-			if(!pluginOptions.clean && shouldEnableDefaultClean) {
-				context.warn("You have enabled transformers or sourceMapCallback, but have disabled the default clean option. You may need to use 'extraCacheKeys' option to enable it again.")
+			if(!pluginOptions.clean && defaultClean) {
+				context.warn("You have enabled 'transformers' or 'sourceMapCallback'. To enable caching, you will have to configure the 'extraCacheKeys' option. See https://github.com/ezolenko/rollup-plugin-typescript2#plugin-options")
 			}
 
 			cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
