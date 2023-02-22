@@ -23,7 +23,7 @@ const forcedOptions: ts.CompilerOptions = {
 	importHelpers: true,
 	inlineSourceMap: false,
 	// typescript 5 renamed NodeJs to Node10, but we still need to support older versions
-	moduleResolution: ts.ModuleResolutionKind.NodeJs ?? (ts.ModuleResolutionKind as any).Node10,	
+	moduleResolution: ts.ModuleResolutionKind.NodeJs ?? (ts.ModuleResolutionKind as any).Node10,
 	noEmit: false,
 	noEmitOnError: false,
 	noEmitHelpers: false,
