@@ -6,7 +6,10 @@ import { remove } from "fs-extra";
 
 import { makeOptions } from "./fixtures/options";
 import { makeContext } from "./fixtures/context";
-import { getOptionsOverrides, createFilter } from "../src/get-options-overrides";
+import {
+	getOptionsOverrides,
+	createFilter,
+} from "../src/get-options-overrides";
 
 const local = (x: string) => normalize(path.resolve(__dirname, x));
 const cacheDir = local("__temp/get-options-overrides");
@@ -22,7 +25,10 @@ const forcedOptions: ts.CompilerOptions = {
 	allowNonTsExtensions: true,
 	importHelpers: true,
 	inlineSourceMap: false,
-	moduleResolution: ts.ModuleResolutionKind.NodeJs,
+	moduleResolution:
+		// typescript 5 renamed NodeJs to Node10, but we still need to support older versions
+		ts.ModuleResolutionKind.NodeJs ??
+		(ts.ModuleResolutionKind as any).Node10,
 	noEmit: false,
 	noEmitOnError: false,
 	noEmitHelpers: false,
@@ -121,7 +127,7 @@ test("createFilter - rootDirs", () => {
 	const preParsedTsConfig = {
 		...defaultPreParsedTsConfig,
 		options: {
-			rootDirs: ["src", "lib"]
+			rootDirs: ["src", "lib"],
 		},
 	};
 	const filter = createFilter(makeContext(), config, preParsedTsConfig);
@@ -142,10 +148,7 @@ test("createFilter - projectReferences", () => {
 	const config = { ...defaultConfig, include: "*.ts+(|x)" };
 	const preParsedTsConfig = {
 		...defaultPreParsedTsConfig,
-		projectReferences: [
-			{ path: "src" },
-			{ path: "lib" },
-		],
+		projectReferences: [{ path: "src" }, { path: "lib" }],
 	};
 	const filter = createFilter(makeContext(), config, preParsedTsConfig);
 
