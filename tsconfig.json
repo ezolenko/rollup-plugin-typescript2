@@ -2,7 +2,7 @@
 	"extends": "./tsconfig.base",
 	"compilerOptions": {
 		"target": "es6",
-		"module": "ES2020",
+		"module": "ES2022",
 		"sourceMap": true,
 		"noUnusedParameters": true,
 		"noUnusedLocals": true,
