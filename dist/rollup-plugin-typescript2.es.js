@@ -1,14 +1,18 @@
 /* eslint-disable */
-import * as require$$0 from 'path';
-import require$$0__default, { dirname, normalize, resolve, relative } from 'path';
+import * as path from 'path';
+import path__default, { dirname, normalize, resolve, relative } from 'path';
 import { normalizePath, createFilter as createFilter$1 } from '@rollup/pluginutils';
-import require$$2 from 'util';
-import require$$0$1 from 'os';
-import require$$3, { satisfies } from 'semver';
-import require$$0$2, { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
-import * as fs$4 from 'fs-extra';
+import require$$0$1 from 'util';
+import require$$0 from 'os';
+import { satisfies } from 'semver';
+import process$1 from 'node:process';
+import path$1 from 'node:path';
+import fs$1 from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import * as fs from 'fs-extra';
 import { emptyDirSync, readJsonSync, writeJsonSync, ensureFileSync, removeSync } from 'fs-extra';
-import require$$0$3 from 'crypto';
+import require$$0$2 from 'crypto';
+import { existsSync, readdirSync, renameSync, readFileSync } from 'fs';
 
 /******************************************************************************
 Copyright (c) Microsoft Corporation.
@@ -24,6 +28,8 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
+/* global Reflect, Promise */
+
 
 function __awaiter(thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -36,6 +42,10 @@ function __awaiter(thisArg, _arguments, P, generator) {
 }
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+function getDefaultExportFromCjs (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
 
 var safe = {exports: {}};
 
@@ -138,8 +148,10 @@ THE SOFTWARE.
 	  var style = styles[key] = [];
 	  style.open = '\u001b[' + val[0] + 'm';
 	  style.close = '\u001b[' + val[1] + 'm';
-	});
+	}); 
 } (styles));
+
+var stylesExports = styles.exports;
 
 /*
 MIT License
@@ -200,7 +212,7 @@ THE SOFTWARE.
 
 */
 
-var os = require$$0$1;
+var os = require$$0;
 var hasFlag = hasFlag$1;
 
 var env$1 = process.env;
@@ -378,8 +390,8 @@ function requireTrap () {
 		    }
 		  });
 		  return result;
-		};
-} (trap));
+		}; 
+	} (trap));
 	return trap.exports;
 }
 
@@ -499,8 +511,8 @@ function requireZalgo () {
 		  }
 		  // don't summon him
 		  return heComes(text, options);
-		};
-} (zalgo));
+		}; 
+	} (zalgo));
 	return zalgo.exports;
 }
 
@@ -521,8 +533,8 @@ function requireAmerica () {
 		      case 2: return colors.blue(letter);
 		    }
 		  };
-		};
-} (america));
+		}; 
+	} (america));
 	return america.exports;
 }
 
@@ -538,8 +550,8 @@ function requireZebra () {
 		  return function(letter, i, exploded) {
 		    return i % 2 === 0 ? letter : colors.inverse(letter);
 		  };
-		};
-} (zebra));
+		}; 
+	} (zebra));
 	return zebra.exports;
 }
 
@@ -561,8 +573,8 @@ function requireRainbow () {
 		      return colors[rainbowColors[i++ % rainbowColors.length]](letter);
 		    }
 		  };
-		};
-} (rainbow));
+		}; 
+	} (rainbow));
 	return rainbow.exports;
 }
 
@@ -584,8 +596,8 @@ function requireRandom () {
 		          available[Math.round(Math.random() * (available.length - 2))]
 		      ](letter);
 		  };
-		};
-} (random));
+		}; 
+	} (random));
 	return random.exports;
 }
 
@@ -625,8 +637,8 @@ THE SOFTWARE.
 
 	colors.themes = {};
 
-	var util = require$$2;
-	var ansiStyles = colors.styles = styles.exports;
+	var util = require$$0$1;
+	var ansiStyles = colors.styles = stylesExports;
 	var defineProps = Object.defineProperties;
 	var newLineRegex = new RegExp(/[\r\n]+/g);
 
@@ -685,7 +697,7 @@ THE SOFTWARE.
 	  return builder;
 	}
 
-	var styles$1 = (function() {
+	var styles = (function() {
 	  var ret = {};
 	  ansiStyles.grey = ansiStyles.gray;
 	  Object.keys(ansiStyles).forEach(function(key) {
@@ -700,7 +712,7 @@ THE SOFTWARE.
 	  return ret;
 	})();
 
-	var proto = defineProps(function colors() {}, styles$1);
+	var proto = defineProps(function colors() {}, styles);
 
 	function applyStyle() {
 	  var args = Array.prototype.slice.call(arguments);
@@ -765,7 +777,7 @@ THE SOFTWARE.
 
 	function init() {
 	  var ret = {};
-	  Object.keys(styles$1).forEach(function(name) {
+	  Object.keys(styles).forEach(function(name) {
 	    ret[name] = {
 	      get: function() {
 	        return build([name]);
@@ -800,8 +812,10 @@ THE SOFTWARE.
 	  })(map);
 	}
 
-	defineProps(colors, init());
+	defineProps(colors, init()); 
 } (colors));
+
+var colorsExports = colors.exports;
 
 (function (module) {
 	//
@@ -812,555 +826,180 @@ THE SOFTWARE.
 	//   colors.red("foo")
 	//
 	//
-	var colors$1 = colors.exports;
-	module['exports'] = colors$1;
+	var colors = colorsExports;
+	module['exports'] = colors; 
 } (safe));
 
-var path$4 = require$$0__default;
+var safeExports = safe.exports;
 
-var commondir = function (basedir, relfiles) {
-    if (relfiles) {
-        var files = relfiles.map(function (r) {
-            return path$4.resolve(basedir, r);
-        });
+const { sep: DEFAULT_SEPARATOR } = path__default;
+
+const determineSeparator = paths => {
+  for (const path of paths) {
+    const match = /(\/|\\)/.exec(path);
+    if (match !== null) return match[0]
+  }
+
+  return DEFAULT_SEPARATOR
+};
+
+var commonPathPrefix = function commonPathPrefix (paths, sep = determineSeparator(paths)) {
+  const [first = '', ...remaining] = paths;
+  if (first === '' || remaining.length === 0) return ''
+
+  const parts = first.split(sep);
+
+  let endOfPrefix = parts.length;
+  for (const path of remaining) {
+    const compare = path.split(sep);
+    for (let i = 0; i < endOfPrefix; i++) {
+      if (compare[i] !== parts[i]) {
+        endOfPrefix = i;
+      }
     }
-    else {
-        var files = basedir;
-    }
-    
-    var res = files.slice(1).reduce(function (ps, file) {
-        if (!file.match(/^([A-Za-z]:)?\/|\\/)) {
-            throw new Error('relative path without a basedir');
-        }
-        
-        var xs = file.split(/\/+|\\+/);
-        for (
-            var i = 0;
-            ps[i] === xs[i] && i < Math.min(ps.length, xs.length);
-            i++
-        );
-        return ps.slice(0, i);
-    }, files[0].split(/\/+|\\+/));
-    
-    // Windows correctly handles paths with forward-slashes
-    return res.length > 1 ? res.join('/') : '/'
+
+    if (endOfPrefix === 0) return ''
+  }
+
+  const prefix = parts.slice(0, endOfPrefix).join(sep);
+  return prefix.endsWith(sep) ? prefix : prefix + sep
 };
 
-var pkgDir$2 = {exports: {}};
-
-var findUp$1 = {exports: {}};
-
-var locatePath = {exports: {}};
-
-var pLocate$2 = {exports: {}};
-
-var pLimit$2 = {exports: {}};
-
-var pTry$2 = {exports: {}};
-
-const pTry$1 = (fn, ...arguments_) => new Promise(resolve => {
-	resolve(fn(...arguments_));
-});
-
-pTry$2.exports = pTry$1;
-// TODO: remove this in the next major version
-pTry$2.exports.default = pTry$1;
-
-const pTry = pTry$2.exports;
-
-const pLimit$1 = concurrency => {
-	if (!((Number.isInteger(concurrency) || concurrency === Infinity) && concurrency > 0)) {
-		return Promise.reject(new TypeError('Expected `concurrency` to be a number from 1 and up'));
-	}
-
-	const queue = [];
-	let activeCount = 0;
-
-	const next = () => {
-		activeCount--;
-
-		if (queue.length > 0) {
-			queue.shift()();
-		}
-	};
-
-	const run = (fn, resolve, ...args) => {
-		activeCount++;
-
-		const result = pTry(fn, ...args);
-
-		resolve(result);
-
-		result.then(next, next);
-	};
-
-	const enqueue = (fn, resolve, ...args) => {
-		if (activeCount < concurrency) {
-			run(fn, resolve, ...args);
-		} else {
-			queue.push(run.bind(null, fn, resolve, ...args));
-		}
-	};
-
-	const generator = (fn, ...args) => new Promise(resolve => enqueue(fn, resolve, ...args));
-	Object.defineProperties(generator, {
-		activeCount: {
-			get: () => activeCount
-		},
-		pendingCount: {
-			get: () => queue.length
-		}
-	});
-
-	return generator;
-};
-
-pLimit$2.exports = pLimit$1;
-pLimit$2.exports.default = pLimit$1;
-
-const pLimit = pLimit$2.exports;
-
-class EndError extends Error {
-	constructor(value) {
-		super();
-		this.value = value;
-	}
-}
-
-// The input can also be a promise, so we await it
-const testElement = async (element, tester) => tester(await element);
-
-// The input can also be a promise, so we `Promise.all()` them both
-const finder = async element => {
-	const values = await Promise.all(element);
-	if (values[1] === true) {
-		throw new EndError(values[0]);
-	}
-
-	return false;
-};
-
-const pLocate$1 = async (iterable, tester, options) => {
-	options = {
-		concurrency: Infinity,
-		preserveOrder: true,
-		...options
-	};
-
-	const limit = pLimit(options.concurrency);
-
-	// Start all the promises concurrently with optional limit
-	const items = [...iterable].map(element => [element, limit(testElement, element, tester)]);
-
-	// Check the promises either serially or concurrently
-	const checkLimit = pLimit(options.preserveOrder ? 1 : Infinity);
-
-	try {
-		await Promise.all(items.map(element => checkLimit(finder, element)));
-	} catch (error) {
-		if (error instanceof EndError) {
-			return error.value;
-		}
-
-		throw error;
-	}
-};
-
-pLocate$2.exports = pLocate$1;
-// TODO: Remove this for the next major release
-pLocate$2.exports.default = pLocate$1;
-
-const path$3 = require$$0__default;
-const fs$3 = require$$0$2;
-const {promisify: promisify$2} = require$$2;
-const pLocate = pLocate$2.exports;
-
-const fsStat = promisify$2(fs$3.stat);
-const fsLStat = promisify$2(fs$3.lstat);
+var commonPathPrefix$1 = /*@__PURE__*/getDefaultExportFromCjs(commonPathPrefix);
 
 const typeMappings = {
 	directory: 'isDirectory',
-	file: 'isFile'
+	file: 'isFile',
 };
 
-function checkType({type}) {
-	if (type in typeMappings) {
+function checkType(type) {
+	if (Object.hasOwnProperty.call(typeMappings, type)) {
 		return;
 	}
 
 	throw new Error(`Invalid type specified: ${type}`);
 }
 
-const matchType = (type, stat) => type === undefined || stat[typeMappings[type]]();
+const matchType = (type, stat) => stat[typeMappings[type]]();
 
-locatePath.exports = async (paths, options) => {
-	options = {
-		cwd: process.cwd(),
-		type: 'file',
-		allowSymlinks: true,
-		...options
-	};
-	checkType(options);
-	const statFn = options.allowSymlinks ? fsStat : fsLStat;
+const toPath$1 = urlOrPath => urlOrPath instanceof URL ? fileURLToPath(urlOrPath) : urlOrPath;
 
-	return pLocate(paths, async path_ => {
-		try {
-			const stat = await statFn(path$3.resolve(options.cwd, path_));
-			return matchType(options.type, stat);
-		} catch (_) {
-			return false;
-		}
-	}, options);
-};
+function locatePathSync(
+	paths,
+	{
+		cwd = process$1.cwd(),
+		type = 'file',
+		allowSymlinks = true,
+	} = {},
+) {
+	checkType(type);
+	cwd = toPath$1(cwd);
 
-locatePath.exports.sync = (paths, options) => {
-	options = {
-		cwd: process.cwd(),
-		allowSymlinks: true,
-		type: 'file',
-		...options
-	};
-	checkType(options);
-	const statFn = options.allowSymlinks ? fs$3.statSync : fs$3.lstatSync;
+	const statFunction = allowSymlinks ? fs$1.statSync : fs$1.lstatSync;
 
 	for (const path_ of paths) {
 		try {
-			const stat = statFn(path$3.resolve(options.cwd, path_));
+			const stat = statFunction(path$1.resolve(cwd, path_), {
+				throwIfNoEntry: false,
+			});
 
-			if (matchType(options.type, stat)) {
+			if (!stat) {
+				continue;
+			}
+
+			if (matchType(type, stat)) {
 				return path_;
 			}
-		} catch (_) {
-		}
+		} catch {}
 	}
-};
+}
 
-var pathExists = {exports: {}};
+const toPath = urlOrPath => urlOrPath instanceof URL ? fileURLToPath(urlOrPath) : urlOrPath;
 
-const fs$2 = require$$0$2;
-const {promisify: promisify$1} = require$$2;
+const findUpStop = Symbol('findUpStop');
 
-const pAccess = promisify$1(fs$2.access);
+function findUpMultipleSync(name, options = {}) {
+	let directory = path$1.resolve(toPath(options.cwd) || '');
+	const {root} = path$1.parse(directory);
+	const stopAt = options.stopAt || root;
+	const limit = options.limit || Number.POSITIVE_INFINITY;
+	const paths = [name].flat();
 
-pathExists.exports = async path => {
-	try {
-		await pAccess(path);
-		return true;
-	} catch (_) {
-		return false;
-	}
-};
-
-pathExists.exports.sync = path => {
-	try {
-		fs$2.accessSync(path);
-		return true;
-	} catch (_) {
-		return false;
-	}
-};
-
-(function (module) {
-	const path = require$$0__default;
-	const locatePath$1 = locatePath.exports;
-	const pathExists$1 = pathExists.exports;
-
-	const stop = Symbol('findUp.stop');
-
-	module.exports = async (name, options = {}) => {
-		let directory = path.resolve(options.cwd || '');
-		const {root} = path.parse(directory);
-		const paths = [].concat(name);
-
-		const runMatcher = async locateOptions => {
-			if (typeof name !== 'function') {
-				return locatePath$1(paths, locateOptions);
-			}
-
-			const foundPath = await name(locateOptions.cwd);
-			if (typeof foundPath === 'string') {
-				return locatePath$1([foundPath], locateOptions);
-			}
-
-			return foundPath;
-		};
-
-		// eslint-disable-next-line no-constant-condition
-		while (true) {
-			// eslint-disable-next-line no-await-in-loop
-			const foundPath = await runMatcher({...options, cwd: directory});
-
-			if (foundPath === stop) {
-				return;
-			}
-
-			if (foundPath) {
-				return path.resolve(directory, foundPath);
-			}
-
-			if (directory === root) {
-				return;
-			}
-
-			directory = path.dirname(directory);
-		}
-	};
-
-	module.exports.sync = (name, options = {}) => {
-		let directory = path.resolve(options.cwd || '');
-		const {root} = path.parse(directory);
-		const paths = [].concat(name);
-
-		const runMatcher = locateOptions => {
-			if (typeof name !== 'function') {
-				return locatePath$1.sync(paths, locateOptions);
-			}
-
-			const foundPath = name(locateOptions.cwd);
-			if (typeof foundPath === 'string') {
-				return locatePath$1.sync([foundPath], locateOptions);
-			}
-
-			return foundPath;
-		};
-
-		// eslint-disable-next-line no-constant-condition
-		while (true) {
-			const foundPath = runMatcher({...options, cwd: directory});
-
-			if (foundPath === stop) {
-				return;
-			}
-
-			if (foundPath) {
-				return path.resolve(directory, foundPath);
-			}
-
-			if (directory === root) {
-				return;
-			}
-
-			directory = path.dirname(directory);
-		}
-	};
-
-	module.exports.exists = pathExists$1;
-
-	module.exports.sync.exists = pathExists$1.sync;
-
-	module.exports.stop = stop;
-} (findUp$1));
-
-const path$2 = require$$0__default;
-const findUp = findUp$1.exports;
-
-const pkgDir$1 = async cwd => {
-	const filePath = await findUp('package.json', {cwd});
-	return filePath && path$2.dirname(filePath);
-};
-
-pkgDir$2.exports = pkgDir$1;
-// TODO: Remove this for the next major release
-pkgDir$2.exports.default = pkgDir$1;
-
-pkgDir$2.exports.sync = cwd => {
-	const filePath = findUp.sync('package.json', {cwd});
-	return filePath && path$2.dirname(filePath);
-};
-
-var makeDir$2 = {exports: {}};
-
-const fs$1 = require$$0$2;
-const path$1 = require$$0__default;
-const {promisify} = require$$2;
-const semver = require$$3;
-
-const useNativeRecursiveOption = semver.satisfies(process.version, '>=10.12.0');
-
-// https://github.com/nodejs/node/issues/8987
-// https://github.com/libuv/libuv/pull/1088
-const checkPath = pth => {
-	if (process.platform === 'win32') {
-		const pathHasInvalidWinCharacters = /[<>:"|?*]/.test(pth.replace(path$1.parse(pth).root, ''));
-
-		if (pathHasInvalidWinCharacters) {
-			const error = new Error(`Path contains invalid characters: ${pth}`);
-			error.code = 'EINVAL';
-			throw error;
-		}
-	}
-};
-
-const processOptions = options => {
-	// https://github.com/sindresorhus/make-dir/issues/18
-	const defaults = {
-		mode: 0o777 & (~process.umask()),
-		fs: fs$1
-	};
-
-	return {
-		...defaults,
-		...options
-	};
-};
-
-const permissionError = pth => {
-	// This replicates the exception of `fs.mkdir` with native the
-	// `recusive` option when run on an invalid drive under Windows.
-	const error = new Error(`operation not permitted, mkdir '${pth}'`);
-	error.code = 'EPERM';
-	error.errno = -4048;
-	error.path = pth;
-	error.syscall = 'mkdir';
-	return error;
-};
-
-const makeDir$1 = async (input, options) => {
-	checkPath(input);
-	options = processOptions(options);
-
-	const mkdir = promisify(options.fs.mkdir);
-	const stat = promisify(options.fs.stat);
-
-	if (useNativeRecursiveOption && options.fs.mkdir === fs$1.mkdir) {
-		const pth = path$1.resolve(input);
-
-		await mkdir(pth, {
-			mode: options.mode,
-			recursive: true
-		});
-
-		return pth;
-	}
-
-	const make = async pth => {
-		try {
-			await mkdir(pth, options.mode);
-
-			return pth;
-		} catch (error) {
-			if (error.code === 'EPERM') {
-				throw error;
-			}
-
-			if (error.code === 'ENOENT') {
-				if (path$1.dirname(pth) === pth) {
-					throw permissionError(pth);
-				}
-
-				if (error.message.includes('null bytes')) {
-					throw error;
-				}
-
-				await make(path$1.dirname(pth));
-
-				return make(pth);
-			}
-
-			try {
-				const stats = await stat(pth);
-				if (!stats.isDirectory()) {
-					throw new Error('The path is not a directory');
-				}
-			} catch (_) {
-				throw error;
-			}
-
-			return pth;
-		}
-	};
-
-	return make(path$1.resolve(input));
-};
-
-makeDir$2.exports = makeDir$1;
-
-makeDir$2.exports.sync = (input, options) => {
-	checkPath(input);
-	options = processOptions(options);
-
-	if (useNativeRecursiveOption && options.fs.mkdirSync === fs$1.mkdirSync) {
-		const pth = path$1.resolve(input);
-
-		fs$1.mkdirSync(pth, {
-			mode: options.mode,
-			recursive: true
-		});
-
-		return pth;
-	}
-
-	const make = pth => {
-		try {
-			options.fs.mkdirSync(pth, options.mode);
-		} catch (error) {
-			if (error.code === 'EPERM') {
-				throw error;
-			}
-
-			if (error.code === 'ENOENT') {
-				if (path$1.dirname(pth) === pth) {
-					throw permissionError(pth);
-				}
-
-				if (error.message.includes('null bytes')) {
-					throw error;
-				}
-
-				make(path$1.dirname(pth));
-				return make(pth);
-			}
-
-			try {
-				if (!options.fs.statSync(pth).isDirectory()) {
-					throw new Error('The path is not a directory');
-				}
-			} catch (_) {
-				throw error;
-			}
+	const runMatcher = locateOptions => {
+		if (typeof name !== 'function') {
+			return locatePathSync(paths, locateOptions);
 		}
 
-		return pth;
+		const foundPath = name(locateOptions.cwd);
+		if (typeof foundPath === 'string') {
+			return locatePathSync([foundPath], locateOptions);
+		}
+
+		return foundPath;
 	};
 
-	return make(path$1.resolve(input));
-};
+	const matches = [];
+	// eslint-disable-next-line no-constant-condition
+	while (true) {
+		const foundPath = runMatcher({...options, cwd: directory});
 
-const path = require$$0__default;
-const fs = require$$0$2;
-const commonDir = commondir;
-const pkgDir = pkgDir$2.exports;
-const makeDir = makeDir$2.exports;
+		if (foundPath === findUpStop) {
+			break;
+		}
 
-const {env, cwd} = process;
+		if (foundPath) {
+			matches.push(path$1.resolve(directory, foundPath));
+		}
+
+		if (directory === stopAt || matches.length >= limit) {
+			break;
+		}
+
+		directory = path$1.dirname(directory);
+	}
+
+	return matches;
+}
+
+function findUpSync(name, options = {}) {
+	const matches = findUpMultipleSync(name, {...options, limit: 1});
+	return matches[0];
+}
+
+function packageDirectorySync({cwd} = {}) {
+	const filePath = findUpSync('package.json', {cwd});
+	return filePath && path$1.dirname(filePath);
+}
+
+const {env, cwd} = process$1;
 
 const isWritable = path => {
 	try {
-		fs.accessSync(path, fs.constants.W_OK);
+		fs$1.accessSync(path, fs$1.constants.W_OK);
 		return true;
-	} catch (_) {
+	} catch {
 		return false;
 	}
 };
 
 function useDirectory(directory, options) {
 	if (options.create) {
-		makeDir.sync(directory);
+		fs$1.mkdirSync(directory, {recursive: true});
 	}
 
 	if (options.thunk) {
-		return (...arguments_) => path.join(directory, ...arguments_);
+		return (...arguments_) => path$1.join(directory, ...arguments_);
 	}
 
 	return directory;
 }
 
 function getNodeModuleDirectory(directory) {
-	const nodeModules = path.join(directory, 'node_modules');
+	const nodeModules = path$1.join(directory, 'node_modules');
 
 	if (
-		!isWritable(nodeModules) &&
-		(fs.existsSync(nodeModules) || !isWritable(path.join(directory)))
+		!isWritable(nodeModules)
+			&& (fs$1.existsSync(nodeModules) || !isWritable(path$1.join(directory)))
 	) {
 		return;
 	}
@@ -1368,18 +1007,18 @@ function getNodeModuleDirectory(directory) {
 	return nodeModules;
 }
 
-var findCacheDir = (options = {}) => {
+function findCacheDirectory(options = {}) {
 	if (env.CACHE_DIR && !['true', 'false', '1', '0'].includes(env.CACHE_DIR)) {
-		return useDirectory(path.join(env.CACHE_DIR, options.name), options);
+		return useDirectory(path$1.join(env.CACHE_DIR, options.name), options);
 	}
 
 	let {cwd: directory = cwd()} = options;
 
 	if (options.files) {
-		directory = commonDir(directory, options.files);
+		directory = commonPathPrefix$1(options.files.map(file => path$1.resolve(directory, file)));
 	}
 
-	directory = pkgDir.sync(directory);
+	directory = packageDirectorySync({cwd: directory});
 
 	if (!directory) {
 		return;
@@ -1387,11 +1026,11 @@ var findCacheDir = (options = {}) => {
 
 	const nodeModules = getNodeModuleDirectory(directory);
 	if (!nodeModules) {
-		return undefined;
+		return;
 	}
 
-	return useDirectory(path.join(directory, 'node_modules', '.cache', options.name), options);
-};
+	return useDirectory(path$1.join(directory, 'node_modules', '.cache', options.name), options);
+}
 
 var VerbosityLevel;
 (function (VerbosityLevel) {
@@ -1522,6 +1161,7 @@ var lodash$1 = {exports: {}};
  * Based on Underscore.js 1.8.3 <http://underscorejs.org/LICENSE>
  * Copyright Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
  */
+lodash$1.exports;
 
 (function (module, exports) {
 (function() {
@@ -18710,8 +18350,10 @@ var lodash$1 = {exports: {}};
 	    // Export to the global object.
 	    root._ = _;
 	  }
-	}.call(commonjsGlobal));
+	}.call(commonjsGlobal)); 
 } (lodash$1, lodash$1.exports));
+
+var lodashExports = lodash$1.exports;
 
 function commonjsRequire(path) {
 	throw new Error('Could not dynamically require "' + path + '". Please configure the dynamicRequireTargets or/and ignoreDynamicRequires option of @rollup/plugin-commonjs appropriately for this require call to work.');
@@ -20448,6 +20090,8 @@ function requireStubFalse () {
 	return stubFalse_1;
 }
 
+isBuffer.exports;
+
 var hasRequiredIsBuffer;
 
 function requireIsBuffer () {
@@ -20491,8 +20135,8 @@ function requireIsBuffer () {
 		 */
 		var isBuffer = nativeIsBuffer || stubFalse;
 
-		module.exports = isBuffer;
-} (isBuffer, isBuffer.exports));
+		module.exports = isBuffer; 
+	} (isBuffer, isBuffer.exports));
 	return isBuffer.exports;
 }
 
@@ -20671,6 +20315,8 @@ function require_baseUnary () {
 
 var _nodeUtil = {exports: {}};
 
+_nodeUtil.exports;
+
 var hasRequired_nodeUtil;
 
 function require_nodeUtil () {
@@ -20706,8 +20352,8 @@ function require_nodeUtil () {
 		  } catch (e) {}
 		}());
 
-		module.exports = nodeUtil;
-} (_nodeUtil, _nodeUtil.exports));
+		module.exports = nodeUtil; 
+	} (_nodeUtil, _nodeUtil.exports));
 	return _nodeUtil.exports;
 }
 
@@ -21167,6 +20813,8 @@ function require_baseAssignIn () {
 
 var _cloneBuffer = {exports: {}};
 
+_cloneBuffer.exports;
+
 var hasRequired_cloneBuffer;
 
 function require_cloneBuffer () {
@@ -21207,8 +20855,8 @@ function require_cloneBuffer () {
 		  return result;
 		}
 
-		module.exports = cloneBuffer;
-} (_cloneBuffer, _cloneBuffer.exports));
+		module.exports = cloneBuffer; 
+	} (_cloneBuffer, _cloneBuffer.exports));
 	return _cloneBuffer.exports;
 }
 
@@ -22403,8 +22051,6 @@ function requireConstant () {
 	return constant_1;
 }
 
-var each = {exports: {}};
-
 /**
  * Creates a base function for methods like `_.forIn` and `_.forOwn`.
  *
@@ -22658,15 +22304,14 @@ function requireForEach () {
 	return forEach_1;
 }
 
+var each;
 var hasRequiredEach;
 
 function requireEach () {
-	if (hasRequiredEach) return each.exports;
+	if (hasRequiredEach) return each;
 	hasRequiredEach = 1;
-	(function (module) {
-		module.exports = requireForEach();
-} (each));
-	return each.exports;
+	each = requireForEach();
+	return each;
 }
 
 var _baseFilter;
@@ -27033,7 +26678,7 @@ var objectHash = {exports: {}};
 
 (function (module, exports) {
 
-	var crypto = require$$0$3;
+	var crypto = require$$0$2;
 
 	/**
 	 * Exported function
@@ -27483,10 +27128,11 @@ var objectHash = {exports: {}};
 	      return this.buf;
 	    }
 	  };
-	}
+	} 
 } (objectHash, objectHash.exports));
 
-var objHash = objectHash.exports;
+var objectHashExports = objectHash.exports;
+var objHash = /*@__PURE__*/getDefaultExportFromCjs(objectHashExports);
 
 /**
  * Saves data in new cache folder or reads it from old one.
@@ -27518,7 +27164,7 @@ class RollingCache {
             return false;
         if (!existsSync(this.oldCacheRoot))
             return names.length === 0; // empty folder matches
-        return lodash$1.exports.isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
+        return lodashExports.isEqual(readdirSync(this.oldCacheRoot).sort(), names.sort());
     }
     /** @returns data for name, must exist in either old cache or new cache */
     read(name) {
@@ -27552,7 +27198,7 @@ class RollingCache {
 
 class FormatHost {
     constructor() {
-        this.getCanonicalFileName = require$$0.normalize;
+        this.getCanonicalFileName = path.normalize;
         this.getNewLine = () => tsModule.sys.newLine;
     }
     getCurrentDirectory() {
@@ -27585,18 +27231,18 @@ function printDiagnostics(context, diagnostics, pretty = true) {
         switch (diagnostic.category) {
             case tsModule.DiagnosticCategory.Message:
                 print = context.info;
-                color = safe.exports.white;
+                color = safeExports.white;
                 category = "";
                 break;
             case tsModule.DiagnosticCategory.Error:
                 print = context.error;
-                color = safe.exports.red;
+                color = safeExports.red;
                 category = "error";
                 break;
             case tsModule.DiagnosticCategory.Warning:
             default:
                 print = context.warn;
-                color = safe.exports.yellow;
+                color = safeExports.yellow;
                 category = "warning";
                 break;
         }
@@ -27627,7 +27273,7 @@ function getAllReferences(importer, snapshot, options) {
     if (!snapshot)
         return [];
     const info = tsModule.preProcessFile(snapshot.getText(0, snapshot.getLength()), true, true);
-    return lodash$1.exports.compact(info.referencedFiles.concat(info.importedFiles).map((reference) => {
+    return lodashExports.compact(info.referencedFiles.concat(info.importedFiles).map((reference) => {
         var _a;
         const resolved = tsModule.nodeModuleNameResolver(reference.fileName, importer, options, tsModule.sys);
         return (_a = resolved.resolvedModule) === null || _a === void 0 ? void 0 : _a.resolvedFileName;
@@ -27670,9 +27316,9 @@ class TsCache {
         this.checkAmbientTypes();
     }
     clean() {
-        if (!fs$4.pathExistsSync(this.cacheRoot))
+        if (!fs.pathExistsSync(this.cacheRoot))
             return;
-        const entries = fs$4.readdirSync(this.cacheRoot);
+        const entries = fs.readdirSync(this.cacheRoot);
         entries.forEach((e) => {
             const dir = `${this.cacheRoot}/${e}`;
             /* istanbul ignore if -- this is a safety check, but shouldn't happen when using a dedicated cache dir */
@@ -27681,37 +27327,37 @@ class TsCache {
                 return;
             }
             /* istanbul ignore if -- this is a safety check, but should never happen in normal usage */
-            if (!fs$4.statSync(dir).isDirectory) {
+            if (!fs.statSync(dir).isDirectory) {
                 this.context.debug(`skipping cleaning '${dir}' as it is not a directory`);
                 return;
             }
-            this.context.info(safe.exports.blue(`cleaning cache: ${dir}`));
-            fs$4.removeSync(`${dir}`);
+            this.context.info(safeExports.blue(`cleaning cache: ${dir}`));
+            fs.removeSync(`${dir}`);
         });
     }
     setDependency(importee, importer) {
         // importee -> importer
-        this.context.debug(`${safe.exports.blue("dependency")} '${importee}'`);
+        this.context.debug(`${safeExports.blue("dependency")} '${importee}'`);
         this.context.debug(`    imported by '${importer}'`);
         this.dependencyTree.setEdge(importer, importee);
     }
     walkTree(cb) {
         if (graphlib.alg.isAcyclic(this.dependencyTree))
             return graphlib.alg.topsort(this.dependencyTree).forEach(id => cb(id));
-        this.context.info(safe.exports.yellow("import tree has cycles"));
+        this.context.info(safeExports.yellow("import tree has cycles"));
         this.dependencyTree.nodes().forEach(id => cb(id));
     }
     done() {
         if (this.noCache)
             return;
-        this.context.info(safe.exports.blue("rolling caches"));
+        this.context.info(safeExports.blue("rolling caches"));
         this.codeCache.roll();
         this.semanticDiagnosticsCache.roll();
         this.syntacticDiagnosticsCache.roll();
         this.typesCache.roll();
     }
     getCompiled(id, snapshot, transform) {
-        this.context.info(`${safe.exports.blue("transpiling")} '${id}'`);
+        this.context.info(`${safeExports.blue("transpiling")} '${id}'`);
         // if !isolatedModules, compiled JS code can change if its imports do (e.g. enums). also, declarations can change based on imports as well
         return this.getCached(this.codeCache, id, snapshot, Boolean(!this.options.isolatedModules || this.options.declaration), transform);
     }
@@ -27722,7 +27368,7 @@ class TsCache {
         return this.getDiagnostics("semantic", this.semanticDiagnosticsCache, id, snapshot, check);
     }
     checkAmbientTypes() {
-        this.context.debug(safe.exports.blue("Ambient types:"));
+        this.context.debug(safeExports.blue("Ambient types:"));
         const typeHashes = this.ambientTypes.filter((snapshot) => snapshot.snapshot !== undefined)
             .map((snapshot) => {
             this.context.debug(`    ${snapshot.id}`);
@@ -27731,7 +27377,7 @@ class TsCache {
         // types dirty if any d.ts changed, added or removed
         this.ambientTypesDirty = !this.typesCache.match(typeHashes);
         if (this.ambientTypesDirty)
-            this.context.info(safe.exports.yellow("ambient types changed, redoing all semantic diagnostics"));
+            this.context.info(safeExports.yellow("ambient types changed, redoing all semantic diagnostics"));
         typeHashes.forEach(this.typesCache.touch, this.typesCache);
     }
     getDiagnostics(type, cache, id, snapshot, check) {
@@ -27744,16 +27390,16 @@ class TsCache {
         const hash = this.createHash(id, snapshot);
         this.context.debug(`    cache: '${cache.path(hash)}'`);
         if (cache.exists(hash) && !this.isDirty(id, checkImports)) {
-            this.context.debug(safe.exports.green("    cache hit"));
+            this.context.debug(safeExports.green("    cache hit"));
             const data = cache.read(hash);
             if (data) {
                 cache.write(hash, data);
                 return data;
             }
             else /* istanbul ignore next -- should only happen when corrupted cache */
-                this.context.warn(safe.exports.yellow("    cache broken, discarding"));
+                this.context.warn(safeExports.yellow("    cache broken, discarding"));
         }
-        this.context.debug(safe.exports.yellow("    cache miss"));
+        this.context.debug(safeExports.yellow("    cache miss"));
         const convertedData = convert();
         cache.write(hash, convertedData);
         this.markAsDirty(id);
@@ -27825,9 +27471,9 @@ function expandIncludeWithDirs(include, dirs) {
     const newDirs = [];
     dirs.forEach(root => {
         if (include instanceof Array)
-            include.forEach(x => newDirs.push(normalizePath(require$$0.join(root, x))));
+            include.forEach(x => newDirs.push(normalizePath(path.join(root, x))));
         else
-            newDirs.push(normalizePath(require$$0.join(root, include)));
+            newDirs.push(normalizePath(path.join(root, include)));
     });
     return newDirs;
 }
@@ -27870,13 +27516,13 @@ function parseTsConfig(context, pluginOptions) {
         configFileName = fileName;
     }
     const mergedConfig = {};
-    lodash$1.exports.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
+    lodashExports.merge(mergedConfig, pluginOptions.tsconfigDefaults, loadedConfig, pluginOptions.tsconfigOverride);
     const preParsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, getOptionsOverrides(pluginOptions), configFileName);
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     const module = parsedTsConfig.options.module;
-    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ESNext)
-        context.error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
+    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ES2022 && module !== tsModule.ModuleKind.ESNext)
+        context.error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', 'module: "ES2022"', or 'module: "ESNext"'.`);
     printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
     context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
     context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
@@ -27903,7 +27549,7 @@ catch (e) {
 // these use globals during testing and are substituted by rollup-plugin-re during builds
 const TS_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__TS_VERSION_RANGE) || ">=2.4.0";
 const ROLLUP_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || ">=1.26.3";
-const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.34.1";
+const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.34.2";
 const typescript = (options) => {
     let watchMode = false;
     let supportsThisLoad = false;
@@ -27943,19 +27589,19 @@ const typescript = (options) => {
             return;
         const key = normalizePath(id);
         declarations[key] = { type: result.dts, map: result.dtsmap };
-        context.debug(() => `${safe.exports.blue("generated declarations")} for '${key}'`);
+        context.debug(() => `${safeExports.blue("generated declarations")} for '${key}'`);
     };
     /** to be called at the end of Rollup's build phase, before output generation */
     const buildDone = () => {
         if (!watchMode && !noErrors)
-            context.info(safe.exports.yellow("there were errors or warnings."));
+            context.info(safeExports.yellow("there were errors or warnings."));
         cache === null || cache === void 0 ? void 0 : cache.done(); // if there's an initialization error in `buildStart`, such as a `tsconfig` error, the cache may not exist yet
     };
     const pluginOptions = Object.assign({}, {
         check: true,
         verbosity: VerbosityLevel.Warning,
         clean: false,
-        cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
+        cacheRoot: findCacheDirectory({ name: "rollup-plugin-typescript2" }),
         include: ["*.ts+(|x)", "**/*.ts+(|x)"],
         exclude: ["*.d.ts", "**/*.d.ts"],
         abortOnError: true,
@@ -27993,15 +27639,15 @@ const typescript = (options) => {
                 context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '${ROLLUP_VERSION_RANGE}'`);
             supportsThisLoad = satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease: true }); // this.load is 2.60.0+ only (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2600)
             if (!supportsThisLoad)
-                context.warn(() => `${safe.exports.yellow("You are using a Rollup version '<2.60.0'")}. This may result in type-only files being ignored.`);
+                context.warn(() => `${safeExports.yellow("You are using a Rollup version '<2.60.0'")}. This may result in type-only files being ignored.`);
             context.info(`rollup-plugin-typescript2 version: ${RPT2_VERSION}`);
             context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${value.version}` : value, 4)}`);
             context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
             context.debug(() => `tsconfig path: ${tsConfigPath}`);
             if (pluginOptions.objectHashIgnoreUnknownHack)
-                context.warn(() => `${safe.exports.yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
+                context.warn(() => `${safeExports.yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
             if (pluginOptions.rollupCommonJSResolveHack)
-                context.warn(() => `${safe.exports.yellow("You are using 'rollupCommonJSResolveHack' option")}. This is no longer needed, try disabling it now.`);
+                context.warn(() => `${safeExports.yellow("You are using 'rollupCommonJSResolveHack' option")}. This is no longer needed, try disabling it now.`);
             if (watchMode)
                 context.info(`running in watch mode`);
             filter = createFilter(context, pluginOptions, parsedConfig);
@@ -28041,7 +27687,7 @@ const typescript = (options) => {
             if (!filter(resolved))
                 return;
             cache.setDependency(resolved, importer);
-            context.debug(() => `${safe.exports.blue("resolving")} '${importee}' imported by '${importer}'`);
+            context.debug(() => `${safeExports.blue("resolving")} '${importee}' imported by '${importer}'`);
             context.debug(() => `    to '${resolved}'`);
             return normalize(resolved); // use host OS separators to fix Windows issue: https://github.com/ezolenko/rollup-plugin-typescript2/pull/251
         },
@@ -28065,7 +27711,7 @@ const typescript = (options) => {
                         // always checking on fatal errors, even if options.check is set to false
                         typecheckFile(id, snapshot, context);
                         // since no output was generated, aborting compilation
-                        this.error(safe.exports.red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
+                        this.error(safeExports.red(`Emit skipped for '${id}'. See https://github.com/microsoft/TypeScript/issues/49790 for potential reasons why this may occur`));
                     }
                     const references = getAllReferences(id, snapshot, parsedConfig.options);
                     return convertEmitOutput(output, references);
@@ -28078,7 +27724,7 @@ const typescript = (options) => {
                     if (tsConfigPath)
                         this.addWatchFile(tsConfigPath);
                     result.references.map(this.addWatchFile, this);
-                    context.debug(() => `${safe.exports.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
+                    context.debug(() => `${safeExports.green("    watching")}: ${result.references.join("\nrpt2:               ")}`);
                 }
                 addDeclaration(id, result);
                 // handle all type-only imports by resolving + loading all of TS's references
@@ -28097,7 +27743,7 @@ const typescript = (options) => {
                 // if a user sets this compilerOption, they probably want another plugin (e.g. Babel, ESBuild) to transform their TS instead, while rpt2 just type-checks and/or outputs declarations
                 // note that result.code is non-existent if emitDeclarationOnly per https://github.com/ezolenko/rollup-plugin-typescript2/issues/268
                 if (parsedConfig.options.emitDeclarationOnly) {
-                    context.debug(() => `${safe.exports.blue("emitDeclarationOnly")} enabled, not transforming TS`);
+                    context.debug(() => `${safeExports.blue("emitDeclarationOnly")} enabled, not transforming TS`);
                     return undefined;
                 }
                 const transformResult = { code: result.code, map: { mappings: "" } };
@@ -28164,7 +27810,7 @@ const typescript = (options) => {
                 // If 'useTsconfigDeclarationDir' is in plugin options, directly write to 'declarationDir'.
                 // This may not be under Rollup's output directory, and thus can't be emitted as an asset.
                 if (pluginOptions.useTsconfigDeclarationDir) {
-                    context.debug(() => `${safe.exports.blue("emitting declarations")} for '${key}' to '${fileName}'`);
+                    context.debug(() => `${safeExports.blue("emitting declarations")} for '${key}' to '${fileName}'`);
                     tsModule.sys.writeFile(fileName, entry.text, entry.writeByteOrderMark);
                     return;
                 }
@@ -28183,7 +27829,7 @@ const typescript = (options) => {
                     entryText = JSON.stringify(parsedText);
                 }
                 const relativePath = normalizePath(relative(cachePlaceholder, fileName));
-                context.debug(() => `${safe.exports.blue("emitting declarations")} for '${key}' to '${relativePath}'`);
+                context.debug(() => `${safeExports.blue("emitting declarations")} for '${key}' to '${relativePath}'`);
                 this.emitFile({
                     type: "asset",
                     source: entryText,
