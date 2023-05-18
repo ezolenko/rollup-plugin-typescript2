@@ -1,7 +1,7 @@
 import { jest, test, expect } from "@jest/globals";
 
 import { makeContext } from "./fixtures/context";
-import { RollupContext } from "../src/context";
+import { RollupContext, VerbosityLevel } from "../src/context";
 
 (global as any).console = {
 	warn: jest.fn(),
@@ -11,7 +11,7 @@ import { RollupContext } from "../src/context";
 
 test("RollupContext", () => {
 	const innerContext = makeContext();
-	const context = new RollupContext(5, false, innerContext);
+	const context = new RollupContext(VerbosityLevel.Debug + 1, false, innerContext);
 
 	context.warn("test");
 	expect(innerContext.warn).toHaveBeenLastCalledWith("test");
@@ -52,7 +52,7 @@ test("RollupContext with 0 verbosity", () => {
 
 test("RollupContext.error + debug negative verbosity", () => {
 	const innerContext = makeContext();
-	const context = new RollupContext(-100, true, innerContext);
+	const context = new RollupContext(VerbosityLevel.Error - 1, true, innerContext);
 
 	context.error("verbosity is too low here");
 	expect(innerContext.error).not.toBeCalled();
@@ -62,7 +62,7 @@ test("RollupContext.error + debug negative verbosity", () => {
 
 test("RollupContext.error with bail", () => {
 	const innerContext = makeContext();
-	const context = new RollupContext(5, true, innerContext);
+	const context = new RollupContext(VerbosityLevel.Debug, true, innerContext);
 
 	context.error("bail");
 	expect(innerContext.error).toHaveBeenLastCalledWith("bail");

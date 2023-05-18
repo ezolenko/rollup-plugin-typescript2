@@ -35,16 +35,6 @@ export async function genBundle (inputArgs: Params) {
   const bundle = await rollup(createInput(inputArgs));
   const esm = await bundle.generate(createOutput(inputArgs.testDir));
 
-  // Rollup has some deprecated properties like `get isAsset`, so enumerating them with, e.g. `.toEqual`, causes a bunch of warnings to be output
-  // delete the `isAsset` property for (much) cleaner logs
-  const { output: files } = esm;
-  for (const file of files) {
-    if ("isAsset" in file) {
-      const optIsAsset = file as Partial<Pick<OutputAsset, "isAsset">> & Omit<OutputAsset, "isAsset">;
-      delete optIsAsset["isAsset"];
-    }
-  }
-
   return esm;
 }
 
