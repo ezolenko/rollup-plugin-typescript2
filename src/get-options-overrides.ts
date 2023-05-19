@@ -16,12 +16,25 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		noEmitOnError: false,
 		inlineSourceMap: false,
 		outDir: normalize(`${cacheRoot}/placeholder`), // need an outdir that is different from source or tsconfig parsing trips up. https://github.com/Microsoft/TypeScript/issues/24715
-		moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
 		allowNonTsExtensions: true,
 	};
 
 	if (!preParsedTsconfig)
 		return overrides;
+
+	switch (preParsedTsconfig.options.moduleResolution)
+	{
+		case tsModule.ModuleResolutionKind.Node10:
+		case tsModule.ModuleResolutionKind.Node16:
+		case tsModule.ModuleResolutionKind.NodeNext:
+			break;
+		case tsModule.ModuleResolutionKind.Classic:
+			overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
+			break;
+		case tsModule.ModuleResolutionKind.Bundler:
+		default:
+			overrides.moduleResolution = tsModule.ModuleResolutionKind.Node16;
+	}
 
 	if (preParsedTsconfig.options.module === undefined)
 		overrides.module = tsModule.ModuleKind.ES2015;
