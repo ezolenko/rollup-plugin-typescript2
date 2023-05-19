@@ -8,7 +8,7 @@
 		"noUnusedLocals": true,
 		"diagnostics": true,
 		"listFiles": true,
-		"moduleResolution": "node",
+		"moduleResolution": "node16",
 		"forceConsistentCasingInFileNames": true,
 		"noImplicitReturns": true,
 		"strict": true,
