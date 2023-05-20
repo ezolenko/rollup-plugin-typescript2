@@ -22,7 +22,6 @@ const forcedOptions: ts.CompilerOptions = {
 	allowNonTsExtensions: true,
 	importHelpers: true,
 	inlineSourceMap: false,
-	moduleResolution: ts.ModuleResolutionKind.NodeJs,
 	noEmit: false,
 	noEmitOnError: false,
 	noEmitHelpers: false,
@@ -51,6 +50,7 @@ test("getOptionsOverrides - preParsedTsConfig", () => {
 		declarationDir: undefined,
 		module: ts.ModuleKind.ES2015,
 		sourceRoot: undefined,
+		moduleResolution: ts.ModuleResolutionKind.Node10,
 	});
 });
 
@@ -67,6 +67,7 @@ test("getOptionsOverrides - preParsedTsConfig with options.module", () => {
 		...forcedOptions,
 		declarationDir: undefined,
 		sourceRoot: undefined,
+		moduleResolution: ts.ModuleResolutionKind.Node10,
 	});
 });
 
@@ -78,6 +79,7 @@ test("getOptionsOverrides - with declaration", () => {
 		...forcedOptions,
 		module: ts.ModuleKind.ES2015,
 		sourceRoot: undefined,
+		moduleResolution: ts.ModuleResolutionKind.Node10,
 	});
 });
 
@@ -94,6 +96,7 @@ test("getOptionsOverrides - with sourceMap", () => {
 		...forcedOptions,
 		declarationDir: undefined,
 		module: ts.ModuleKind.ES2015,
+		moduleResolution: ts.ModuleResolutionKind.Node10,
 	});
 });
 

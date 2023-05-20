@@ -27,8 +27,10 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		case tsModule.ModuleResolutionKind.Node10:
 		case tsModule.ModuleResolutionKind.Node16:
 		case tsModule.ModuleResolutionKind.NodeNext:
+			overrides.moduleResolution = preParsedTsconfig.options.moduleResolution;
 			break;
 		case tsModule.ModuleResolutionKind.Classic:
+		case undefined:
 			overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
 			break;
 		case tsModule.ModuleResolutionKind.Bundler:
