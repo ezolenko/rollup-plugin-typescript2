@@ -166,7 +166,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
 
-			cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+			const runClean = pluginOptions.clean;
+			const noCache = pluginOptions.clean || watchMode;
+
+			cache = new TsCache(noCache, runClean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 
 			// reset transformedFiles Set on each watch cycle
 			transformedFiles = new Set<string>();
