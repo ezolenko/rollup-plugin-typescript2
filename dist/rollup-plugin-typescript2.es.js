@@ -27875,8 +27875,8 @@ function parseTsConfig(context, pluginOptions) {
     const compilerOptionsOverride = getOptionsOverrides(pluginOptions, preParsedTsConfig);
     const parsedTsConfig = tsModule.parseJsonConfigFileContent(mergedConfig, tsModule.sys, baseDir, compilerOptionsOverride, configFileName);
     const module = parsedTsConfig.options.module;
-    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ESNext)
-        context.error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', or 'module: "ESNext"'.`);
+    if (module !== tsModule.ModuleKind.ES2015 && module !== tsModule.ModuleKind.ES2020 && module !== tsModule.ModuleKind.ES2022 && module !== tsModule.ModuleKind.ESNext)
+        context.error(`Incompatible tsconfig option. Module resolves to '${tsModule.ModuleKind[module]}'. This is incompatible with Rollup, please use 'module: "ES2015"', 'module: "ES2020"', 'module: "ES2022"', or 'module: "ESNext"'.`);
     printDiagnostics(context, convertDiagnostic("config", parsedTsConfig.errors), pretty);
     context.debug(`built-in options overrides: ${JSON.stringify(compilerOptionsOverride, undefined, 4)}`);
     context.debug(`parsed tsconfig: ${JSON.stringify(parsedTsConfig, undefined, 4)}`);
@@ -27903,7 +27903,7 @@ catch (e) {
 // these use globals during testing and are substituted by rollup-plugin-re during builds
 const TS_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__TS_VERSION_RANGE) || ">=2.4.0";
 const ROLLUP_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || ">=1.26.3";
-const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.34.1";
+const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.35.0";
 const typescript = (options) => {
     let watchMode = false;
     let supportsThisLoad = false;
