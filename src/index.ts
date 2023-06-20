@@ -274,7 +274,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
 			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
-					if (!filter(id))
+					if (!filter(ref))
 						continue;
 
 					const module = await this.resolve(ref, id);
