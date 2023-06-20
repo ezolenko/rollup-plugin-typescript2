@@ -27985,8 +27985,8 @@ const typescript = (options) => {
         verbosity: VerbosityLevel.Warning,
         clean: false,
         cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
-        include: ["*.ts+(|x)", "**/*.ts+(|x)"],
-        exclude: ["*.d.ts", "**/*.d.ts"],
+        include: ["*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts"],
+        exclude: ["*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
         tsconfig: undefined,
@@ -28114,7 +28114,7 @@ const typescript = (options) => {
                 // Rollup can't see these otherwise, because they are "emit-less" and produce no JS
                 if (result.references && supportsThisLoad) {
                     for (const ref of result.references) {
-                        if (ref.endsWith(".d.ts"))
+                        if (!filter(ref))
                             continue;
                         const module = yield this.resolve(ref, id);
                         if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
