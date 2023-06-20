@@ -78,16 +78,16 @@ export class TsCache
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private hashOptions = { algorithm: "sha1", ignoreUnknown: false };
 
-	constructor(private noCache: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: RollupContext)
+	constructor(private noCache: boolean, runClean: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: RollupContext)
 	{
 		this.dependencyTree = new Graph({ directed: true });
 		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
 
-		if (noCache)
-		{
+		if (runClean)
 			this.clean();
+
+		if (noCache)
 			return;
-		}
 
 		this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
 		this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash(
