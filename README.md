@@ -53,7 +53,7 @@ This also allows for passing in different `tsconfig` files depending on your bui
 
 ### Some compiler options have more than one compatible value
 
-* `module`: defaults to `ES2015`. Other valid values are `ES2020` and `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
+* `module`: defaults to `ES2015`. Other valid values are `ES2020`, `ES2022` and `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
 
 ### Some options need additional configuration on plugin side
 
@@ -152,11 +152,11 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 	Path to cache.
 	Defaults to a folder in `node_modules`.
 
-* `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)" ]`
+* `include`: `[ "*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts" ]`
 
 	By default compiles all `.ts` and `.tsx` files with TypeScript.
 
-* `exclude`: `[ "*.d.ts", "**/*.d.ts" ]`
+* `exclude`: `[ "*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts" ]`
 
 	But excludes type definitions.
 
