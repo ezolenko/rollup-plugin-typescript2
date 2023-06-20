@@ -89,11 +89,15 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		cache?.done(); // if there's an initialization error in `buildStart`, such as a `tsconfig` error, the cache may not exist yet
 	}
 
+	// function scope can't be properly hashed: https://github.com/ezolenko/rollup-plugin-typescript2/issues/228
+	const hasFunctions = options?.sourceMapCallback || options?.transformers?.length;
+	const defaultClean = hasFunctions && !options?.extraCacheKeys
+
 	const pluginOptions: IOptions = Object.assign({},
 		{
 			check: true,
 			verbosity: VerbosityLevel.Warning,
-			clean: false,
+			clean: defaultClean,
 			cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
 			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
 			exclude: ["*.d.ts", "**/*.d.ts"],
@@ -165,6 +169,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
 			service = tsModule.createLanguageService(servicesHost, documentRegistry);
 			servicesHost.setLanguageService(service);
+
+			if(!pluginOptions.clean && defaultClean) {
+				context.warn("You have enabled 'transformers' or 'sourceMapCallback'. To enable caching, you will have to configure the 'extraCacheKeys' option. See https://github.com/ezolenko/rollup-plugin-typescript2#plugin-options")
+			}
 
 			cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
 
