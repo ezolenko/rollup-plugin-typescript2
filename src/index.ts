@@ -95,8 +95,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			verbosity: VerbosityLevel.Warning,
 			clean: false,
 			cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
-			include: ["*.ts+(|x)", "**/*.ts+(|x)"],
-			exclude: ["*.d.ts", "**/*.d.ts"],
+			include: ["*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts"],
+			exclude: ["*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
 			abortOnError: true,
 			rollupCommonJSResolveHack: false,
 			tsconfig: undefined,
@@ -277,7 +277,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
 			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
-					if (ref.endsWith(".d.ts"))
+					if (!filter(ref))
 						continue;
 
 					const module = await this.resolve(ref, id);
