@@ -27835,6 +27835,7 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         inlineSourceMap: false,
         outDir: pluginutils.normalizePath(`${cacheRoot}/placeholder`),
         allowNonTsExtensions: true,
+        moduleResolution: tsModule.ModuleResolutionKind.Node10,
     };
     if (!preParsedTsconfig)
         return overrides;
@@ -27842,13 +27843,12 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         case tsModule.ModuleResolutionKind.Node10:
         case tsModule.ModuleResolutionKind.Node16:
         case tsModule.ModuleResolutionKind.NodeNext:
+            overrides.moduleResolution = preParsedTsconfig.options.moduleResolution;
             break;
         case tsModule.ModuleResolutionKind.Classic:
-            overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
-            break;
         case tsModule.ModuleResolutionKind.Bundler:
         default:
-            overrides.moduleResolution = tsModule.ModuleResolutionKind.Node16;
+            overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
     }
     if (preParsedTsconfig.options.module === undefined)
         overrides.module = tsModule.ModuleKind.ES2015;

@@ -22,12 +22,12 @@ const forcedOptions: ts.CompilerOptions = {
 	allowNonTsExtensions: true,
 	importHelpers: true,
 	inlineSourceMap: false,
-	moduleResolution: ts.ModuleResolutionKind.NodeJs,
 	noEmit: false,
 	noEmitOnError: false,
 	noEmitHelpers: false,
 	noResolve: false,
 	outDir: `${cacheDir}/placeholder`,
+	moduleResolution: ts.ModuleResolutionKind.Node10,
 };
 
 const defaultPreParsedTsConfig: ts.ParsedCommandLine = {
