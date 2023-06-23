@@ -28,7 +28,7 @@ export declare class TsCache {
     private semanticDiagnosticsCache;
     private syntacticDiagnosticsCache;
     private hashOptions;
-    constructor(noCache: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: RollupContext);
+    constructor(noCache: boolean, runClean: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: RollupContext);
     private clean;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;

@@ -27634,7 +27634,7 @@ function getAllReferences(importer, snapshot, options) {
     }));
 }
 class TsCache {
-    constructor(noCache, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
+    constructor(noCache, runClean, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
         this.noCache = noCache;
         this.host = host;
         this.cacheRoot = cacheRoot;
@@ -27647,10 +27647,10 @@ class TsCache {
         this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
         this.dependencyTree = new graphlib.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        if (noCache) {
+        if (runClean)
             this.clean();
+        if (noCache)
             return;
-        }
         this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
         this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash({
             version: this.cacheVersion,
@@ -28008,7 +28008,9 @@ const typescript = (options) => {
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
             service = tsModule.createLanguageService(servicesHost, documentRegistry);
             servicesHost.setLanguageService(service);
-            cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+            const runClean = pluginOptions.clean;
+            const noCache = pluginOptions.clean || watchMode;
+            cache = new TsCache(noCache, runClean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
             // reset transformedFiles Set on each watch cycle
             transformedFiles = new Set();
             // printing compiler option errors
