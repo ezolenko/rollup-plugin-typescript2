@@ -27634,7 +27634,7 @@ function getAllReferences(importer, snapshot, options) {
     }));
 }
 class TsCache {
-    constructor(noCache, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
+    constructor(noCache, runClean, hashIgnoreUnknown, host, cacheRoot, options, rollupConfig, rootFilenames, context) {
         this.noCache = noCache;
         this.host = host;
         this.cacheRoot = cacheRoot;
@@ -27647,10 +27647,10 @@ class TsCache {
         this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
         this.dependencyTree = new graphlib.Graph({ directed: true });
         this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
-        if (noCache) {
+        if (runClean)
             this.clean();
+        if (noCache)
             return;
-        }
         this.hashOptions.ignoreUnknown = hashIgnoreUnknown;
         this.cacheDir = `${this.cacheRoot}/${this.cachePrefix}${objHash({
             version: this.cacheVersion,
@@ -27805,11 +27805,22 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         noEmitOnError: false,
         inlineSourceMap: false,
         outDir: normalizePath(`${cacheRoot}/placeholder`),
-        moduleResolution: tsModule.ModuleResolutionKind.NodeJs,
         allowNonTsExtensions: true,
     };
     if (!preParsedTsconfig)
         return overrides;
+    switch (preParsedTsconfig.options.moduleResolution) {
+        case tsModule.ModuleResolutionKind.Node10:
+        case tsModule.ModuleResolutionKind.Node16:
+        case tsModule.ModuleResolutionKind.NodeNext:
+            break;
+        case tsModule.ModuleResolutionKind.Classic:
+            overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
+            break;
+        case tsModule.ModuleResolutionKind.Bundler:
+        default:
+            overrides.moduleResolution = tsModule.ModuleResolutionKind.Node16;
+    }
     if (preParsedTsconfig.options.module === undefined)
         overrides.module = tsModule.ModuleKind.ES2015;
     // only set declarationDir if useTsconfigDeclarationDir is enabled
@@ -27956,8 +27967,8 @@ const typescript = (options) => {
         verbosity: VerbosityLevel.Warning,
         clean: false,
         cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
-        include: ["*.ts+(|x)", "**/*.ts+(|x)"],
-        exclude: ["*.d.ts", "**/*.d.ts"],
+        include: ["*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts"],
+        exclude: ["*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
         tsconfig: undefined,
@@ -28008,7 +28019,9 @@ const typescript = (options) => {
             servicesHost = new LanguageServiceHost(parsedConfig, pluginOptions.transformers, pluginOptions.cwd);
             service = tsModule.createLanguageService(servicesHost, documentRegistry);
             servicesHost.setLanguageService(service);
-            cache = new TsCache(pluginOptions.clean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
+            const runClean = pluginOptions.clean;
+            const noCache = pluginOptions.clean || watchMode;
+            cache = new TsCache(noCache, runClean, pluginOptions.objectHashIgnoreUnknownHack, servicesHost, pluginOptions.cacheRoot, parsedConfig.options, rollupOptions, parsedConfig.fileNames, context);
             // reset transformedFiles Set on each watch cycle
             transformedFiles = new Set();
             // printing compiler option errors
@@ -28085,7 +28098,7 @@ const typescript = (options) => {
                 // Rollup can't see these otherwise, because they are "emit-less" and produce no JS
                 if (result.references && supportsThisLoad) {
                     for (const ref of result.references) {
-                        if (ref.endsWith(".d.ts"))
+                        if (!filter(ref))
                             continue;
                         const module = yield this.resolve(ref, id);
                         if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
