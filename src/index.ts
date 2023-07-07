@@ -82,7 +82,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 	/** common resolution check -- only resolve files that aren't declarations and pass `filter` */
 	const shouldResolve = (id: string): boolean => {
-		if (id.endsWith(".d.ts"))
+		if (id.endsWith(".d.ts") || id.endsWith(".d.cts") || id.endsWith(".d.mts"))
 			return false;
 
 		if (!filter(id))
