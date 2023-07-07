@@ -285,7 +285,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
 			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
-					// pre-emptively filter out some files (for efficiency, as well as to workaround a Rollup bug: https://github.com/ezolenko/rollup-plugin-typescript2/issues/426#issuecomment-1264812897)
+					// pre-emptively filter out files that we don't resolve ourselves (e.g. declarations). don't add new files to Rollup's pipeline if we can't resolve them
 					if (!shouldResolve(ref))
 						continue;
 
