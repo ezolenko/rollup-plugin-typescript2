@@ -80,6 +80,17 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		context.debug(() => `${blue("generated declarations")} for '${key}'`);
 	}
 
+	/** common resolution check -- only resolve files that aren't declarations and pass `filter` */
+	const shouldResolve = (id: string): boolean => {
+		if (id.endsWith(".d.ts") || id.endsWith(".d.cts") || id.endsWith(".d.mts"))
+			return false;
+
+		if (!filter(id))
+			return false;
+
+		return true;
+	}
+
 	/** to be called at the end of Rollup's build phase, before output generation */
 	const buildDone = (): void =>
 	{
@@ -207,10 +218,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!resolved)
 				return;
 
-			if (resolved.endsWith(".d.ts"))
-				return;
-
-			if (!filter(resolved))
+			if (!shouldResolve(resolved))
 				return;
 
 			cache.setDependency(resolved, importer);
@@ -277,7 +285,8 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
 			if (result.references && supportsThisLoad) {
 				for (const ref of result.references) {
-					if (!filter(ref))
+					// pre-emptively filter out files that we don't resolve ourselves (e.g. declarations). don't add new files to Rollup's pipeline if we can't resolve them
+					if (!shouldResolve(ref))
 						continue;
 
 					const module = await this.resolve(ref, id);
