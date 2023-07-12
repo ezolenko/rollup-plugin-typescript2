@@ -48,7 +48,7 @@ This also allows for passing in different `tsconfig` files depending on your bui
 * `inlineSourceMap`: false (see [#71](https://github.com/ezolenko/rollup-plugin-typescript2/issues/71))
 * `outDir`: `./placeholder` in cache root (see [#83](https://github.com/ezolenko/rollup-plugin-typescript2/issues/83) and [Microsoft/TypeScript#24715](https://github.com/Microsoft/TypeScript/issues/24715))
 * `declarationDir`: Rollup's `output.file` or `output.dir` (*unless `useTsconfigDeclarationDir` is true in the plugin options*)
-* `moduleResolution`: `node` (*`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html). It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*)
+* `moduleResolution`: *`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html) and changed to `node`. It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14)*). All other values are passed through. Rollup might have problems with some of them, so if in doubt, use `node`.
 * `allowNonTsExtensions`: true to let other plugins on the chain generate typescript; update plugin's `include` filter to pick them up (see [#111](https://github.com/ezolenko/rollup-plugin-typescript2/issues/111))
 
 ### Some compiler options have more than one compatible value
