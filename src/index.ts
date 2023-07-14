@@ -28,7 +28,6 @@ export { RPT2Options }
 const typescript: PluginImpl<RPT2Options> = (options) =>
 {
 	let watchMode = false;
-	let supportsThisLoad = false;
 	let generateRound = 0;
 	let rollupOptions: InputOptions;
 	let context: RollupContext;
@@ -98,7 +97,6 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			include: ["*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts"],
 			exclude: ["*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
 			abortOnError: true,
-			rollupCommonJSResolveHack: false,
 			tsconfig: undefined,
 			useTsconfigDeclarationDir: false,
 			tsconfigOverride: {},
@@ -128,7 +126,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		{
 			context = new RollupContext(pluginOptions.verbosity, pluginOptions.abortOnError, this, "rpt2: ");
 
-			watchMode = process.env.ROLLUP_WATCH === "true" || !!this.meta.watchMode; // meta.watchMode was added in 2.14.0 to capture watch via Rollup API (i.e. no env var) (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2140)
+			watchMode = !!this.meta.watchMode;
 			({ parsedTsConfig: parsedConfig, fileName: tsConfigPath } = parseTsConfig(context, pluginOptions));
 
 			// print out all versions and configurations
@@ -142,20 +140,10 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			if (!satisfies(this.meta.rollupVersion, ROLLUP_VERSION_RANGE, { includePrerelease: true }))
 				context.error(`Installed Rollup version '${this.meta.rollupVersion}' is outside of supported range '${ROLLUP_VERSION_RANGE}'`);
 
-			supportsThisLoad = satisfies(this.meta.rollupVersion, ">=2.60.0", { includePrerelease : true }); // this.load is 2.60.0+ only (c.f. https://github.com/rollup/rollup/blob/master/CHANGELOG.md#2600)
-			if (!supportsThisLoad)
-				context.warn(() => `${yellow("You are using a Rollup version '<2.60.0'")}. This may result in type-only files being ignored.`);
-
 			context.info(`rollup-plugin-typescript2 version: ${RPT2_VERSION}`);
 			context.debug(() => `plugin options:\n${JSON.stringify(pluginOptions, (key, value) => key === "typescript" ? `version ${(value as typeof tsModule).version}` : value, 4)}`);
 			context.debug(() => `rollup config:\n${JSON.stringify(rollupOptions, undefined, 4)}`);
 			context.debug(() => `tsconfig path: ${tsConfigPath}`);
-
-			if (pluginOptions.objectHashIgnoreUnknownHack)
-				context.warn(() => `${yellow("You are using 'objectHashIgnoreUnknownHack' option")}. If you enabled it because of async functions, try disabling it now.`);
-
-			if (pluginOptions.rollupCommonJSResolveHack)
-				context.warn(() => `${yellow("You are using 'rollupCommonJSResolveHack' option")}. This is no longer needed, try disabling it now.`);
 
 			if (watchMode)
 				context.info(`running in watch mode`);
@@ -275,7 +263,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			// handle all type-only imports by resolving + loading all of TS's references
 			// Rollup can't see these otherwise, because they are "emit-less" and produce no JS
-			if (result.references && supportsThisLoad) {
+			if (result.references) {
 				for (const ref of result.references) {
 					if (!filter(ref))
 						continue;
@@ -312,18 +300,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		{
 			generateRound = 0; // in watch mode, buildEnd resets generate count just before generateBundle for each output
 
-			if (err)
-			{
-				buildDone();
-				// workaround: err.stack contains err.message and Rollup prints both, causing duplication, so split out the stack itself if it exists (c.f. https://github.com/ezolenko/rollup-plugin-typescript2/issues/103#issuecomment-1172820658)
-				const stackOnly = err.stack?.split(err.message)[1];
-				if (stackOnly)
-					this.error({ ...err, message: err.message, stack: stackOnly });
-				else
-					this.error(err);
-			}
-
-			if (!pluginOptions.check)
+			if (err || !pluginOptions.check)
 				return buildDone();
 
 			// walkTree once on each cycle when in watch mode
