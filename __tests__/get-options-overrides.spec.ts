@@ -27,7 +27,6 @@ const forcedOptions: ts.CompilerOptions = {
 	noEmitHelpers: false,
 	noResolve: false,
 	outDir: `${cacheDir}/placeholder`,
-	moduleResolution: ts.ModuleResolutionKind.Node10,
 };
 
 const defaultPreParsedTsConfig: ts.ParsedCommandLine = {

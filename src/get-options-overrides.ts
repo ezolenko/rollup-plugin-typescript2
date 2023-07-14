@@ -17,7 +17,6 @@ export function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }: IO
 		inlineSourceMap: false,
 		outDir: normalize(`${cacheRoot}/placeholder`), // need an outdir that is different from source or tsconfig parsing trips up. https://github.com/Microsoft/TypeScript/issues/24715
 		allowNonTsExtensions: true,
-		moduleResolution: tsModule.ModuleResolutionKind.Node10,
 	};
 
 	if (!preParsedTsconfig)
