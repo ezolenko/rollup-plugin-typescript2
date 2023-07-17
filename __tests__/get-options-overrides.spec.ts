@@ -22,7 +22,6 @@ const forcedOptions: ts.CompilerOptions = {
 	allowNonTsExtensions: true,
 	importHelpers: true,
 	inlineSourceMap: false,
-	moduleResolution: ts.ModuleResolutionKind.NodeJs,
 	noEmit: false,
 	noEmitOnError: false,
 	noEmitHelpers: false,
