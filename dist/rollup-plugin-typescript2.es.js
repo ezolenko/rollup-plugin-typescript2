@@ -27806,21 +27806,11 @@ function getOptionsOverrides({ useTsconfigDeclarationDir, cacheRoot }, preParsed
         inlineSourceMap: false,
         outDir: normalizePath(`${cacheRoot}/placeholder`),
         allowNonTsExtensions: true,
-        moduleResolution: tsModule.ModuleResolutionKind.Node10,
     };
     if (!preParsedTsconfig)
         return overrides;
-    switch (preParsedTsconfig.options.moduleResolution) {
-        case tsModule.ModuleResolutionKind.Node10:
-        case tsModule.ModuleResolutionKind.Node16:
-        case tsModule.ModuleResolutionKind.NodeNext:
-            overrides.moduleResolution = preParsedTsconfig.options.moduleResolution;
-            break;
-        case tsModule.ModuleResolutionKind.Classic:
-        case tsModule.ModuleResolutionKind.Bundler:
-        default:
-            overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
-    }
+    if (preParsedTsconfig.options.moduleResolution === tsModule.ModuleResolutionKind.Classic)
+        overrides.moduleResolution = tsModule.ModuleResolutionKind.Node10;
     if (preParsedTsconfig.options.module === undefined)
         overrides.module = tsModule.ModuleKind.ES2015;
     // only set declarationDir if useTsconfigDeclarationDir is enabled
