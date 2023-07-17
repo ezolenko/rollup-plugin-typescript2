@@ -55,9 +55,7 @@ This also allows for passing in different `tsconfig` files depending on your bui
 * `module`: defaults to `ES2015`. Other valid values are `ES2020`, `ES2022` and `ESNext` (required for dynamic imports, see [#54](https://github.com/ezolenko/rollup-plugin-typescript2/issues/54)).
 
 * `moduleResolution`: defaults to `node10` (same as `node`), but value from tsconfig is used if specified. Other valid (but mostly untested) values are `node16`, `nodenext` and `bundler`. If in doubt, use `node10`.
-
-	`classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html) and changed to `node10`. It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14).
-
+	* `classic` is [deprecated](https://www.typescriptlang.org/docs/handbook/module-resolution.html) and changed to `node10`. It also breaks this plugin, see [#12](https://github.com/ezolenko/rollup-plugin-typescript2/issues/12) and [#14](https://github.com/ezolenko/rollup-plugin-typescript2/issues/14).
 
 ### Some options need additional configuration on plugin side
 
