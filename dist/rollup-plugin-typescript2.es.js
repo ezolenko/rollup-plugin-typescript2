@@ -27904,7 +27904,7 @@ catch (e) {
 // these use globals during testing and are substituted by rollup-plugin-re during builds
 const TS_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__TS_VERSION_RANGE) || ">=2.4.0";
 const ROLLUP_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || ">=1.26.3";
-const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.35.0";
+const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.35.1";
 const typescript = (options) => {
     let watchMode = false;
     let supportsThisLoad = false;
@@ -27945,6 +27945,14 @@ const typescript = (options) => {
         const key = normalizePath(id);
         declarations[key] = { type: result.dts, map: result.dtsmap };
         context.debug(() => `${safe.exports.blue("generated declarations")} for '${key}'`);
+    };
+    /** common resolution check -- only resolve files that aren't declarations and pass `filter` */
+    const shouldResolve = (id) => {
+        if (id.endsWith(".d.ts") || id.endsWith(".d.cts") || id.endsWith(".d.mts"))
+            return false;
+        if (!filter(id))
+            return false;
+        return true;
     };
     /** to be called at the end of Rollup's build phase, before output generation */
     const buildDone = () => {
@@ -28039,9 +28047,7 @@ const typescript = (options) => {
             const resolved = (_a = result.resolvedModule) === null || _a === void 0 ? void 0 : _a.resolvedFileName;
             if (!resolved)
                 return;
-            if (resolved.endsWith(".d.ts"))
-                return;
-            if (!filter(resolved))
+            if (!shouldResolve(resolved))
                 return;
             cache.setDependency(resolved, importer);
             context.debug(() => `${safe.exports.blue("resolving")} '${importee}' imported by '${importer}'`);
@@ -28088,7 +28094,8 @@ const typescript = (options) => {
                 // Rollup can't see these otherwise, because they are "emit-less" and produce no JS
                 if (result.references && supportsThisLoad) {
                     for (const ref of result.references) {
-                        if (!filter(ref))
+                        // pre-emptively filter out files that we don't resolve ourselves (e.g. declarations). don't add new files to Rollup's pipeline if we can't resolve them
+                        if (!shouldResolve(ref))
                             continue;
                         const module = yield this.resolve(ref, id);
                         if (!module || transformedFiles.has(module.id)) // check for circular references (per https://rollupjs.org/guide/en/#thisload)
