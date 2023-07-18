@@ -1,4 +1,4 @@
-import ts from "./build-self/dist/rollup-plugin-typescript2.es";
+import ts from "./build-self/index";
 
 import config from "./rollup.config.base";
 

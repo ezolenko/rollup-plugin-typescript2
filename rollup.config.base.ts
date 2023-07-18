@@ -59,7 +59,7 @@ export default {
 		},
 		{
 			format: "es",
-			file: "build-self/" + pkg.module,
+			file: "build-self/index.mjs",
 			sourcemap: true,
 			banner: "/* eslint-disable */",
 			exports: "auto",

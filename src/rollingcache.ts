@@ -1,8 +1,10 @@
 import { existsSync, readdirSync, renameSync } from "fs";
-import { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } from "fs-extra";
+import fsExtra from "fs-extra"; // TODO: replace with fs-extra/esm once we support node16+ moduleResolution
 import * as _ from "lodash";
 
 import { ICache } from "./icache";
+
+const { emptyDirSync, ensureFileSync, readJsonSync, removeSync, writeJsonSync } = fsExtra; // TODO: per above, replace as named exports once we support node16+ moduleResolution
 
 /**
  * Saves data in new cache folder or reads it from old one.

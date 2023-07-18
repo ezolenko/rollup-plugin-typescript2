@@ -1,3 +1,4 @@
+import { createRequire } from "module";
 import { readFileSync } from "fs";
 
 // The injected id for helpers.
@@ -5,6 +6,8 @@ export const TSLIB = "tslib";
 export const TSLIB_VIRTUAL = "\0tslib.js";
 export let tslibSource: string;
 export let tslibVersion: string;
+
+const require = createRequire(import.meta.url);
 
 try
 {
