@@ -1,8 +1,8 @@
+import replace from "@rollup/plugin-replace";
 import resolve from "@rollup/plugin-node-resolve";
 import commonjs from "@rollup/plugin-commonjs";
-import replace from "rollup-plugin-re";
 
-const pkg = require("./package.json");
+import pkg from "./package.json";
 
 export default {
 	input: "src/index.ts",
@@ -26,14 +26,16 @@ export default {
 	plugins: [
 		replace
 		({
-			replaces:
+			preventAssignment: true, // remove default warning
+			delimiters: ["", ""], // replace all instances
+			values:
 			{
 				"$TS_VERSION_RANGE": pkg.peerDependencies.typescript,
 				"$ROLLUP_VERSION_RANGE": pkg.peerDependencies.rollup,
 				"$RPT2_VERSION": pkg.version,
 			},
 		}),
-		resolve({ jsnext: true, preferBuiltins: true, }),
+		resolve({ preferBuiltins: true, mainFields: ["module", "jsnext:main", "main"] }),
 		commonjs
 		({
 			include: "node_modules/**",
@@ -57,7 +59,7 @@ export default {
 		},
 		{
 			format: "es",
-			file: "build-self/" + pkg.module,
+			file: "build-self/index.mjs",
 			sourcemap: true,
 			banner: "/* eslint-disable */",
 			exports: "auto",

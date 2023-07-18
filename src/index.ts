@@ -1,3 +1,4 @@
+import { createRequire } from "module";
 import { relative, dirname, normalize as pathNormalize, resolve } from "path";
 import * as tsTypes from "typescript";
 import { PluginImpl, InputOptions, TransformResult, SourceMap, Plugin } from "rollup";
@@ -16,7 +17,9 @@ import { convertDiagnostic, printDiagnostics } from "./diagnostics";
 import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { createFilter } from "./get-options-overrides";
 
-// these use globals during testing and are substituted by rollup-plugin-re during builds
+const require = createRequire(import.meta.url);
+
+// these use globals during testing and are substituted by @rollup/plugin-replace during builds
 const TS_VERSION_RANGE = (global as any)?.rpt2__TS_VERSION_RANGE || "$TS_VERSION_RANGE";
 const ROLLUP_VERSION_RANGE = (global as any)?.rpt2__ROLLUP_VERSION_RANGE || "$ROLLUP_VERSION_RANGE";
 const RPT2_VERSION = (global as any)?.rpt2__ROLLUP_VERSION_RANGE || "$RPT2_VERSION";
