@@ -32,6 +32,9 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
+  "engines": {
+    "node": ">=12.2.0"
+  },
   "dependencies": {
     "@rollup/pluginutils": "^4.1.2",
     "find-cache-dir": "^3.3.2",

@@ -241,7 +241,7 @@ Otherwise the plugin should work in watch mode. Make sure to run a normal build 
 
 * TypeScript `2.4+`
 * Rollup `1.26.3+`
-* Node `6.4.0+` (basic ES6 support)
+* Node `12.2.0+` (to [support `createRequire`](https://nodejs.org/api/module.html#modulecreaterequirefilename))
 
 ### Reporting bugs and Contributing
 
