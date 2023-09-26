@@ -26,7 +26,7 @@
     "build": "rimraf dist/* && rollup -c",
     "watch": "rollup -c rollup.config.self.js -w ",
     "build-self": "rimraf dist/* && rollup -c rollup.config.self.js",
-    "lint": "npx eslint .",
+    "lint": "eslint .",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
