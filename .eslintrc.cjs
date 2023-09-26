@@ -6,6 +6,6 @@ module.exports = {
 	root: true,
 	ignorePatterns: ['dist/**', 'node_modules/**', 'build-self/**', '*.js', "__tests__/integration/fixtures/errors/**"],
 	rules: {
-		"@typescript-eslint/no-explicit-any": "off",
+		"@typescript-eslint/no-explicit-any": "off", // these are explicit, so they are intentional
 	}
 };
