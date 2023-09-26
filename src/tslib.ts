@@ -8,7 +8,7 @@ export let tslibVersion: string;
 
 try
 {
-	// tslint:disable-next-line:no-string-literal no-var-requires
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	const tslibPackage = require("tslib/package.json");
 	const tslibPath = require.resolve("tslib/" + tslibPackage.module);
 	tslibSource = readFileSync(tslibPath, "utf8");

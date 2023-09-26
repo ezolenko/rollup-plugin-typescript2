@@ -123,6 +123,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		pluginOptions.typescript = require("typescript");
 	}
 	setTypescriptModule(pluginOptions.typescript);
+	// eslint-disable-next-line prefer-const
 	documentRegistry = tsModule.createDocumentRegistry();
 
 	const self: Plugin = {

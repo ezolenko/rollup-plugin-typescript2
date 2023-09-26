@@ -81,7 +81,7 @@ export class TsCache
 	constructor(private noCache: boolean, runClean: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: RollupContext)
 	{
 		this.dependencyTree = new Graph({ directed: true });
-		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
+		this.dependencyTree.setDefaultNodeLabel(() => ({ dirty: false }));
 
 		if (runClean)
 			this.clean();

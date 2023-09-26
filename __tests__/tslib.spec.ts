@@ -14,6 +14,7 @@ test("tslib", async () => {
 	jest.unmock("tslib/package.json");
 
 	const { tslibVersion, tslibSource } = await import("../src/tslib");
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
 	expect(tslibVersion).toEqual(require("tslib/package.json").version);
 
 	const tslibES6 = await fs.readFile(require.resolve("tslib/tslib.es6.js"), "utf8");
