@@ -4,5 +4,8 @@ module.exports = {
 	parser: '@typescript-eslint/parser',
 	plugins: ['@typescript-eslint'],
 	root: true,
-	ignorePatterns: ['__tests__/**', 'dist/**', 'node_modules/**', 'build-self/**', '*.js'],
+	ignorePatterns: ['dist/**', 'node_modules/**', 'build-self/**', '*.js', "__tests__/integration/fixtures/errors/**"],
+	rules: {
+		"@typescript-eslint/no-explicit-any": "off",
+	}
 };

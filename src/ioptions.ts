@@ -25,10 +25,8 @@ export interface IOptions
 	tsconfig?: string;
 	useTsconfigDeclarationDir: boolean;
 	typescript: typeof tsModule;
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	tsconfigOverride: any;
 	transformers: TransformerFactoryCreator[];
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	tsconfigDefaults: any;
 	sourceMapCallback: (id: string, map: string) => void;
 	objectHashIgnoreUnknownHack: boolean;

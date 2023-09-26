@@ -15,7 +15,6 @@ export function parseTsConfig(context: RollupContext, pluginOptions: IOptions)
 	if (pluginOptions.tsconfig !== undefined && !fileName)
 		context.error(`failed to open '${pluginOptions.tsconfig}'`);
 
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	let loadedConfig: any = {};
 	let baseDir = pluginOptions.cwd;
 	let configFileName;

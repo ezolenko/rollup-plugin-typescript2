@@ -18,4 +18,4 @@ export function makeContext(): PluginContext & RollupContext {
 		info: jest.fn(returnText),
 		debug: jest.fn(returnText),
 	} as unknown as PluginContext & RollupContext;
-};
+}
