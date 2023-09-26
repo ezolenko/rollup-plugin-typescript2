@@ -78,10 +78,11 @@ export class TsCache
 	private syntacticDiagnosticsCache!: ICache<IDiagnostics[]>;
 	private hashOptions = { algorithm: "sha1", ignoreUnknown: false };
 
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
 	constructor(private noCache: boolean, runClean: boolean, hashIgnoreUnknown: boolean, private host: tsTypes.LanguageServiceHost, private cacheRoot: string, private options: tsTypes.CompilerOptions, private rollupConfig: any, rootFilenames: string[], private context: RollupContext)
 	{
 		this.dependencyTree = new Graph({ directed: true });
-		this.dependencyTree.setDefaultNodeLabel((_node: string) => ({ dirty: false }));
+		this.dependencyTree.setDefaultNodeLabel(() => ({ dirty: false }));
 
 		if (runClean)
 			this.clean();

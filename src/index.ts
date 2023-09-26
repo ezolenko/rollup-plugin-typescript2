@@ -17,8 +17,11 @@ import { TSLIB, TSLIB_VIRTUAL, tslibSource, tslibVersion } from "./tslib";
 import { createFilter } from "./get-options-overrides";
 
 // these use globals during testing and are substituted by rollup-plugin-re during builds
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const TS_VERSION_RANGE = (global as any)?.rpt2__TS_VERSION_RANGE || "$TS_VERSION_RANGE";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const ROLLUP_VERSION_RANGE = (global as any)?.rpt2__ROLLUP_VERSION_RANGE || "$ROLLUP_VERSION_RANGE";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const RPT2_VERSION = (global as any)?.rpt2__ROLLUP_VERSION_RANGE || "$RPT2_VERSION";
 
 type RPT2Options = Partial<IOptions>;
@@ -123,6 +126,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 		pluginOptions.typescript = require("typescript");
 	}
 	setTypescriptModule(pluginOptions.typescript);
+	// eslint-disable-next-line prefer-const
 	documentRegistry = tsModule.createDocumentRegistry();
 
 	const self: Plugin = {
