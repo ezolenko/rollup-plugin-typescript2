@@ -26,14 +26,19 @@ PERFORMANCE OF THIS SOFTWARE.
 ***************************************************************************** */
 
 function __awaiter(thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
+  function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+  return new (P || (P = Promise))(function (resolve, reject) {
+      function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+      function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+      function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+      step((generator = generator.apply(thisArg, _arguments || [])).next());
+  });
 }
+
+typeof SuppressedError === "function" ? SuppressedError : function (error, suppressed, message) {
+  var e = new Error(message);
+  return e.name = "SuppressedError", e.error = error, e.suppressed = suppressed, e;
+};
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -27646,7 +27651,7 @@ class TsCache {
         this.ambientTypesDirty = false;
         this.hashOptions = { algorithm: "sha1", ignoreUnknown: false };
         this.dependencyTree = new graphlib.Graph({ directed: true });
-        this.dependencyTree.setDefaultNodeLabel((_node) => ({ dirty: false }));
+        this.dependencyTree.setDefaultNodeLabel(() => ({ dirty: false }));
         if (runClean)
             this.clean();
         if (noCache)
@@ -27890,7 +27895,7 @@ const TSLIB_VIRTUAL = "\0tslib.js";
 let tslibSource;
 let tslibVersion;
 try {
-    // tslint:disable-next-line:no-string-literal no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const tslibPackage = require("tslib/package.json");
     const tslibPath = require.resolve("tslib/" + tslibPackage.module);
     tslibSource = readFileSync(tslibPath, "utf8");
@@ -27904,7 +27909,7 @@ catch (e) {
 // these use globals during testing and are substituted by rollup-plugin-re during builds
 const TS_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__TS_VERSION_RANGE) || ">=2.4.0";
 const ROLLUP_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || ">=1.26.3";
-const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.35.1";
+const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.36.0";
 const typescript = (options) => {
     let watchMode = false;
     let supportsThisLoad = false;
@@ -27981,6 +27986,7 @@ const typescript = (options) => {
         pluginOptions.typescript = require("typescript");
     }
     setTypescriptModule(pluginOptions.typescript);
+    // eslint-disable-next-line prefer-const
     documentRegistry = tsModule.createDocumentRegistry();
     const self = {
         name: "rpt2",
