@@ -15,7 +15,6 @@ export function makeOptions(cacheDir: string, cwd: string): IOptions {
 		cacheRoot: cacheDir,
 		cwd,
 		abortOnError: false,
-		rollupCommonJSResolveHack: false,
 		typescript: ts,
 		objectHashIgnoreUnknownHack: false,
 		tsconfigOverride: null,

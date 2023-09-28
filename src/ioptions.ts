@@ -21,7 +21,6 @@ export interface IOptions
 	clean: boolean;
 	cacheRoot: string;
 	abortOnError: boolean;
-	rollupCommonJSResolveHack: boolean;
 	tsconfig?: string;
 	useTsconfigDeclarationDir: boolean;
 	typescript: typeof tsModule;

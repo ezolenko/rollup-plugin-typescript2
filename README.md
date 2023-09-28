@@ -67,10 +67,6 @@ This also allows for passing in different `tsconfig` files depending on your bui
 
 Must be before `rollup-plugin-typescript2` in the plugin list, especially when the `browser: true` option is used (see [#66](https://github.com/ezolenko/rollup-plugin-typescript2/issues/66)).
 
-#### @rollup/plugin-commonjs
-
-See the explanation for `rollupCommonJSResolveHack` option below.
-
 #### @rollup/plugin-babel
 
 This plugin transpiles code, but doesn't change file extensions. `@rollup/plugin-babel` only looks at code with these extensions [by default](https://github.com/rollup/plugins/tree/master/packages/babel#extensions): `.js,.jsx,.es6,.es,.mjs`. To workaround this, add `.ts` and `.tsx` to its list of extensions.
@@ -167,14 +163,10 @@ See [#108](https://github.com/ezolenko/rollup-plugin-typescript2/issues/108)
 	Bail out on first syntactic or semantic error.
 	In some cases, setting this to false will result in an exception in Rollup itself (for example, unresolvable imports).
 
-* `rollupCommonJSResolveHack`: false
-
-	_Deprecated_. OS native paths are now _always_ used since [`0.30.0`](https://github.com/ezolenko/rollup-plugin-typescript2/releases/0.30.0) (see [#251](https://github.com/ezolenko/rollup-plugin-typescript2/pull/251)), so this no longer has any effect -- as if it is always `true`.
-
 * `objectHashIgnoreUnknownHack`: false
 
 	The plugin uses your Rollup config as part of its cache key.
-	`object-hash` is used to generate a hash, but it can have trouble with some uncommon types of elements.
+	[`object-hash`](https://github.com/puleos/object-hash) is used to generate a hash, but it can have trouble with some uncommon types of elements.
 	Setting this option to true will make `object-hash` ignore unknowns, at the cost of not invalidating the cache if ignored elements are changed.
 
 	Only enable this option if you need it (e.g. if you get `Error: Unknown object type "xxx"`) and make sure to run with `clean: true` once in a while and definitely before a release.
@@ -240,8 +232,8 @@ Otherwise the plugin should work in watch mode. Make sure to run a normal build 
 ### Requirements
 
 * TypeScript `2.4+`
-* Rollup `1.26.3+`
-* Node `6.4.0+` (basic ES6 support)
+* Rollup `3.7.5+`
+* Node `14.18.0+` (Rollup [requirement](https://github.com/rollup/rollup/blob/096ae92972a920dc53c3bbe9b1001ea82a15e86a/package.json#L133))
 
 ### Reporting bugs and Contributing
 
