@@ -5,6 +5,7 @@ export interface ICache<DataType> {
     read(name: string): DataType | null | undefined;
     write(name: string, data: DataType): void;
     touch(name: string): void;
+    remove(name: string): void;
     roll(): void;
 }
 //# sourceMappingURL=icache.d.ts.map

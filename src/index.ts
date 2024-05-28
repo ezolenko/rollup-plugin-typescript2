@@ -126,6 +126,34 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 	// eslint-disable-next-line prefer-const
 	documentRegistry = tsModule.createDocumentRegistry();
 
+	const hashes: Array<[string, string]> = [];
+
+	/**
+	 * Tracks the hash of the file
+	 * If there is an error, we will delete the cache for the file
+	 * 
+	 * This is necessary when sometimes a file has a flaky error
+	 * @param id 
+	 * @param hash 
+	 */
+	const trackHash = (id: string, hash?: string) => {
+		if (!hash) {
+			return;
+		}
+		if (hashes.length >= 10) {
+			hashes.shift();
+		}
+		hashes.push([id, hash])
+	}
+
+	const clearCacheHash = (id: string) => {
+		const [hash] = hashes.find(([file]) => file === id) || [];
+		if (hash) {
+			context.warn(`Clearing rpt2 cache for ${id}`)
+			cache.cleanHash(hash);
+		}
+	}
+
 	const self: Plugin = {
 
 		name: "rpt2",
@@ -248,8 +276,9 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			const snapshot = servicesHost.setSnapshot(id, code);
 
 			// getting compiled file from cache or from ts
-			const result = cache.getCompiled(id, snapshot, () =>
+			const result = cache.getCompiled(id, snapshot, (hash) =>
 			{
+				trackHash(id, hash);
 				const output = service.getEmitOutput(id);
 
 				if (output.emitSkipped)
@@ -324,6 +353,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 			if (err)
 			{
+				clearCacheHash((err as any).id)
 				buildDone();
 				// workaround: err.stack contains err.message and Rollup prints both, causing duplication, so split out the stack itself if it exists (c.f. https://github.com/ezolenko/rollup-plugin-typescript2/issues/103#issuecomment-1172820658)
 				const stackOnly = err.stack?.split(err.message)[1];

@@ -12,5 +12,7 @@ export interface ICache <DataType>
 
 	touch(name: string): void;
 
+	remove(name: string): void;
+
 	roll(): void;
 }

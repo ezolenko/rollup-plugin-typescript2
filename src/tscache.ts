@@ -143,6 +143,12 @@ export class TsCache
 			fs.removeSync(`${dir}`);
 		});
 	}
+	
+	public cleanHash(hash: string) {
+		this.codeCache.remove(hash);
+		this.typesCache.remove(hash);
+		this.syntacticDiagnosticsCache.remove(hash);
+	}
 
 	public setDependency(importee: string, importer: string): void
 	{
@@ -173,7 +179,7 @@ export class TsCache
 		this.typesCache.roll();
 	}
 
-	public getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined
+	public getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: (hash?: string) => ICode | undefined): ICode | undefined
 	{
 		this.context.info(`${blue("transpiling")} '${id}'`);
 		// if !isolatedModules, compiled JS code can change if its imports do (e.g. enums). also, declarations can change based on imports as well
@@ -214,7 +220,7 @@ export class TsCache
 		return this.getCached(cache, id, snapshot, type === "semantic", () => convertDiagnostic(type, check()));
 	}
 
-	private getCached<CacheType>(cache: ICache<CacheType>, id: string, snapshot: tsTypes.IScriptSnapshot, checkImports: boolean, convert: () => CacheType): CacheType
+	private getCached<CacheType>(cache: ICache<CacheType>, id: string, snapshot: tsTypes.IScriptSnapshot, checkImports: boolean, convert: (hash?: string) => CacheType): CacheType
 	{
 		if (this.noCache)
 			return convert();
@@ -238,7 +244,7 @@ export class TsCache
 
 		this.context.debug(yellow("    cache miss"));
 
-		const convertedData = convert();
+		const convertedData = convert(hash);
 		cache.write(hash, convertedData);
 		this.markAsDirty(id);
 		return convertedData;

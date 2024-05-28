@@ -27543,6 +27543,12 @@ class RollingCache {
             return;
         ensureFileSync(`${this.newCacheRoot}/${name}`);
     }
+    remove(name) {
+        if (existsSync(`${this.newCacheRoot}/${name}`))
+            removeSync(`${this.newCacheRoot}/${name}`);
+        else if (existsSync(`${this.oldCacheRoot}/${name}`))
+            removeSync(`${this.oldCacheRoot}/${name}`);
+    }
     /** clears old cache and moves new in its place */
     roll() {
         if (this.rolled)
@@ -27694,6 +27700,11 @@ class TsCache {
             fs$4.removeSync(`${dir}`);
         });
     }
+    cleanHash(hash) {
+        this.codeCache.remove(hash);
+        this.typesCache.remove(hash);
+        this.syntacticDiagnosticsCache.remove(hash);
+    }
     setDependency(importee, importer) {
         // importee -> importer
         this.context.debug(`${safe.exports.blue("dependency")} '${importee}'`);
@@ -27759,7 +27770,7 @@ class TsCache {
                 this.context.warn(safe.exports.yellow("    cache broken, discarding"));
         }
         this.context.debug(safe.exports.yellow("    cache miss"));
-        const convertedData = convert();
+        const convertedData = convert(hash);
         cache.write(hash, convertedData);
         this.markAsDirty(id);
         return convertedData;
@@ -27988,6 +27999,31 @@ const typescript = (options) => {
     setTypescriptModule(pluginOptions.typescript);
     // eslint-disable-next-line prefer-const
     documentRegistry = tsModule.createDocumentRegistry();
+    const hashes = [];
+    /**
+     * Tracks the hash of the file
+     * If there is an error, we will delete the cache for the file
+     *
+     * This is necessary when sometimes a file has a flaky error
+     * @param id
+     * @param hash
+     */
+    const trackHash = (id, hash) => {
+        if (!hash) {
+            return;
+        }
+        if (hashes.length >= 10) {
+            hashes.shift();
+        }
+        hashes.push([id, hash]);
+    };
+    const clearCacheHash = (id) => {
+        const [hash] = hashes.find(([file]) => file === id) || [];
+        if (hash) {
+            context.warn(`Clearing rpt2 cache for ${id}`);
+            cache.cleanHash(hash);
+        }
+    };
     const self = {
         name: "rpt2",
         options(config) {
@@ -28073,7 +28109,8 @@ const typescript = (options) => {
                     return undefined;
                 const snapshot = servicesHost.setSnapshot(id, code);
                 // getting compiled file from cache or from ts
-                const result = cache.getCompiled(id, snapshot, () => {
+                const result = cache.getCompiled(id, snapshot, (hash) => {
+                    trackHash(id, hash);
                     const output = service.getEmitOutput(id);
                     if (output.emitSkipped) {
                         noErrors = false;
@@ -28128,6 +28165,7 @@ const typescript = (options) => {
             var _a;
             generateRound = 0; // in watch mode, buildEnd resets generate count just before generateBundle for each output
             if (err) {
+                clearCacheHash(err.id);
                 buildDone();
                 // workaround: err.stack contains err.message and Rollup prints both, causing duplication, so split out the stack itself if it exists (c.f. https://github.com/ezolenko/rollup-plugin-typescript2/issues/103#issuecomment-1172820658)
                 const stackOnly = (_a = err.stack) === null || _a === void 0 ? void 0 : _a.split(err.message)[1];

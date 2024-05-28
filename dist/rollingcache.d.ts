@@ -19,6 +19,7 @@ export declare class RollingCache<DataType> implements ICache<DataType> {
     read(name: string): DataType | null | undefined;
     write(name: string, data: DataType): void;
     touch(name: string): void;
+    remove(name: string): void;
     /** clears old cache and moves new in its place */
     roll(): void;
 }

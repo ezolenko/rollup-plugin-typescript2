@@ -30,10 +30,11 @@ export declare class TsCache {
     private hashOptions;
     constructor(noCache: boolean, runClean: boolean, hashIgnoreUnknown: boolean, host: tsTypes.LanguageServiceHost, cacheRoot: string, options: tsTypes.CompilerOptions, rollupConfig: any, rootFilenames: string[], context: RollupContext);
     private clean;
+    cleanHash(hash: string): void;
     setDependency(importee: string, importer: string): void;
     walkTree(cb: (id: string) => void | false): void;
     done(): void;
-    getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: () => ICode | undefined): ICode | undefined;
+    getCompiled(id: string, snapshot: tsTypes.IScriptSnapshot, transform: (hash?: string) => ICode | undefined): ICode | undefined;
     getSyntacticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
     getSemanticDiagnostics(id: string, snapshot: tsTypes.IScriptSnapshot, check: () => tsTypes.Diagnostic[]): IDiagnostics[];
     private checkAmbientTypes;

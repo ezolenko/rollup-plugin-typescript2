@@ -79,6 +79,13 @@ export class RollingCache<DataType> implements ICache<DataType>
 		ensureFileSync(`${this.newCacheRoot}/${name}`);
 	}
 
+	public remove(name: string) {
+		if (existsSync(`${this.newCacheRoot}/${name}`))
+			removeSync(`${this.newCacheRoot}/${name}`);
+		else if (existsSync(`${this.oldCacheRoot}/${name}`))
+			removeSync(`${this.oldCacheRoot}/${name}`);
+	}
+
 	/** clears old cache and moves new in its place */
 	public roll()
 	{
