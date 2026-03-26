@@ -106,7 +106,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 			verbosity: VerbosityLevel.Warning,
 			clean: false,
 			cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
-			include: ["*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts"],
+			include: ["*.ts{,x}", "**/*.ts{,x}", "**/*.cts", "**/*.mts"],
 			exclude: ["*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
 			abortOnError: true,
 			rollupCommonJSResolveHack: false,
