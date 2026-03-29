@@ -138,7 +138,7 @@ test("createFilter - rootDirs", () => {
 
 test("createFilter - projectReferences", () => {
 	// test string include and also don't match with "**"
-	const config = { ...defaultConfig, include: "*.ts+(|x)" };
+	const config = { ...defaultConfig, include: "*.ts{,x}" };
 	const preParsedTsConfig = {
 		...defaultPreParsedTsConfig,
 		projectReferences: [
