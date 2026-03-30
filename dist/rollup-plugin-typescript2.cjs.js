@@ -27938,7 +27938,7 @@ catch (e) {
 // these use globals during testing and are substituted by rollup-plugin-re during builds
 const TS_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__TS_VERSION_RANGE) || ">=2.4.0";
 const ROLLUP_VERSION_RANGE = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || ">=1.26.3";
-const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.36.1";
+const RPT2_VERSION = (global === null || global === void 0 ? void 0 : global.rpt2__ROLLUP_VERSION_RANGE) || "0.37.0";
 const typescript = (options) => {
     let watchMode = false;
     let supportsThisLoad = false;
@@ -27999,7 +27999,7 @@ const typescript = (options) => {
         verbosity: VerbosityLevel.Warning,
         clean: false,
         cacheRoot: findCacheDir({ name: "rollup-plugin-typescript2" }),
-        include: ["*.ts+(|x)", "**/*.ts+(|x)", "**/*.cts", "**/*.mts"],
+        include: ["*.ts{,x}", "**/*.ts{,x}", "**/*.cts", "**/*.mts"],
         exclude: ["*.d.ts", "**/*.d.ts", "**/*.d.cts", "**/*.d.mts"],
         abortOnError: true,
         rollupCommonJSResolveHack: false,
