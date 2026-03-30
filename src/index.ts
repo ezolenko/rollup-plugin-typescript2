@@ -403,7 +403,7 @@ const typescript: PluginImpl<RPT2Options> = (options) =>
 
 				// don't mutate the entry because generateBundle gets called multiple times
 				let entryText = entry.text
-				const cachePlaceholder = `${pluginOptions.cacheRoot}/placeholder`
+				const cachePlaceholder = normalize(`${pluginOptions.cacheRoot}/placeholder`)
 
 				// modify declaration map sources to correct relative path (only if outputting)
 				if (extension === ".d.ts.map" && (_output?.file || _output?.dir))

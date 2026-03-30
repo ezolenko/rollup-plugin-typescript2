@@ -86,6 +86,28 @@ test("integration - no errors - no declarations", async () => {
   expect(output.length).toEqual(1); // no other files
 });
 
+test("integration - no errors - cacheRoot with backslashes (Windows path normalization)", async () => {
+  // Simulate Windows-style cacheRoot with backslashes (as returned by findCacheDir() on Windows).
+  // Without normalizePath(), path.relative(cachePlaceholder, fileName) produces a path like
+  // "../../../../src/index.d.ts", which Rollup rejects as an invalid emitted fileName.
+  const windowsStyleCacheRoot = `${testDir}/rpt2-cache-backslash`.replace(/\//g, "\\");
+  const { output } = await genBundle("index.ts", {
+    cacheRoot: windowsStyleCacheRoot,
+    clean: true,
+  });
+
+  // declaration file must have a plain fileName, not a traversal path like "../../../../..."
+  const decFile = findName(output, "index.d.ts");
+  expect(decFile).toBeTruthy();
+  expect(decFile.fileName).not.toMatch(/^\.\./);
+
+  // declaration map sources must be correctly remapped (not pointing into the cache dir)
+  const decMap = findName(output, "index.d.ts.map");
+  const decMapSources = JSON.parse(decMap.source as string).sources;
+  const decRelPath = normalize(path.relative(`${testDir}/dist`, `${fixtureDir}/index.ts`));
+  expect(decMapSources).toEqual([decRelPath]);
+});
+
 test("integration - no errors - allowJs + emitDeclarationOnly", async () => {
   const { output } = await genBundle("some-js-import.js", {
     include: ["**/*.js"],
