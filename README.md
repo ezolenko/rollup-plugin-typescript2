@@ -59,7 +59,7 @@ This also allows for passing in different `tsconfig` files depending on your bui
 
 ### Some options need additional configuration on plugin side
 
-* `allowJs`: lets TypeScript process JS files as well. If you use it, modify this plugin's `include` option to add `"*.js+(|x)", "**/*.js+(|x)"` (might also want to `exclude` `"**/node_modules/**/*"`, as it can slow down the build significantly).
+* `allowJs`: lets TypeScript process JS files as well. If you use it, modify this plugin's `include` option to add `"*.js{,x}", "**/*.js{,x}"` (might also want to `exclude` `"**/node_modules/**/*"`, as it can slow down the build significantly).
 
 ### Compatibility
 
