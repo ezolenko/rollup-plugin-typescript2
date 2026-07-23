@@ -15,9 +15,13 @@ setTypescriptModule(ts);
 };
 
 const defaultConfig = { fileNames: [], errors: [], options: {} };
+const defaultFilter = () => true;
 
 const unaryFunc = "const unary = (x: string): string => x.reverse()";
 const unaryFuncSnap = { text: unaryFunc };
+
+const binaryFunc = "const binary = (a: number, b: number): number => a - b";
+const binaryFuncSnap = { text: binaryFunc };
 
 // host.ts uses `/` normalized path, as does TS itself (https://github.com/microsoft/TypeScript/blob/7f022c58fb8b7253f23c49f0d9eee6fde82b477b/src/compiler/path.ts#L4)
 const local = (x: string) => normalize(path.resolve(__dirname, x));
@@ -37,14 +41,18 @@ test("LanguageServiceHost", async () => {
 	const testOpts = { test: "this is a test" };
 	const config = { ...defaultConfig, options: testOpts };
 	const transformers = [() => ({})];
-	const host = new LanguageServiceHost(config, transformers, testDir);
+	const host = new LanguageServiceHost(config, transformers, testDir, defaultFilter);
 
 	// test core snapshot functionality
 	expect(host.getScriptSnapshot(testFile)).toEqual(unaryFuncSnap);
 	expect(host.getScriptVersion(testFile)).toEqual("1");
 
-	expect(host.setSnapshot(testFile, unaryFunc)).toEqual(unaryFuncSnap); // version 2
+	expect(host.setSnapshot(testFile, unaryFunc)).toEqual(unaryFuncSnap); // unchanged
 	expect(host.getScriptSnapshot(testFile)).toEqual(unaryFuncSnap); // get from dict
+	expect(host.getScriptVersion(testFile)).toEqual("1");
+
+	expect(host.setSnapshot(testFile, binaryFunc)).toEqual(binaryFuncSnap); // version 2
+	expect(host.getScriptSnapshot(testFile)).toEqual(binaryFuncSnap);
 	expect(host.getScriptVersion(testFile)).toEqual("2");
 
 	expect(host.getScriptSnapshot(nonExistent)).toBeFalsy();
@@ -89,7 +97,7 @@ test("LanguageServiceHost - getCustomTransformers", () => {
 		after: () => "testAfter",
 		afterDeclarations: () => "testAfterDeclarations",
 	})];
-	const host = new LanguageServiceHost(config, transformers as any, testDir);
+	const host = new LanguageServiceHost(config, transformers as any, testDir, defaultFilter);
 
 	host.setLanguageService(true as any);
 	const customTransformers = host.getCustomTransformers();
@@ -107,13 +115,13 @@ test("LanguageServiceHost - getCustomTransformers -- undefined cases", () => {
 	const config = { ...defaultConfig };
 
 	// no LS and no transformers cases
-	let host = new LanguageServiceHost(config, undefined as any, testDir);
+	let host = new LanguageServiceHost(config, undefined as any, testDir, defaultFilter);
 	expect(host.getCustomTransformers()).toBeFalsy(); // no LS
 	host.setLanguageService(true as any);
 	expect(host.getCustomTransformers()).toBeFalsy(); // no transformers
 
 	// empty transformers case
-	host = new LanguageServiceHost(config, [], testDir);
+	host = new LanguageServiceHost(config, [], testDir, defaultFilter);
 	host.setLanguageService(true as any);
 	expect(host.getCustomTransformers()).toBeFalsy(); // empty transformers
 });

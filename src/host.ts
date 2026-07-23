@@ -11,7 +11,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 	private service?: tsTypes.LanguageService;
 	private fileNames: Set<string>;
 
-	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[], private cwd: string)
+	constructor(private parsedConfig: tsTypes.ParsedCommandLine, private transformers: TransformerFactoryCreator[], private cwd: string, private filter: (id: string | unknown) => boolean)
 	{
 		this.fileNames = new Set(parsedConfig.fileNames);
 	}
@@ -27,14 +27,27 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 		this.service = service;
 	}
 
-	public setSnapshot(fileName: string, source: string): tsTypes.IScriptSnapshot
+	public setSnapshot(fileName: string, source: string, forcedUpdate = false): tsTypes.IScriptSnapshot
 	{
 		fileName = normalize(fileName);
+
+		// don't update the snapshot if there are no changes
+		const prevSnapshot = this.snapshots[fileName];
+		if (prevSnapshot?.getText(0, prevSnapshot.getLength()) === source) {
+			if (forcedUpdate) {
+				this.versions[fileName] = (this.versions[fileName] || 0) + 1;
+			}
+
+			return prevSnapshot;
+		}
 
 		const snapshot = tsModule.ScriptSnapshot.fromString(source);
 		this.snapshots[fileName] = snapshot;
 		this.versions[fileName] = (this.versions[fileName] || 0) + 1;
-		this.fileNames.add(fileName);
+
+		if (this.filter(fileName))
+			this.fileNames.add(fileName);
+
 		return snapshot;
 	}
 
@@ -46,7 +59,7 @@ export class LanguageServiceHost implements tsTypes.LanguageServiceHost
 			return this.snapshots[fileName];
 
 		const source = tsModule.sys.readFile(fileName);
-		if (source)
+		if (source !== undefined)
 			return this.setSnapshot(fileName, source);
 
 		return undefined;
