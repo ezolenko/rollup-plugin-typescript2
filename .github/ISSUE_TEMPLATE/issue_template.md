@@ -1,3 +1,9 @@
+---
+name: Reproducible Bug Report
+about: If you have a minimal reproduction of a bug within `rollup-plugin-typescript2` itself
+
+---
+
 ## Troubleshooting
 <!--
   Please follow the steps below to ensure that you have troubleshot this problem sufficiently to believe that it is a bug in this plugin.
